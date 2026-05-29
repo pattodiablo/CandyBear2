@@ -1,0 +1,98 @@
+{
+    "id": "60be42aa-8f5d-439a-b281-d01000ca8a78",
+    "sceneType": "PREFAB",
+    "settings": {
+        "exportClass": true,
+        "autoImport": true,
+        "preloadMethodName": "",
+        "preloadPackFiles": [],
+        "createMethodName": "",
+        "compilerOutputLanguage": "TYPE_SCRIPT",
+        "borderWidth": 1280,
+        "borderHeight": 720
+    },
+    "displayList": [
+        {
+            "type": "Image",
+            "id": "0cfe5d53-616b-444e-87fa-a264db8e47e8",
+            "label": "rawProduct1",
+            "texture": {
+                "key": "Product1Raw"
+            }
+        }
+    ],
+    "plainObjects": [],
+    "meta": {
+        "app": "Phaser Editor - Scene Editor",
+        "url": "https://phaser.io/editor",
+        "contentType": "phasereditor2d.core.scene.SceneContentType",
+        "version": 5
+    },
+    "prefabProperties": [
+        {
+            "name": "ACTIVE_DURATION",
+            "label": "ACTIVE_DURATION",
+            "tooltip": "",
+            "defValue": 2500,
+            "customDefinition": false,
+            "editorOnly": false,
+            "deprecated": false,
+            "type": {
+                "id": "number",
+                "isArray": false
+            }
+        },
+        {
+            "name": "Raw",
+            "label": "Raw",
+            "tooltip": "Raw",
+            "defValue": "{\"key\":\"Product1Raw\"}",
+            "customDefinition": false,
+            "editorOnly": false,
+            "deprecated": false,
+            "type": {
+                "id": "texture-config",
+                "isArray": false
+            }
+        },
+        {
+            "name": "Cooked",
+            "label": "Cooked",
+            "tooltip": "Cooked",
+            "defValue": "{\"key\":\"Product1Cooked\"}",
+            "customDefinition": false,
+            "editorOnly": false,
+            "deprecated": false,
+            "type": {
+                "id": "texture-config",
+                "isArray": false
+            }
+        },
+        {
+            "name": "ChocolateDip",
+            "label": "ChocolateDip",
+            "tooltip": "ChocolateDip",
+            "defValue": "{\"key\":\"Product1Chocolate\"}",
+            "customDefinition": false,
+            "editorOnly": false,
+            "deprecated": false,
+            "type": {
+                "id": "texture-config",
+                "isArray": false
+            }
+        },
+        {
+            "name": "CandyDip",
+            "label": "CandyDip",
+            "tooltip": "CandyDip",
+            "defValue": "{\"key\":\"Product1Candy\"}",
+            "customDefinition": false,
+            "editorOnly": false,
+            "deprecated": false,
+            "type": {
+                "id": "texture-config",
+                "isArray": false
+            }
+        }
+    ]
+}

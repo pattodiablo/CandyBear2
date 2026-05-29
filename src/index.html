@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>My Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <style>
+        html,
+        body {
+            padding: 0px;
+            margin: 0px;
+            background: #242424;
+            width: 100%;
+            height: 100%;
+            min-height: 100dvh;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: sans-serif;
+        }
+
+        #mobile-launch-overlay {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at top, #3b3b3b 0%, #121212 70%);
+            z-index: 9999;
+        }
+
+        #mobile-launch-overlay.visible {
+            display: flex;
+        }
+
+        #mobile-launch-button {
+            border: 0;
+            border-radius: 18px;
+            padding: 18px 24px;
+            background: #f2cf66;
+            color: #2b2115;
+            font-size: 18px;
+            font-weight: 700;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+        }
+
+        #mobile-launch-hint {
+            position: absolute;
+            left: 50%;
+            bottom: 40px;
+            transform: translateX(-50%);
+            width: min(320px, calc(100% - 32px));
+            color: rgba(255, 255, 255, 0.85);
+            text-align: center;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="mobile-launch-overlay">
+        <button id="mobile-launch-button" type="button">Tap To Play Fullscreen</button>
+        <div id="mobile-launch-hint">On some phones, fullscreen only works after a tap. If Safari blocks it, the game will still open using the full browser area.</div>
+    </div>
+    <script>
+        (function () {
+            const isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+                || (navigator.maxTouchPoints > 0 && Math.min(screen.width, screen.height) < 1024);
+
+            if (!isMobileDevice) {
+                return;
+            }
+
+            const overlay = document.getElementById("mobile-launch-overlay");
+            const launchButton = document.getElementById("mobile-launch-button");
+
+            const requestFullscreen = async () => {
+                const root = document.documentElement;
+                const fullscreenElement = document.fullscreenElement || document.webkitFullscreenElement;
+
+                if (fullscreenElement) {
+                    return true;
+                }
+
+                try {
+                    if (root.requestFullscreen) {
+                        await root.requestFullscreen();
+                        return true;
+                    }
+
+                    if (root.webkitRequestFullscreen) {
+                        root.webkitRequestFullscreen();
+                        return true;
+                    }
+                } catch (_) {
+                    return false;
+                }
+
+                return false;
+            };
+
+            const expandBrowserArea = () => {
+                document.body.style.minHeight = "100dvh";
+                window.scrollTo(0, 1);
+            };
+
+            const lockOrientation = async () => {
+                try {
+                    if (screen.orientation && screen.orientation.lock) {
+                        await screen.orientation.lock("landscape");
+                    }
+                } catch (_) {
+                    // Orientation lock is optional and unsupported on many mobile browsers.
+                }
+            };
+
+            const launchGame = async () => {
+                await requestFullscreen();
+                await lockOrientation();
+                expandBrowserArea();
+                overlay.classList.remove("visible");
+            };
+
+            overlay.classList.add("visible");
+            launchButton.addEventListener("click", launchGame, { once: true });
+        })();
+    </script>
+</body>
+
+</html>

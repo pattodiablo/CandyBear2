@@ -1,0 +1,34 @@
+{
+    "id": "c90d0d58-238b-4399-bf41-916b771ccf95",
+    "sceneType": "PREFAB",
+    "settings": {
+        "exportClass": true,
+        "autoImport": true,
+        "preloadMethodName": "",
+        "preloadPackFiles": [],
+        "createMethodName": "",
+        "compilerOutputLanguage": "TYPE_SCRIPT",
+        "borderWidth": 1280,
+        "borderHeight": 720
+    },
+    "displayList": [
+        {
+            "type": "SpineGameObject",
+            "id": "d8b02ee7-d92e-4a9d-9e29-e5152d431a05",
+            "label": "clientBearSpine",
+            "dataKey": "ClientBearSpine",
+            "atlasKey": "ClientBear-atlas",
+            "skinName": "default",
+            "bpType": 1,
+            "bpAnimation": "idle",
+            "previewAnimation": ""
+        }
+    ],
+    "plainObjects": [],
+    "meta": {
+        "app": "Phaser Editor - Scene Editor",
+        "url": "https://phaser.io/editor",
+        "contentType": "phasereditor2d.core.scene.SceneContentType",
+        "version": 5
+    }
+}

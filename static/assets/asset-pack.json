@@ -1,0 +1,309 @@
+{
+    "section1": {
+        "files": [
+            {
+                "url": [
+                    "assets/audio/backgroundMusic.mp3"
+                ],
+                "type": "audio",
+                "key": "backgroundMusic"
+            },
+            {
+                "url": "assets/bigCoin.png",
+                "type": "image",
+                "key": "bigCoin"
+            },
+            {
+                "url": "assets/BigStar.png",
+                "type": "image",
+                "key": "BigStar"
+            },
+            {
+                "url": "assets/blurOverlay.png",
+                "type": "image",
+                "key": "blurOverlay"
+            },
+            {
+                "url": "assets/CandyDip.png",
+                "type": "image",
+                "key": "CandyDip"
+            },
+            {
+                "url": "assets/candyicon.png",
+                "type": "image",
+                "key": "candyicon"
+            },
+            {
+                "url": "assets/Charola.png",
+                "type": "image",
+                "key": "Charola"
+            },
+            {
+                "url": "assets/ChocolateDip.png",
+                "type": "image",
+                "key": "ChocolateDip"
+            },
+            {
+                "url": "assets/chocolateIcon.png",
+                "type": "image",
+                "key": "chocolateIcon"
+            },
+            {
+                "url": "assets/ClientBack.png",
+                "type": "image",
+                "key": "ClientBack"
+            },
+            {
+                "url": "assets/ClientBear.png",
+                "type": "image",
+                "key": "ClientBear"
+            },
+            {
+                "url": "assets/spine/ClientBear.atlas",
+                "type": "spineAtlas",
+                "key": "ClientBear-atlas"
+            },
+            {
+                "url": "assets/spine/ClientBear.json",
+                "type": "spineJson",
+                "key": "ClientBearSpine"
+            },
+            {
+                "url": "assets/ClientQuestion.png",
+                "type": "image",
+                "key": "ClientQuestion"
+            },
+            {
+                "url": "assets/coin.png",
+                "type": "image",
+                "key": "coin"
+            },
+            {
+                "url": [
+                    "assets/audio/coinDrop.mp3"
+                ],
+                "type": "audio",
+                "key": "coinDrop"
+            },
+            {
+                "url": [
+                    "assets/audio/coinDrop2.mp3"
+                ],
+                "type": "audio",
+                "key": "coinDrop2"
+            },
+            {
+                "url": "assets/dayOneLabel.png",
+                "type": "image",
+                "key": "dayOneLabel"
+            },
+            {
+                "url": [
+                    "assets/audio/eating1.mp3"
+                ],
+                "type": "audio",
+                "key": "eating1"
+            },
+            {
+                "url": [
+                    "assets/audio/eating2.mp3"
+                ],
+                "type": "audio",
+                "key": "eating2"
+            },
+            {
+                "url": [
+                    "assets/audio/eating3.mp3"
+                ],
+                "type": "audio",
+                "key": "eating3"
+            },
+            {
+                "url": [
+                    "assets/audio/fry.mp3"
+                ],
+                "type": "audio",
+                "key": "fry"
+            },
+            {
+                "url": [
+                    "assets/audio/fry2.mp3"
+                ],
+                "type": "audio",
+                "key": "fry2"
+            },
+            {
+                "url": [
+                    "assets/audio/fry3.mp3"
+                ],
+                "type": "audio",
+                "key": "fry3"
+            },
+            {
+                "url": "assets/Fryer.png",
+                "type": "image",
+                "key": "Fryer"
+            },
+            {
+                "url": "assets/glace1.png",
+                "type": "image",
+                "key": "glace1"
+            },
+            {
+                "url": "assets/glace2.png",
+                "type": "image",
+                "key": "glace2"
+            },
+            {
+                "url": "assets/Holder.png",
+                "type": "image",
+                "key": "Holder"
+            },
+            {
+                "url": "assets/fonts/Klop.otf",
+                "format": "opentype",
+                "descriptors": {},
+                "type": "font",
+                "key": "Klop"
+            },
+            {
+                "url": "assets/lamp.png",
+                "type": "image",
+                "key": "lamp"
+            },
+            {
+                "url": "assets/nextdayBtn.png",
+                "type": "image",
+                "key": "nextdayBtn"
+            },
+            {
+                "url": [
+                    "assets/audio/pop1.mp3"
+                ],
+                "type": "audio",
+                "key": "pop1"
+            },
+            {
+                "url": [
+                    "assets/audio/pop2.mp3"
+                ],
+                "type": "audio",
+                "key": "pop2"
+            },
+            {
+                "url": [
+                    "assets/audio/pop3.mp3"
+                ],
+                "type": "audio",
+                "key": "pop3"
+            },
+            {
+                "url": "assets/Product1Berry.png",
+                "type": "image",
+                "key": "Product1Berry"
+            },
+            {
+                "url": "assets/Product1Candy.png",
+                "type": "image",
+                "key": "Product1Candy"
+            },
+            {
+                "url": "assets/Product1Chocolate.png",
+                "type": "image",
+                "key": "Product1Chocolate"
+            },
+            {
+                "url": "assets/Product1Cooked.png",
+                "type": "image",
+                "key": "Product1Cooked"
+            },
+            {
+                "url": "assets/Product1Raw.png",
+                "type": "image",
+                "key": "Product1Raw"
+            },
+            {
+                "url": "assets/Product1Zombie.png",
+                "type": "image",
+                "key": "Product1Zombie"
+            },
+            {
+                "url": "assets/RawProduct1.png",
+                "type": "image",
+                "key": "RawProduct1"
+            },
+            {
+                "url": "assets/RawProduct2.png",
+                "type": "image",
+                "key": "RawProduct2"
+            },
+            {
+                "url": "assets/RawProduct3.png",
+                "type": "image",
+                "key": "RawProduct3"
+            },
+            {
+                "url": "assets/RawProduct4.png",
+                "type": "image",
+                "key": "RawProduct4"
+            },
+            {
+                "url": "assets/readyBtn.png",
+                "type": "image",
+                "key": "readyBtn"
+            },
+            {
+                "url": "assets/smallHeart.png",
+                "type": "image",
+                "key": "smallHeart"
+            },
+            {
+                "url": "assets/smallStar.png",
+                "type": "image",
+                "key": "smallStar"
+            },
+            {
+                "url": "assets/StarHolder.png",
+                "type": "image",
+                "key": "StarHolder"
+            },
+            {
+                "url": [
+                    "assets/audio/swoosh.mp3"
+                ],
+                "type": "audio",
+                "key": "swoosh"
+            },
+            {
+                "url": [
+                    "assets/audio/swoosh2.mp3"
+                ],
+                "type": "audio",
+                "key": "swoosh2"
+            },
+            {
+                "url": "assets/workplace.png",
+                "type": "image",
+                "key": "workplace"
+            },
+            {
+                "url": "assets/Workstation.png",
+                "type": "image",
+                "key": "Workstation"
+            },
+            {
+                "url": "assets/yumyumText.png",
+                "type": "image",
+                "key": "yumyumText"
+            }
+        ]
+    },
+    "meta": {
+        "app": "Phaser Editor 2D - Asset Pack Editor",
+        "contentType": "phasereditor2d.pack.core.AssetContentType",
+        "url": "https://phasereditor2d.com",
+        "version": 2,
+        "showAllFilesInBlocks": false,
+        "visible": true
+    }
+}

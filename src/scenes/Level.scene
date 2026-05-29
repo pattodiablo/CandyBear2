@@ -1,0 +1,259 @@
+{
+    "id": "b685c081-ee5f-4b67-b583-415922c9e2c4",
+    "sceneType": "SCENE",
+    "settings": {
+        "exportClass": true,
+        "autoImport": true,
+        "preloadPackFiles": [],
+        "createMethodName": "editorCreate",
+        "sceneKey": "Level",
+        "compilerOutputLanguage": "TYPE_SCRIPT",
+        "borderWidth": 1280,
+        "borderHeight": 720
+    },
+    "displayList": [
+        {
+            "type": "Image",
+            "id": "342ea940-81a0-4c92-98d1-92937151c596",
+            "label": "workstation",
+            "scope": "CLASS",
+            "texture": {
+                "key": "Workstation"
+            },
+            "x": 654,
+            "y": 563
+        },
+        {
+            "type": "Image",
+            "id": "8c644116-637e-49aa-a3aa-d0c7d2c2dbe6",
+            "label": "fryer1",
+            "scope": "PUBLIC",
+            "texture": {
+                "key": "Fryer"
+            },
+            "x": 640,
+            "y": 522
+        },
+        {
+            "type": "Image",
+            "id": "790b2c24-41fe-4bbc-82cc-b60cebcccfc8",
+            "label": "fryer2",
+            "scope": "PUBLIC",
+            "texture": {
+                "key": "Fryer"
+            },
+            "x": 640,
+            "y": 654
+        },
+        {
+            "type": "Image",
+            "id": "77e12487-c7aa-43f9-aedc-7ffd3f437610",
+            "label": "holder",
+            "texture": {
+                "key": "Holder"
+            },
+            "x": 79,
+            "y": 544
+        },
+        {
+            "type": "Image",
+            "id": "2655ce1f-66c8-4278-8eda-384defc90028",
+            "label": "holder_1",
+            "texture": {
+                "key": "Holder"
+            },
+            "x": 211,
+            "y": 544
+        },
+        {
+            "type": "Image",
+            "id": "8d337a3c-b413-4fe7-8a69-e24bfb57e39a",
+            "label": "holder_2",
+            "texture": {
+                "key": "Holder"
+            },
+            "x": 339,
+            "y": 544
+        },
+        {
+            "type": "Image",
+            "id": "491587c9-778c-4cca-b320-9662a64fc100",
+            "label": "holder_3",
+            "texture": {
+                "key": "Holder"
+            },
+            "x": 465,
+            "y": 544
+        },
+        {
+            "type": "Image",
+            "id": "6cb67c17-e4bc-47c8-97f0-de8ef8641c65",
+            "label": "workplace1",
+            "scope": "PUBLIC",
+            "texture": {
+                "key": "workplace"
+            },
+            "x": 817,
+            "y": 543
+        },
+        {
+            "type": "Image",
+            "id": "4029d547-78b3-45a2-bcc4-6e0aec02d098",
+            "label": "workplace2",
+            "scope": "PUBLIC",
+            "texture": {
+                "key": "workplace"
+            },
+            "x": 947,
+            "y": 543
+        },
+        {
+            "type": "Image",
+            "id": "9e438c60-a11c-433c-b0ca-7ea8845fe637",
+            "label": "chocolateDip",
+            "scope": "PUBLIC",
+            "texture": {
+                "key": "ChocolateDip"
+            },
+            "x": 1078,
+            "y": 543
+        },
+        {
+            "type": "Image",
+            "id": "352fea16-120d-49fb-bac7-bbb179062a90",
+            "label": "candyDip",
+            "scope": "PUBLIC",
+            "texture": {
+                "key": "CandyDip"
+            },
+            "x": 1213,
+            "y": 543
+        },
+        {
+            "type": "Image",
+            "id": "f2bc987a-43b7-4632-8522-c398010d9d6d",
+            "label": "chocolateIcon",
+            "texture": {
+                "key": "chocolateIcon"
+            },
+            "x": 1077,
+            "y": 539
+        },
+        {
+            "type": "Image",
+            "id": "f3ff7775-7efd-43be-977d-ff2df860b3c1",
+            "label": "candyicon",
+            "texture": {
+                "key": "candyicon"
+            },
+            "x": 1212,
+            "y": 539
+        },
+        {
+            "type": "Image",
+            "id": "691671dd-1ff0-4f04-b6e7-a3c4ba3ddec4",
+            "label": "lamp",
+            "texture": {
+                "key": "lamp"
+            },
+            "x": 193,
+            "y": 57
+        },
+        {
+            "type": "Image",
+            "id": "1da19fb0-3b27-4fd8-95bc-5a2a16d3462b",
+            "label": "lamp_1",
+            "texture": {
+                "key": "lamp"
+            },
+            "x": 1035,
+            "y": 57
+        },
+        {
+            "prefabId": "60be42aa-8f5d-439a-b281-d01000ca8a78",
+            "id": "80373848-99cb-4690-8660-56e5b56aac7f",
+            "unlock": [
+                "x",
+                "y"
+            ],
+            "label": "rawProduct1",
+            "x": 78,
+            "y": 547
+        },
+        {
+            "prefabId": "60be42aa-8f5d-439a-b281-d01000ca8a78",
+            "id": "d3d5e537-d5a0-45ad-947e-f7a26515f246",
+            "unlock": [
+                "x",
+                "y"
+            ],
+            "label": "rawProduct",
+            "x": 207,
+            "y": 547
+        },
+        {
+            "prefabId": "60be42aa-8f5d-439a-b281-d01000ca8a78",
+            "id": "0e00d68f-5bcb-4692-a1c1-d5abc2676a89",
+            "unlock": [
+                "x",
+                "y"
+            ],
+            "label": "rawProduct_1",
+            "x": 338,
+            "y": 547
+        },
+        {
+            "prefabId": "60be42aa-8f5d-439a-b281-d01000ca8a78",
+            "id": "0f5153d7-21ca-42a6-a10b-d39d9dea57a7",
+            "unlock": [
+                "x",
+                "y"
+            ],
+            "label": "rawProduct_2",
+            "x": 469,
+            "y": 547
+        },
+        {
+            "type": "Image",
+            "id": "cbbd1530-1071-401d-9cf2-61df5585e099",
+            "label": "blurOverlay",
+            "scope": "CLASS",
+            "texture": {
+                "key": "blurOverlay"
+            },
+            "scaleX": 7,
+            "scaleY": 4,
+            "originX": 0,
+            "originY": 0
+        },
+        {
+            "prefabId": "d22c95a1-a07a-4d36-acf8-819eb6f4423d",
+            "id": "4e832075-3263-4e5f-a190-ad7f56354070",
+            "unlock": [
+                "x",
+                "y"
+            ],
+            "label": "panel",
+            "scope": "CLASS",
+            "x": 595,
+            "y": 360
+        },
+        {
+            "type": "Image",
+            "id": "3d082956-b015-42cc-a47d-294732a6db07",
+            "label": "bigCoin",
+            "texture": {
+                "key": "bigCoin"
+            },
+            "x": 52,
+            "y": 58
+        }
+    ],
+    "plainObjects": [],
+    "meta": {
+        "app": "Phaser Editor - Scene Editor",
+        "url": "https://phaser.io/editor",
+        "contentType": "phasereditor2d.core.scene.SceneContentType",
+        "version": 5
+    }
+}

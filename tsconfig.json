@@ -1,0 +1,25 @@
+{
+	"compilerOptions": {
+		"target": "ESNext",
+		"module": "ESNext",
+		"strict": true,
+		"noEmit": false,
+		"importHelpers": true,
+		"moduleResolution": "bundler",
+		"esModuleInterop": true,
+		"allowSyntheticDefaultImports": true,
+		"sourceMap": true,
+		"paths": {
+		  "~/*": ["./src/*"],
+		  "@esotericsoftware/spine-phaser": ["./src/vendor/spine-phaser.ts"]
+		},
+        "outDir": "./dist",
+		"types": [
+			"phaser"
+		]
+	},
+	"include": [
+		"src/**/*",
+		"types/**/*"
+	]
+}

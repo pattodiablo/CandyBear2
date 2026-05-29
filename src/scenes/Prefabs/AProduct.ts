@@ -1,0 +1,789 @@
+
+// You can write more code here
+
+/* START OF COMPILED CODE */
+
+/* START-USER-IMPORTS */
+import Phaser from "phaser";
+import type Level from "../Level";
+/* END-USER-IMPORTS */
+
+export default class AProduct extends Phaser.GameObjects.Image {
+
+	constructor(scene: Phaser.Scene, x?: number, y?: number, texture?: string, frame?: number | string) {
+		super(scene, x ?? 0, y ?? 0, texture || "Product1Raw", frame);
+
+		/* START-USER-CTR-CODE */
+		this.baseScaleX = this.scaleX;
+		this.baseScaleY = this.scaleY;
+		this.baseX = this.x;
+		this.baseY = this.y;
+		this.baseAngle = this.angle;
+		this.applyAppearance(this.Raw);
+		this.setScale(0, 0);
+		this.setInteractive({
+			hitArea: new Phaser.Geom.Circle(
+				this.displayOriginX,
+				this.displayOriginY,
+				Math.max(this.width, this.height) * AProduct.HIT_AREA_SCALE * 0.5
+			),
+			hitAreaCallback: Phaser.Geom.Circle.Contains,
+			useHandCursor: true
+		});
+		this.on(Phaser.Input.Events.POINTER_OVER, this.handlePointerOver, this);
+		this.on(Phaser.Input.Events.POINTER_DOWN, this.handlePointerDown, this);
+		this.playSpawnTween();
+		/* END-USER-CTR-CODE */
+	}
+
+	public ACTIVE_DURATION: number = 2500;
+	public Raw: {key:string,frame?:string|number} = {"key":"Product1Raw"};
+	public Cooked: {key:string,frame?:string|number} = {"key":"Product1Cooked"};
+	public ChocolateDip: {key:string,frame?:string|number} = {"key":"Product1Chocolate"};
+	public CandyDip: {key:string,frame?:string|number} = {"key":"Product1Candy"};
+
+	/* START-USER-CODE */
+	public fryDuration = 3000;
+	private static readonly BURN_DURATION = 6000;
+	private static readonly HOLDER_ACTIVE_DURATION = 100;
+	private static readonly BURN_START_DELAY = 2000;
+	private static readonly RAISED_OFFSET_Y = 50;
+	private static readonly FRYER_OFFSET_Y = 20;
+	private static readonly FRY_FLOAT_OFFSET_Y = 10;
+	private static readonly SPIN_ANGLE = 360;
+	private static readonly HIT_AREA_SCALE = 1.5;
+	private static readonly WORKPLACE_DELAY = 200;
+	private static readonly WORKPLACE_LIFT_OFFSET_Y = 35;
+	private static readonly WORKPLACE_SELECTION_SCALE = 1.12;
+	private static readonly DIP_SCALE_DURATION = 120;
+	private static readonly SELECTION_TIMEOUT = 2500;
+	private static readonly BURN_TINT = Phaser.Display.Color.ValueToColor(0x5c4634);
+	private readonly baseScaleX: number;
+	private readonly baseScaleY: number;
+	private readonly baseX: number;
+	private readonly baseY: number;
+	private readonly baseAngle: number;
+
+	private isLaunching = false;
+	private isRaised = false;
+	private isCooking = false;
+	private isCooked = false;
+	private isBurned = false;
+	private isAtWorkplace = false;
+	private isReadyForDelivery = false;
+	private isSelectingDip = false;
+	private isSelectingDelivery = false;
+	private isDelivered = false;
+	private activeTimer?: Phaser.Time.TimerEvent;
+	private danceTween?: Phaser.Tweens.Tween;
+	private fryTimer?: Phaser.Time.TimerEvent;
+	private floatTween?: Phaser.Tweens.Tween;
+	private burnTween?: Phaser.Tweens.Tween;
+	private selectionTimeout?: Phaser.Time.TimerEvent;
+	private burnProgress = 0;
+	private currentFryerId?: "fryer1" | "fryer2";
+	private currentWorkplaceId?: "workplace1" | "workplace2";
+
+	private handlePointerOver() {
+		if (this.isLaunching || this.isRaised || this.isCooking || this.isSelectingDip || this.isSelectingDelivery) {
+			return;
+		}
+
+		this.playPopTween();
+	}
+
+	private handlePointerDown() {
+		if (this.isLaunching || this.isRaised || this.isCooking || this.isSelectingDip || this.isSelectingDelivery) {
+			return;
+		}
+
+		const levelScene = this.scene as Level;
+
+		if (this.isAtWorkplace) {
+			if (this.isReadyForDelivery) {
+				const directDeliveryTarget = levelScene.getDirectDeliveryTarget(this);
+
+				if (directDeliveryTarget) {
+					this.directDeliverToClient(directDeliveryTarget);
+					return;
+				}
+
+				this.startDeliverySelection();
+				return;
+			}
+
+			this.startDipSelection();
+			return;
+		}
+
+		if (this.isBurned) {
+			this.discardBurnedProduct();
+			return;
+		}
+
+		if (this.isCooked) {
+			this.pickUpFromFryer();
+			return;
+		}
+
+		this.isLaunching = true;
+		this.playPopTween(() => {
+			this.raiseProduct();
+		});
+	}
+
+	private startDirectDelivery(client: { x: number; y: number; matchesProduct(product: AProduct): boolean; canReceiveDelivery(): boolean; consumeRequestAndExit(): void; }) {
+
+		this.isAtWorkplace = false;
+		this.isReadyForDelivery = false;
+		this.isSelectingDelivery = true;
+		this.deliverToClient(client);
+	}
+
+	public canReceiveDirectDelivery() {
+
+		return this.active
+			&& this.isAtWorkplace
+			&& this.isReadyForDelivery
+			&& !this.isLaunching
+			&& !this.isSelectingDip
+			&& !this.isSelectingDelivery;
+	}
+
+	public directDeliverToClient(client: { x: number; y: number; matchesProduct(product: AProduct): boolean; canReceiveDelivery(): boolean; consumeRequestAndExit(): void; }) {
+
+		if (!this.canReceiveDirectDelivery()) {
+			return;
+		}
+
+		const levelScene = this.scene as Level;
+		this.isAtWorkplace = false;
+		this.isReadyForDelivery = false;
+		this.isSelectingDelivery = true;
+		levelScene.beginDeliverySelection(this);
+		this.deliverToClient(client);
+	}
+
+	private raiseProduct() {
+
+		this.clearActiveState();
+		this.scene.tweens.add({
+			targets: this,
+			y: this.baseY - AProduct.RAISED_OFFSET_Y,
+			angle: this.baseAngle + AProduct.SPIN_ANGLE,
+			duration: 360,
+			ease: "Cubic.Out",
+			onComplete: () => {
+				this.isRaised = true;
+				this.isLaunching = false;
+				this.angle = this.baseAngle;
+				this.startActiveState();
+			}
+		});
+	}
+
+	private returnToBase() {
+
+		this.clearActiveState();
+		this.scene.tweens.add({
+			targets: this,
+			y: this.baseY,
+			angle: this.baseAngle - AProduct.SPIN_ANGLE,
+			duration: 360,
+			ease: "Cubic.Out",
+			onComplete: () => {
+				this.isRaised = false;
+				this.isLaunching = false;
+				this.angle = this.baseAngle;
+			}
+		});
+	}
+
+	private startActiveState() {
+
+		this.danceTween = this.scene.tweens.add({
+			targets: this,
+			angle: { from: this.baseAngle - 8, to: this.baseAngle + 8 },
+			duration: 220,
+			yoyo: true,
+			repeat: -1,
+			ease: "Sine.InOut"
+		});
+
+		this.activeTimer = this.scene.time.delayedCall(AProduct.HOLDER_ACTIVE_DURATION, () => {
+			if (!this.isRaised || this.isLaunching) {
+				return;
+			}
+
+			this.isLaunching = true;
+			this.moveToFryer();
+		});
+	}
+
+	private moveToFryer() {
+
+		const levelScene = this.scene as Level;
+		const targetFryer = levelScene.claimAvailableFryer();
+
+		if (!targetFryer) {
+			this.returnToBase();
+			return;
+		}
+
+		this.clearActiveState();
+		const replacementProduct = new AProduct(this.scene, this.baseX, this.baseY, this.Raw.key, this.Raw.frame);
+		replacementProduct.Raw = { ...this.Raw };
+		replacementProduct.Cooked = { ...this.Cooked };
+		replacementProduct.ChocolateDip = { ...this.ChocolateDip };
+		replacementProduct.CandyDip = { ...this.CandyDip };
+		replacementProduct.fryDuration = this.fryDuration;
+		this.scene.add.existing(replacementProduct);
+		this.playSwooshSound();
+		this.scene.tweens.add({
+			targets: this,
+			x: targetFryer.target.x,
+			y: targetFryer.target.y - AProduct.FRYER_OFFSET_Y,
+			angle: this.baseAngle + AProduct.SPIN_ANGLE,
+			duration: 420,
+			ease: "Cubic.InOut",
+			onComplete: () => {
+				this.isRaised = false;
+				this.isLaunching = false;
+				this.currentFryerId = targetFryer.id;
+				this.angle = this.baseAngle;
+				this.startFrying(targetFryer.target.y - AProduct.FRYER_OFFSET_Y);
+			}
+		});
+	}
+
+	private startFrying(fryerY: number) {
+
+		this.isCooking = true;
+		this.isCooked = false;
+		this.scene.sound.play(["fry", "fry2", "fry3"][Phaser.Math.Between(0, 2)]);
+		this.floatTween = this.scene.tweens.add({
+			targets: this,
+			y: fryerY - AProduct.FRY_FLOAT_OFFSET_Y,
+			duration: 350,
+			yoyo: true,
+			repeat: -1,
+			ease: "Sine.InOut"
+		});
+
+		this.fryTimer = this.scene.time.delayedCall(this.fryDuration, () => {
+			this.finishFrying(fryerY);
+		});
+	}
+
+	private finishFrying(fryerY: number) {
+
+		this.clearFryingState();
+		this.y = fryerY;
+		this.isCooking = false;
+		this.isCooked = true;
+		this.isBurned = false;
+		this.isReadyForDelivery = false;
+		this.applyAppearance(this.Cooked);
+		this.clearTint();
+		this.scene.sound.play(`pop${Phaser.Math.Between(1, 3)}`);
+		this.startBurnCountdown();
+		this.playPopTween();
+	}
+
+	private startBurnCountdown() {
+
+		this.burnProgress = 0;
+		this.burnTween?.stop();
+		this.burnTween = this.scene.tweens.addCounter({
+			from: 0,
+			to: 100,
+			duration: AProduct.BURN_DURATION,
+			delay: AProduct.BURN_START_DELAY,
+			ease: "Linear",
+			onUpdate: (tween) => {
+				this.burnProgress = (tween.getValue() ?? 0) / 100;
+				this.updateBurnTint();
+			},
+			onComplete: () => {
+				this.isBurned = true;
+				this.burnProgress = 1;
+				this.updateBurnTint();
+			}
+		});
+	}
+
+	private updateBurnTint() {
+
+		const color = Phaser.Display.Color.Interpolate.ColorWithColor(
+			Phaser.Display.Color.ValueToColor(0xffffff),
+			AProduct.BURN_TINT,
+			100,
+			Math.round(this.burnProgress * 100)
+		);
+
+		this.setTint(Phaser.Display.Color.GetColor(color.r, color.g, color.b));
+	}
+
+	private pickUpFromFryer() {
+
+		const levelScene = this.scene as Level;
+		const workplace = levelScene.claimAvailableWorkplace();
+
+		if (!workplace) {
+			return;
+		}
+
+		this.clearBurnState();
+		levelScene.releaseFryer(this.currentFryerId);
+		this.currentFryerId = undefined;
+		this.currentWorkplaceId = workplace.id;
+		this.isLaunching = true;
+		this.isCooked = false;
+		this.isReadyForDelivery = false;
+		this.playSwooshSound();
+
+		this.scene.tweens.add({
+			targets: this,
+			y: this.y - AProduct.WORKPLACE_LIFT_OFFSET_Y,
+			duration: 180,
+			ease: "Cubic.Out",
+			onComplete: () => {
+				this.scene.time.delayedCall(AProduct.WORKPLACE_DELAY, () => {
+					this.moveToWorkplace(workplace.target);
+				});
+			}
+		});
+	}
+
+	private discardBurnedProduct() {
+
+		const levelScene = this.scene as Level;
+		this.clearBurnState(true);
+		levelScene.releaseFryer(this.currentFryerId);
+		this.currentFryerId = undefined;
+		this.isCooked = false;
+		this.isBurned = false;
+		this.isLaunching = true;
+		levelScene.showSpentCoinsAt(this.x, this.y);
+
+		this.scene.tweens.add({
+			targets: this,
+			y: this.scene.scale.height + this.height,
+			angle: this.angle - AProduct.SPIN_ANGLE,
+			alpha: 0.7,
+			duration: 420,
+			ease: "Cubic.In",
+			onComplete: () => {
+				this.destroy();
+			}
+		});
+	}
+
+	private moveToWorkplace(workplace: Phaser.GameObjects.Image) {
+
+		this.scene.tweens.add({
+			targets: this,
+			x: workplace.x,
+			y: workplace.y,
+			duration: 360,
+			ease: "Cubic.InOut",
+			onComplete: () => {
+				this.isLaunching = false;
+				this.isAtWorkplace = true;
+				this.isReadyForDelivery = false;
+				this.isDelivered = true;
+			}
+		});
+	}
+
+	private startDipSelection() {
+
+		const levelScene = this.scene as Level;
+		this.isLaunching = true;
+		this.isAtWorkplace = false;
+		this.scene.tweens.add({
+			targets: this,
+			scaleX: this.baseScaleX * AProduct.WORKPLACE_SELECTION_SCALE,
+			scaleY: this.baseScaleY * AProduct.WORKPLACE_SELECTION_SCALE,
+			duration: 220,
+			ease: "Cubic.Out",
+			onComplete: () => {
+				this.isLaunching = false;
+				this.isSelectingDip = true;
+				levelScene.beginDipSelection(this);
+					this.startSelectionTimeout(() => {
+						this.cancelDipSelection();
+					});
+			}
+		});
+	}
+
+	private startDeliverySelection() {
+
+		const levelScene = this.scene as Level;
+		this.isLaunching = true;
+		this.isAtWorkplace = false;
+		this.isReadyForDelivery = false;
+
+		this.scene.tweens.add({
+			targets: this,
+			scaleX: this.baseScaleX * AProduct.WORKPLACE_SELECTION_SCALE,
+			scaleY: this.baseScaleY * AProduct.WORKPLACE_SELECTION_SCALE,
+			duration: 220,
+			ease: "Cubic.Out",
+			onComplete: () => {
+				this.isLaunching = false;
+				this.isSelectingDelivery = true;
+				levelScene.beginDeliverySelection(this);
+					this.startSelectionTimeout(() => {
+						this.cancelDeliverySelection();
+					});
+			}
+		});
+	}
+
+	public canReceiveDirectDip() {
+
+		return this.active
+			&& this.isAtWorkplace
+			&& !this.isReadyForDelivery
+			&& !this.isLaunching
+			&& !this.isSelectingDip
+			&& !this.isSelectingDelivery;
+	}
+
+	public directApplyDip(dipType: "chocolate" | "candy") {
+
+		if (!this.canReceiveDirectDip() || !this.currentWorkplaceId) {
+			return;
+		}
+
+		const levelScene = this.scene as Level;
+		this.isAtWorkplace = false;
+		this.isSelectingDip = true;
+		levelScene.beginDipSelection(this);
+		this.applyDip(dipType);
+	}
+
+	public applyDip(dipType: "chocolate" | "candy") {
+
+		if (!this.isSelectingDip || !this.currentWorkplaceId) {
+			return;
+		}
+
+		const levelScene = this.scene as Level;
+		const target = dipType === "chocolate" ? levelScene.chocolateDip : levelScene.candyDip;
+		const appearance = dipType === "chocolate" ? this.ChocolateDip : this.CandyDip;
+
+		this.isLaunching = true;
+		this.isSelectingDip = false;
+		this.clearSelectionTimeout();
+		levelScene.clearDipSelection(this);
+		this.playSwooshSound();
+		this.scene.tweens.add({
+			targets: this,
+			x: target.x,
+			y: target.y,
+			duration: 320,
+			ease: "Cubic.InOut",
+			onComplete: () => {
+				this.playDipSwapAnimation(appearance);
+			}
+		});
+	}
+
+	private playDipSwapAnimation(appearance: { key: string; frame?: string | number }) {
+
+		this.scene.tweens.add({
+			targets: this,
+			scaleX: 0,
+			scaleY: 0,
+			duration: AProduct.DIP_SCALE_DURATION,
+			ease: "Cubic.In",
+			onComplete: () => {
+				this.applyAppearance(appearance);
+				this.scene.tweens.add({
+					targets: this,
+					scaleX: this.baseScaleX * 1.15,
+					scaleY: this.baseScaleY * 1.15,
+					duration: 180,
+					ease: "Back.Out",
+					onComplete: () => {
+						this.scene.tweens.add({
+							targets: this,
+							scaleX: this.baseScaleX,
+							scaleY: this.baseScaleY,
+							duration: 100,
+							ease: "Sine.Out",
+							onComplete: () => {
+								this.returnToWorkplace();
+							}
+						});
+					}
+				});
+			}
+		});
+	}
+
+	private returnToWorkplace() {
+
+		const levelScene = this.scene as Level;
+		const workplace = this.currentWorkplaceId === "workplace1" ? levelScene.workplace1 : levelScene.workplace2;
+
+		this.scene.tweens.add({
+			targets: this,
+			x: workplace.x,
+			y: workplace.y,
+			duration: 320,
+			ease: "Cubic.InOut",
+			onComplete: () => {
+				this.isLaunching = false;
+				this.isAtWorkplace = true;
+				this.isReadyForDelivery = true;
+			}
+		});
+	}
+
+	public deliverToClient(client: { x: number; y: number; matchesProduct(product: AProduct): boolean; canReceiveDelivery(): boolean; consumeRequestAndExit(showYum?: boolean): void; }) {
+
+		if (!this.isSelectingDelivery) {
+			return;
+		}
+
+		const levelScene = this.scene as Level;
+		this.clearSelectionTimeout();
+		levelScene.clearDeliverySelection(this);
+		levelScene.releaseWorkplace(this.currentWorkplaceId);
+		this.currentWorkplaceId = undefined;
+		this.isSelectingDelivery = false;
+		this.isLaunching = true;
+		this.playSwooshSound();
+
+		this.scene.tweens.add({
+			targets: this,
+			x: client.x,
+			y: client.y,
+			angle: this.baseAngle + AProduct.SPIN_ANGLE,
+			duration: 360,
+			ease: "Cubic.InOut",
+			onComplete: () => {
+				this.angle = this.baseAngle;
+
+				if (!client.canReceiveDelivery()) {
+					this.fallOffscreen();
+					return;
+				}
+
+				if (client.matchesProduct(this)) {
+					levelScene.showCoinsAt(client.x);
+					client.consumeRequestAndExit(true);
+					this.destroy();
+					return;
+				}
+
+				levelScene.showSpentCoinsAt(client.x, client.y - 64);
+				client.consumeRequestAndExit();
+
+				this.fallOffscreen();
+			}
+		});
+	}
+
+	public cancelDeliverySelection() {
+
+		if (!this.isSelectingDelivery || !this.currentWorkplaceId) {
+			return;
+		}
+
+		const levelScene = this.scene as Level;
+		const workplace = this.currentWorkplaceId === "workplace1" ? levelScene.workplace1 : levelScene.workplace2;
+
+		this.clearSelectionTimeout();
+		levelScene.clearDeliverySelection(this);
+		this.isSelectingDelivery = false;
+		this.isLaunching = true;
+
+		this.scene.tweens.add({
+			targets: this,
+			x: workplace.x,
+			y: workplace.y,
+			scaleX: this.baseScaleX,
+			scaleY: this.baseScaleY,
+			duration: 220,
+			ease: "Cubic.Out",
+			onComplete: () => {
+				this.isLaunching = false;
+				this.isAtWorkplace = true;
+				this.isReadyForDelivery = true;
+			}
+		});
+	}
+
+	public cancelDipSelection() {
+
+		if (!this.isSelectingDip || !this.currentWorkplaceId) {
+			return;
+		}
+
+		const levelScene = this.scene as Level;
+		const workplace = this.currentWorkplaceId === "workplace1" ? levelScene.workplace1 : levelScene.workplace2;
+
+		this.clearSelectionTimeout();
+		levelScene.clearDipSelection(this);
+		this.isSelectingDip = false;
+		this.isLaunching = true;
+
+		this.scene.tweens.add({
+			targets: this,
+			x: workplace.x,
+			y: workplace.y,
+			scaleX: this.baseScaleX,
+			scaleY: this.baseScaleY,
+			duration: 220,
+			ease: "Cubic.Out",
+			onComplete: () => {
+				this.isLaunching = false;
+				this.isAtWorkplace = true;
+				this.isReadyForDelivery = false;
+			}
+		});
+	}
+
+	private clearActiveState() {
+
+		this.activeTimer?.remove(false);
+		this.activeTimer = undefined;
+
+		this.danceTween?.stop();
+		this.danceTween = undefined;
+
+		this.angle = this.baseAngle;
+	}
+
+	private clearFryingState() {
+
+		this.fryTimer?.remove(false);
+		this.fryTimer = undefined;
+
+		this.floatTween?.stop();
+		this.floatTween = undefined;
+	}
+
+	private clearBurnState(keepTint = false) {
+
+		this.burnTween?.stop();
+		this.burnTween = undefined;
+		this.burnProgress = 0;
+
+		if (!keepTint) {
+			this.clearTint();
+		}
+	}
+
+	private startSelectionTimeout(onTimeout: () => void) {
+
+		this.clearSelectionTimeout();
+		this.selectionTimeout = this.scene.time.delayedCall(AProduct.SELECTION_TIMEOUT, () => {
+			onTimeout();
+		});
+	}
+
+	private clearSelectionTimeout() {
+
+		this.selectionTimeout?.remove(false);
+		this.selectionTimeout = undefined;
+	}
+
+	private playSwooshSound() {
+
+		const swooshSoundKey = Phaser.Math.Between(0, 1) === 0 ? "swoosh" : "swoosh2";
+		this.scene.sound.play(swooshSoundKey);
+	}
+
+	public matchesAppearance(appearance: { key: string; frame?: string | number }) {
+
+		if (this.texture.key !== appearance.key) {
+			return false;
+		}
+
+		if (appearance.frame === undefined) {
+			return true;
+		}
+
+		return this.frame.name === appearance.frame;
+	}
+
+	private fallOffscreen() {
+
+		this.isCooked = false;
+		this.isBurned = false;
+		this.isReadyForDelivery = false;
+		this.isLaunching = true;
+
+		this.scene.tweens.add({
+			targets: this,
+			y: this.scene.scale.height + this.height,
+			angle: this.angle - AProduct.SPIN_ANGLE,
+			alpha: 0.7,
+			duration: 420,
+			ease: "Cubic.In",
+			onComplete: () => {
+				this.destroy();
+			}
+		});
+	}
+
+	private applyAppearance(appearance: { key: string; frame?: string | number }) {
+
+		if (appearance.frame !== undefined) {
+			this.setTexture(appearance.key, appearance.frame);
+			return;
+		}
+
+		this.setTexture(appearance.key);
+	}
+
+	private playSpawnTween() {
+
+		this.scene.tweens.add({
+			targets: this,
+			scaleX: this.baseScaleX * 1.08,
+			scaleY: this.baseScaleY * 1.08,
+			duration: 120,
+			ease: "Back.Out",
+			onComplete: () => {
+				this.scene.tweens.add({
+					targets: this,
+					scaleX: this.baseScaleX,
+					scaleY: this.baseScaleY,
+					duration: 80,
+					ease: "Sine.Out"
+				});
+			}
+		});
+	}
+
+	private playPopTween(onComplete?: () => void) {
+
+		this.scene.tweens.killTweensOf(this);
+		this.setScale(this.baseScaleX, this.baseScaleY);
+
+		this.scene.tweens.add({
+			targets: this,
+			scaleX: this.baseScaleX * 1.12,
+			scaleY: this.baseScaleY * 1.12,
+			duration: 90,
+			yoyo: true,
+			ease: "Quad.Out",
+			onComplete: () => {
+				onComplete?.();
+			}
+		});
+	}
+
+	/* END-USER-CODE */
+}
+
+/* END OF COMPILED CODE */
+
+// You can write more code here

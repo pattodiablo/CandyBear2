@@ -1,0 +1,107 @@
+{
+    "id": "0e754961-8f14-4606-a64f-1da2fdc7e3e3",
+    "sceneType": "PREFAB",
+    "settings": {
+        "snapWidth": 119.00000512252657,
+        "snapHeight": 171.99999999999994,
+        "exportClass": true,
+        "autoImport": true,
+        "preloadMethodName": "",
+        "preloadPackFiles": [],
+        "createMethodName": "",
+        "compilerOutputLanguage": "TYPE_SCRIPT",
+        "borderWidth": 1280,
+        "borderHeight": 720
+    },
+    "displayList": [
+        {
+            "type": "Container",
+            "id": "048f6ff1-99ed-4f10-9857-75abbe997afe",
+            "label": "container_1",
+            "list": [
+                {
+                    "type": "Image",
+                    "id": "56cbc5f7-3177-4942-b785-3d9405dba794",
+                    "label": "clientQuestion",
+                    "scope": "CLASS",
+                    "texture": {
+                        "key": "ClientQuestion"
+                    },
+                    "x": -1,
+                    "y": -145
+                },
+                {
+                    "type": "Image",
+                    "id": "c9500eaa-0510-47f9-b5d4-d9cb9d36abc6",
+                    "label": "ProductSample",
+                    "scope": "CLASS",
+                    "texture": {
+                        "key": "Product1Cooked"
+                    },
+                    "y": -157,
+                    "visible": false
+                },
+                {
+                    "prefabId": "c90d0d58-238b-4399-bf41-916b771ccf95",
+                    "id": "f5a931d0-b10f-45d3-87bf-2bc364a724e9",
+                    "unlock": [
+                        "x",
+                        "y"
+                    ],
+                    "label": "clientBear",
+                    "scope": "CLASS",
+                    "x": 1,
+                    "y": 9
+                }
+            ]
+        }
+    ],
+    "plainObjects": [],
+    "meta": {
+        "app": "Phaser Editor - Scene Editor",
+        "url": "https://phaser.io/editor",
+        "contentType": "phasereditor2d.core.scene.SceneContentType",
+        "version": 5
+    },
+    "prefabProperties": [
+        {
+            "name": "Product1_Chocolate",
+            "label": "Product1_Chocolate",
+            "tooltip": "Product1_Chocolate",
+            "defValue": "{\"key\":\"Product1Chocolate\"}",
+            "customDefinition": false,
+            "editorOnly": false,
+            "deprecated": false,
+            "type": {
+                "id": "texture-config",
+                "isArray": false
+            }
+        },
+        {
+            "name": "Product1_Candy",
+            "label": "Product1_Candy",
+            "tooltip": "Product1_Candy",
+            "defValue": "{\"key\":\"Product1Candy\"}",
+            "customDefinition": false,
+            "editorOnly": false,
+            "deprecated": false,
+            "type": {
+                "id": "texture-config",
+                "isArray": false
+            }
+        },
+        {
+            "name": "ClientBack",
+            "label": "ClientBack",
+            "tooltip": "ClientBack",
+            "defValue": "{\"key\":\"ClientBack\"}",
+            "customDefinition": false,
+            "editorOnly": false,
+            "deprecated": false,
+            "type": {
+                "id": "texture-config",
+                "isArray": false
+            }
+        }
+    ]
+}
