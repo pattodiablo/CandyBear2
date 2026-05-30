@@ -31,7 +31,7 @@
             "texture": {
                 "key": "Fryer"
             },
-            "x": 640,
+            "x": 390,
             "y": 522
         },
         {
@@ -42,7 +42,7 @@
             "texture": {
                 "key": "Fryer"
             },
-            "x": 640,
+            "x": 390,
             "y": 654
         },
         {
@@ -52,7 +52,7 @@
             "texture": {
                 "key": "Holder"
             },
-            "x": 79,
+            "x": 80,
             "y": 544
         },
         {
@@ -62,8 +62,8 @@
             "texture": {
                 "key": "Holder"
             },
-            "x": 211,
-            "y": 544
+            "x": 80,
+            "y": 650
         },
         {
             "type": "Image",
@@ -72,8 +72,8 @@
             "texture": {
                 "key": "Holder"
             },
-            "x": 339,
-            "y": 544
+            "x": 210,
+            "y": 650
         },
         {
             "type": "Image",
@@ -82,7 +82,7 @@
             "texture": {
                 "key": "Holder"
             },
-            "x": 465,
+            "x": 210,
             "y": 544
         },
         {
@@ -93,8 +93,8 @@
             "texture": {
                 "key": "workplace"
             },
-            "x": 817,
-            "y": 543
+            "x": 1175,
+            "y": 644
         },
         {
             "type": "Image",
@@ -104,8 +104,8 @@
             "texture": {
                 "key": "workplace"
             },
-            "x": 947,
-            "y": 543
+            "x": 1042,
+            "y": 644
         },
         {
             "type": "Image",
@@ -115,7 +115,7 @@
             "texture": {
                 "key": "ChocolateDip"
             },
-            "x": 1078,
+            "x": 1042,
             "y": 543
         },
         {
@@ -126,7 +126,7 @@
             "texture": {
                 "key": "CandyDip"
             },
-            "x": 1213,
+            "x": 1175,
             "y": 543
         },
         {
@@ -136,7 +136,7 @@
             "texture": {
                 "key": "chocolateIcon"
             },
-            "x": 1077,
+            "x": 1039,
             "y": 539
         },
         {
@@ -146,7 +146,7 @@
             "texture": {
                 "key": "candyicon"
             },
-            "x": 1212,
+            "x": 1174,
             "y": 539
         },
         {
@@ -199,8 +199,8 @@
                 "y"
             ],
             "label": "rawProduct_1",
-            "x": 338,
-            "y": 547
+            "x": 81,
+            "y": 653
         },
         {
             "prefabId": "60be42aa-8f5d-439a-b281-d01000ca8a78",
@@ -210,8 +210,8 @@
                 "y"
             ],
             "label": "rawProduct_2",
-            "x": 469,
-            "y": 547
+            "x": 209,
+            "y": 655
         },
         {
             "type": "Image",
@@ -224,19 +224,24 @@
             "scaleX": 7,
             "scaleY": 4,
             "originX": 0,
-            "originY": 0
+            "originY": 0,
+            "editorRender": false
         },
         {
             "prefabId": "d22c95a1-a07a-4d36-acf8-819eb6f4423d",
             "id": "4e832075-3263-4e5f-a190-ad7f56354070",
             "unlock": [
                 "x",
-                "y"
+                "y",
+                "visible",
+                "editorRender"
             ],
             "label": "panel",
             "scope": "CLASS",
             "x": 595,
-            "y": 360
+            "y": 360,
+            "visible": true,
+            "editorRender": false
         },
         {
             "type": "Image",
@@ -247,6 +252,26 @@
             },
             "x": 52,
             "y": 58
+        },
+        {
+            "type": "Image",
+            "id": "d4300e91-7766-466a-be6d-8370e393eb3e",
+            "label": "milkmachine",
+            "texture": {
+                "key": "Milkmachine"
+            },
+            "x": 611,
+            "y": 590
+        },
+        {
+            "type": "Image",
+            "id": "d522e9fc-f9d3-4d3d-9ff8-3d22db667f57",
+            "label": "toaster",
+            "texture": {
+                "key": "toaster"
+            },
+            "x": 827,
+            "y": 582
         }
     ],
     "plainObjects": [],

@@ -172,6 +172,11 @@
                 "key": "lamp"
             },
             {
+                "url": "assets/Milkmachine.png",
+                "type": "image",
+                "key": "Milkmachine"
+            },
+            {
                 "url": "assets/nextdayBtn.png",
                 "type": "image",
                 "key": "nextdayBtn"
@@ -280,6 +285,11 @@
                 ],
                 "type": "audio",
                 "key": "swoosh2"
+            },
+            {
+                "url": "assets/toaster.png",
+                "type": "image",
+                "key": "toaster"
             },
             {
                 "url": "assets/workplace.png",

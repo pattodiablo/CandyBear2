@@ -29,40 +29,40 @@ export default class Level extends Phaser.Scene {
 		const workstation = this.add.image(654, 563, "Workstation");
 
 		// fryer1
-		const fryer1 = this.add.image(640, 522, "Fryer");
+		const fryer1 = this.add.image(390, 522, "Fryer");
 
 		// fryer2
-		const fryer2 = this.add.image(640, 654, "Fryer");
+		const fryer2 = this.add.image(390, 654, "Fryer");
 
 		// holder
-		this.add.image(79, 544, "Holder");
+		this.add.image(80, 544, "Holder");
 
 		// holder_1
-		this.add.image(211, 544, "Holder");
+		this.add.image(80, 650, "Holder");
 
 		// holder_2
-		this.add.image(339, 544, "Holder");
+		this.add.image(210, 650, "Holder");
 
 		// holder_3
-		this.add.image(465, 544, "Holder");
+		this.add.image(210, 544, "Holder");
 
 		// workplace1
-		const workplace1 = this.add.image(817, 543, "workplace");
+		const workplace1 = this.add.image(1175, 644, "workplace");
 
 		// workplace2
-		const workplace2 = this.add.image(947, 543, "workplace");
+		const workplace2 = this.add.image(1042, 644, "workplace");
 
 		// chocolateDip
-		const chocolateDip = this.add.image(1078, 543, "ChocolateDip");
+		const chocolateDip = this.add.image(1042, 543, "ChocolateDip");
 
 		// candyDip
-		const candyDip = this.add.image(1213, 543, "CandyDip");
+		const candyDip = this.add.image(1175, 543, "CandyDip");
 
 		// chocolateIcon
-		this.add.image(1077, 539, "chocolateIcon");
+		this.add.image(1039, 539, "chocolateIcon");
 
 		// candyicon
-		this.add.image(1212, 539, "candyicon");
+		this.add.image(1174, 539, "candyicon");
 
 		// lamp
 		this.add.image(193, 57, "lamp");
@@ -79,11 +79,11 @@ export default class Level extends Phaser.Scene {
 		this.add.existing(rawProduct);
 
 		// rawProduct_1
-		const rawProduct_1 = new AProduct(this, 338, 547);
+		const rawProduct_1 = new AProduct(this, 81, 653);
 		this.add.existing(rawProduct_1);
 
 		// rawProduct_2
-		const rawProduct_2 = new AProduct(this, 469, 547);
+		const rawProduct_2 = new AProduct(this, 209, 655);
 		this.add.existing(rawProduct_2);
 
 		// blurOverlay
@@ -95,9 +95,16 @@ export default class Level extends Phaser.Scene {
 		// panel
 		const panel = new PanelPrefab(this, 595, 360);
 		this.add.existing(panel);
+		panel.visible = true;
 
 		// bigCoin
 		this.add.image(52, 58, "bigCoin");
+
+		// milkmachine
+		this.add.image(611, 590, "Milkmachine");
+
+		// toaster
+		this.add.image(827, 582, "toaster");
 
 		this.workstation = workstation;
 		this.fryer1 = fryer1;
