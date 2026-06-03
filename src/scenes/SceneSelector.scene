@@ -1,0 +1,59 @@
+{
+    "id": "caeea58c-876c-4b41-aff3-e16193ee225d",
+    "sceneType": "SCENE",
+    "settings": {
+        "exportClass": true,
+        "autoImport": true,
+        "preloadPackFiles": [],
+        "createMethodName": "editorCreate",
+        "sceneKey": "SceneSelector",
+        "compilerOutputLanguage": "TYPE_SCRIPT",
+        "borderWidth": 1280,
+        "borderHeight": 720
+    },
+    "displayList": [
+        {
+            "type": "Image",
+            "id": "9d5f7b4c-1907-472c-a3f2-d14f3f3ecbc1",
+            "label": "nextPage",
+            "scope": "CLASS",
+            "texture": {
+                "key": "NextPage"
+            },
+            "x": 1196,
+            "y": 628
+        },
+        {
+            "type": "Image",
+            "id": "5186581f-6472-43a7-a126-7216a5f81c5c",
+            "label": "prevPage",
+            "scope": "CLASS",
+            "texture": {
+                "key": "PrevPage"
+            },
+            "x": 83,
+            "y": 628
+        },
+        {
+            "type": "Text",
+            "id": "a6ac1aca-f318-4b7f-95c6-480b2a641e19",
+            "label": "PageNumber",
+            "scope": "CLASS",
+            "x": 640,
+            "y": 82,
+            "originX": 0.5,
+            "originY": 0.5,
+            "text": "1/4",
+            "fontFamily": "Klop",
+            "fontSize": "40px",
+            "color": "#A96625"
+        }
+    ],
+    "plainObjects": [],
+    "meta": {
+        "app": "Phaser Editor - Scene Editor",
+        "url": "https://phaser.io/editor",
+        "contentType": "phasereditor2d.core.scene.SceneContentType",
+        "version": 5
+    }
+}

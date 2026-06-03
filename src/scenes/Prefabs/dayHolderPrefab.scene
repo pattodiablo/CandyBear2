@@ -1,0 +1,103 @@
+{
+    "id": "775ed158-02a4-48f2-8f6a-c5cba24ac07b",
+    "sceneType": "PREFAB",
+    "settings": {
+        "exportClass": true,
+        "autoImport": true,
+        "preloadMethodName": "",
+        "preloadPackFiles": [],
+        "createMethodName": "",
+        "compilerOutputLanguage": "TYPE_SCRIPT",
+        "borderWidth": 1280,
+        "borderHeight": 720
+    },
+    "displayList": [
+        {
+            "type": "Container",
+            "id": "a89e3743-c1cc-4f96-8383-b0d5d0f79112",
+            "label": "container_1",
+            "list": [
+                {
+                    "type": "Image",
+                    "id": "72857f1d-c2ed-4b94-ae1c-cde10b88acd0",
+                    "label": "dayHolder",
+                    "texture": {
+                        "key": "dayHolder"
+                    },
+                    "scaleX": 0.7,
+                    "scaleY": 0.7
+                },
+                {
+                    "type": "Text",
+                    "id": "a3d166a6-4368-4808-9a95-b6e24512968a",
+                    "label": "DayText",
+                    "y": -59,
+                    "originX": 0.5,
+                    "originY": 0.5,
+                    "text": "DAY",
+                    "fontFamily": "Klop",
+                    "fontSize": "40px",
+                    "color": "#DF3D7A"
+                },
+                {
+                    "type": "Text",
+                    "id": "a9d436ca-7249-4a47-8844-96a90f54ab53",
+                    "label": "DayNumber",
+                    "scope": "CLASS",
+                    "y": -23,
+                    "originX": 0.5,
+                    "originY": 0.5,
+                    "text": "1",
+                    "fontFamily": "Klop",
+                    "fontSize": "40px",
+                    "color": "#A96625"
+                },
+                {
+                    "type": "Image",
+                    "id": "76a3eb94-3979-44eb-9676-7dad3e8f1842",
+                    "label": "smallStarHolder",
+                    "scope": "CLASS",
+                    "texture": {
+                        "key": "smallStarHolder"
+                    },
+                    "x": -41,
+                    "y": 25,
+                    "scaleX": 0.7,
+                    "scaleY": 0.7
+                },
+                {
+                    "type": "Image",
+                    "id": "383e1d79-8485-4b23-933e-9b583410a31c",
+                    "label": "smallStarHolder2",
+                    "scope": "CLASS",
+                    "texture": {
+                        "key": "smallStarHolder"
+                    },
+                    "y": 25,
+                    "scaleX": 0.7,
+                    "scaleY": 0.7
+                },
+                {
+                    "type": "Image",
+                    "id": "2a70e59f-79dc-4be7-af24-91d37a472f1b",
+                    "label": "smallStarHolder3",
+                    "scope": "CLASS",
+                    "texture": {
+                        "key": "smallStarHolder"
+                    },
+                    "x": 41,
+                    "y": 25,
+                    "scaleX": 0.7,
+                    "scaleY": 0.7
+                }
+            ]
+        }
+    ],
+    "plainObjects": [],
+    "meta": {
+        "app": "Phaser Editor - Scene Editor",
+        "url": "https://phaser.io/editor",
+        "contentType": "phasereditor2d.core.scene.SceneContentType",
+        "version": 5
+    }
+}

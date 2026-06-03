@@ -25,6 +25,26 @@
         },
         {
             "type": "Image",
+            "id": "d4300e91-7766-466a-be6d-8370e393eb3e",
+            "label": "milkmachine",
+            "texture": {
+                "key": "Milkmachine"
+            },
+            "x": 611,
+            "y": 590
+        },
+        {
+            "type": "Image",
+            "id": "d522e9fc-f9d3-4d3d-9ff8-3d22db667f57",
+            "label": "toaster",
+            "texture": {
+                "key": "toaster"
+            },
+            "x": 827,
+            "y": 582
+        },
+        {
+            "type": "Image",
             "id": "8c644116-637e-49aa-a3aa-d0c7d2c2dbe6",
             "label": "fryer1",
             "scope": "PUBLIC",
@@ -196,9 +216,13 @@
             "id": "0e00d68f-5bcb-4692-a1c1-d5abc2676a89",
             "unlock": [
                 "x",
-                "y"
+                "y",
+                "texture"
             ],
             "label": "rawProduct_1",
+            "texture": {
+                "key": "RawProduct1"
+            },
             "x": 81,
             "y": 653
         },
@@ -252,26 +276,6 @@
             },
             "x": 52,
             "y": 58
-        },
-        {
-            "type": "Image",
-            "id": "d4300e91-7766-466a-be6d-8370e393eb3e",
-            "label": "milkmachine",
-            "texture": {
-                "key": "Milkmachine"
-            },
-            "x": 611,
-            "y": 590
-        },
-        {
-            "type": "Image",
-            "id": "d522e9fc-f9d3-4d3d-9ff8-3d22db667f57",
-            "label": "toaster",
-            "texture": {
-                "key": "toaster"
-            },
-            "x": 827,
-            "y": 582
         }
     ],
     "plainObjects": [],

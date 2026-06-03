@@ -10,7 +10,21 @@ import Phaser from "phaser";
 import AClient from "./Prefabs/AClient";	
 import YumPrefab from "./Prefabs/YumPrefab";
 import Coin from "./Prefabs/Coin";
+import ConfettiPrefab from "./Prefabs/ConfettiPrefab";
+import { getStoredTotalCoins, storeCompletedLevel, storeTotalCoins } from "./levelProgress";
 import { SkinsAndAnimationBoundsProvider } from "@esotericsoftware/spine-phaser-v4";
+
+interface LevelPlan {
+	levelNumber: number;
+	difficulty: number;
+	oscillation: number;
+	waveSizes: number[];
+	isTutorial: boolean;
+}
+
+interface LevelSceneData {
+	levelNumber?: number;
+}
 /* END-USER-IMPORTS */
 
 export default class Level extends Phaser.Scene {
@@ -27,6 +41,12 @@ export default class Level extends Phaser.Scene {
 
 		// workstation
 		const workstation = this.add.image(654, 563, "Workstation");
+
+		// milkmachine
+		this.add.image(611, 590, "Milkmachine");
+
+		// toaster
+		this.add.image(827, 582, "toaster");
 
 		// fryer1
 		const fryer1 = this.add.image(390, 522, "Fryer");
@@ -79,7 +99,7 @@ export default class Level extends Phaser.Scene {
 		this.add.existing(rawProduct);
 
 		// rawProduct_1
-		const rawProduct_1 = new AProduct(this, 81, 653);
+		const rawProduct_1 = new AProduct(this, 81, 653, "RawProduct1");
 		this.add.existing(rawProduct_1);
 
 		// rawProduct_2
@@ -99,12 +119,6 @@ export default class Level extends Phaser.Scene {
 
 		// bigCoin
 		this.add.image(52, 58, "bigCoin");
-
-		// milkmachine
-		this.add.image(611, 590, "Milkmachine");
-
-		// toaster
-		this.add.image(827, 582, "toaster");
 
 		this.workstation = workstation;
 		this.fryer1 = fryer1;
@@ -130,9 +144,22 @@ export default class Level extends Phaser.Scene {
 	private panel!: PanelPrefab;
 
 	/* START-USER-CODE */
-	private static readonly INITIAL_CLIENT_COUNT = 1;
-	private static readonly TRIPLE_CLIENT_CHANCE = 0.2;
-	private static readonly DOUBLE_CLIENT_CHANCE = 0.45;
+	public static readonly CAMPAIGN_LEVEL_COUNT = 40;
+	private static readonly DIFFICULTY_GROWTH = 0.18;
+	private static readonly DIFFICULTY_BASE = 0.9;
+	private static readonly DIFFICULTY_OSCILLATION_AMPLITUDE = 0.95;
+	private static readonly DIFFICULTY_OSCILLATION_FREQUENCY = 0.72;
+	private static readonly WAVE_OSCILLATION_FREQUENCY = 1.18;
+	private static readonly MAX_WAVE_SIZE = 3;
+	private static readonly MAX_WAVE_COUNT = 10;
+	private static readonly LEVEL_TWO_TOTAL_CLIENTS = 4;
+	private static readonly MAX_TOTAL_CLIENTS = 18;
+	private static readonly TOTAL_CLIENT_GROWTH_PER_LEVEL = 0.42;
+	private static readonly TOTAL_CLIENT_OSCILLATION_WEIGHT = 0.9;
+	private static readonly CAMPAIGN_LEVEL_PLANS = Array.from(
+		{ length: Level.CAMPAIGN_LEVEL_COUNT },
+		(_, index) => Level.createLevelPlan(index + 1)
+	);
 	private static readonly INTRO_OVERLAY_FADE_IN_DURATION = 220;
 	private static readonly INTRO_OVERLAY_FADE_OUT_DURATION = 380;
 	private static readonly INTRO_PANEL_DROP_DURATION = 620;
@@ -148,6 +175,7 @@ export default class Level extends Phaser.Scene {
 	private static readonly REWARD_COIN_FALL_DURATION_MIN = 240;
 	private static readonly REWARD_COIN_FALL_DURATION_MAX = 360;
 	private static readonly REWARD_COIN_COLLECT_DELAY = 1600;
+	private static readonly LEVEL_COMPLETE_CONFETTI_DELAY = 0;
 	private static readonly SPENT_COIN_START_OFFSET = 48;
 	private static readonly SPENT_COIN_RISE = 100;
 	private static readonly SPENT_COIN_RISE_DURATION = 220;
@@ -158,7 +186,6 @@ export default class Level extends Phaser.Scene {
 
 	private clientSpawnY = -103;
 	private activeClients: AClient[] = [];
-	private hasCompletedFirstClientRound = false;
 	private fryer1Occupied = false;
 	private fryer2Occupied = false;
 	private workplace1Occupied = false;
@@ -166,9 +193,136 @@ export default class Level extends Phaser.Scene {
 	private selectedDipProduct?: AProduct;
 	private selectedDeliveryProduct?: AProduct;
 	private coinCount = 0;
+	private earnedCoinsToday = 0;
 	private coinCounterText?: Phaser.GameObjects.Text;
 	private backgroundMusic?: Phaser.Sound.BaseSound;
-	// Write your code here
+	private selectedLevelNumber = 1;
+	private currentLevelPlan: LevelPlan = Level.getLevelPlan(1);
+	private currentWaveIndex = 0;
+	private hasCelebratedLevelCompletion = false;
+	private panelRestY = 0;
+
+	init(data: LevelSceneData = {}) {
+		this.resetRuntimeState();
+		this.coinCount = getStoredTotalCoins();
+		this.earnedCoinsToday = 0;
+
+		this.selectedLevelNumber = Phaser.Math.Clamp(
+			Math.floor(data.levelNumber ?? 1),
+			1,
+			Level.CAMPAIGN_LEVEL_COUNT
+		);
+		this.currentLevelPlan = Level.getLevelPlan(this.selectedLevelNumber);
+		this.currentWaveIndex = 0;
+		this.hasCelebratedLevelCompletion = false;
+	}
+
+	private resetRuntimeState() {
+
+		this.activeClients = [];
+		this.fryer1Occupied = false;
+		this.fryer2Occupied = false;
+		this.workplace1Occupied = false;
+		this.workplace2Occupied = false;
+		this.selectedDipProduct = undefined;
+		this.selectedDeliveryProduct = undefined;
+	}
+
+	private static createLevelPlan(levelNumber: number): LevelPlan {
+		if (levelNumber <= 1) {
+			return {
+				levelNumber: 1,
+				difficulty: 0.85,
+				oscillation: 0,
+				waveSizes: [1],
+				isTutorial: true
+			};
+		}
+
+		if (levelNumber === 2) {
+			return {
+				levelNumber: 2,
+				difficulty: 1.35,
+				oscillation: Number(Math.sin(Level.DIFFICULTY_OSCILLATION_FREQUENCY).toFixed(3)),
+				waveSizes: [2, 2],
+				isTutorial: false
+			};
+		}
+
+		const normalizedLevel = Math.max(2, Math.floor(levelNumber));
+		const oscillation = Math.sin((normalizedLevel - 1) * Level.DIFFICULTY_OSCILLATION_FREQUENCY);
+		const difficulty = Number((
+			Level.DIFFICULTY_BASE
+			+ (normalizedLevel * Level.DIFFICULTY_GROWTH)
+			+ (oscillation * Level.DIFFICULTY_OSCILLATION_AMPLITUDE)
+		).toFixed(2));
+		const totalClientsTarget = Phaser.Math.Clamp(
+			Math.round(
+				Level.LEVEL_TWO_TOTAL_CLIENTS
+				+ ((normalizedLevel - 2) * Level.TOTAL_CLIENT_GROWTH_PER_LEVEL)
+				+ (difficulty * 0.7)
+				+ (Math.max(0, oscillation) * Level.TOTAL_CLIENT_OSCILLATION_WEIGHT)
+			),
+			Level.LEVEL_TWO_TOTAL_CLIENTS,
+			Level.MAX_TOTAL_CLIENTS
+		);
+		const minimumWaveCount = Math.ceil(totalClientsTarget / Level.MAX_WAVE_SIZE);
+		const waveCount = Phaser.Math.Clamp(
+			Math.max(
+				minimumWaveCount,
+				Math.round(2 + ((normalizedLevel - 2) * 0.08) + (Math.max(0, oscillation) * 1.2))
+			),
+			Math.max(2, minimumWaveCount),
+			Math.min(Level.MAX_WAVE_COUNT, totalClientsTarget)
+		);
+		const waveSizes: number[] = Array.from({ length: waveCount }, () => 1);
+		let remainingClients = totalClientsTarget - waveCount;
+		let distributionStep = Math.round(Math.abs(oscillation) * waveCount);
+
+		while (remainingClients > 0) {
+			let distributedClient = false;
+
+			for (let offset = 0; offset < waveCount && remainingClients > 0; offset++) {
+				const waveIndex = (distributionStep + offset) % waveCount;
+
+				if (waveSizes[waveIndex] >= Level.MAX_WAVE_SIZE) {
+					continue;
+				}
+
+				waveSizes[waveIndex]++;
+				remainingClients--;
+				distributedClient = true;
+			}
+
+			if (!distributedClient) {
+				break;
+			}
+
+			distributionStep++;
+		}
+
+		return {
+			levelNumber: normalizedLevel,
+			difficulty,
+			oscillation: Number(oscillation.toFixed(3)),
+			waveSizes,
+			isTutorial: false
+		};
+	}
+
+	private static getLevelPlan(levelNumber: number): LevelPlan {
+		const clampedLevel = Phaser.Math.Clamp(levelNumber, 1, Level.CAMPAIGN_LEVEL_COUNT);
+		const sourcePlan = Level.CAMPAIGN_LEVEL_PLANS[clampedLevel - 1];
+		return {
+			...sourcePlan,
+			waveSizes: [...sourcePlan.waveSizes]
+		};
+	}
+
+	private applyLevelPlanToIntroPanel() {
+
+		this.panel.setDayLabel(`Day ${this.currentLevelPlan.levelNumber}`);
+	}
 
 	private initializeCoinCounter() {
 
@@ -194,7 +348,7 @@ export default class Level extends Phaser.Scene {
 
 		this.panel.setScrollFactor(0);
 		this.panel.setDepth(1001);
-		this.panel.disableReadyButton();
+		this.panel.showIntroState();
 	}
 
 	private startBackgroundMusic() {
@@ -270,7 +424,16 @@ export default class Level extends Phaser.Scene {
 
 	private addCoins(amount: number) {
 
-		this.coinCount = Math.max(0, this.coinCount + amount);
+		const nextCoinCount = Math.max(0, this.coinCount + amount);
+		const appliedDelta = nextCoinCount - this.coinCount;
+
+		this.coinCount = nextCoinCount;
+
+		if (appliedDelta > 0) {
+			this.earnedCoinsToday += appliedDelta;
+		}
+
+		storeTotalCoins(this.coinCount);
 		this.updateCoinCounter();
 	}
 
@@ -416,9 +579,13 @@ export default class Level extends Phaser.Scene {
 			return client.active && client.canReceiveDelivery() && client.matchesProduct(product);
 		});
 
-		if (matchingTargets.length !== 1) {
+		if (matchingTargets.length === 0) {
 			return undefined;
 		}
+
+		matchingTargets.sort((left, right) => {
+			return left.getRemainingRequestTime() - right.getRemainingRequestTime();
+		});
 
 		return matchingTargets[0];
 	}
@@ -441,6 +608,7 @@ export default class Level extends Phaser.Scene {
 		const yum = new YumPrefab(this, x, 307);
 		this.add.existing(yum);
 		yum.setDepth(this.workstation.depth - 1);
+		return yum;
 	}
 
 	public showCoinsAt(x: number) {
@@ -542,15 +710,83 @@ export default class Level extends Phaser.Scene {
 		});
 	}
 
-	public respawnClient(previousClient: AClient) {
+	public respawnClient(previousClient: AClient, finalYum?: YumPrefab) {
 
 		this.activeClients = this.activeClients.filter((client) => client !== previousClient && client.active);
 
 		previousClient.destroy();
 
 		if (this.activeClients.length === 0) {
-			this.spawnNextClientWave();
+			if (this.hasMoreClientWaves()) {
+				this.spawnNextClientWave();
+				return;
+			}
+
+			this.handleLevelCleared(finalYum);
 		}
+	}
+
+	private hasMoreClientWaves() {
+		return this.currentWaveIndex < this.currentLevelPlan.waveSizes.length - 1;
+	}
+
+	private handleLevelCleared(finalYum?: YumPrefab) {
+		if (this.hasCelebratedLevelCompletion || !finalYum) {
+			return;
+		}
+
+		this.hasCelebratedLevelCompletion = true;
+		storeTotalCoins(this.coinCount);
+		storeCompletedLevel(this.currentLevelPlan.levelNumber);
+		finalYum.once(Phaser.GameObjects.Events.DESTROY, () => {
+			this.time.delayedCall(Level.LEVEL_COMPLETE_CONFETTI_DELAY, () => {
+				if (!this.sys.isActive()) {
+					return;
+				}
+
+				ConfettiPrefab.launch(this);
+				this.playLevelCompletePanel();
+			});
+		});
+	}
+
+	private playLevelCompletePanel() {
+		const panelStartY = -this.panel.displayHeight - Level.INTRO_PANEL_START_OFFSET;
+		const nextLevelNumber = Phaser.Math.Clamp(
+			this.currentLevelPlan.levelNumber + 1,
+			1,
+			Level.CAMPAIGN_LEVEL_COUNT
+		);
+
+		this.blurOverlay.setVisible(true);
+		this.blurOverlay.setAlpha(0);
+		this.blurOverlay.setInteractive(new Phaser.Geom.Rectangle(0, 0, this.scale.width, this.scale.height), Phaser.Geom.Rectangle.Contains);
+		this.panel.setVisible(true);
+		this.panel.setAlpha(1);
+		this.panel.y = panelStartY;
+		this.panel.setEarnedTodayTotal(this.earnedCoinsToday);
+		this.panel.showFinalState(() => {
+			if (this.currentLevelPlan.levelNumber >= Level.CAMPAIGN_LEVEL_COUNT) {
+				this.scene.start("SceneSelector");
+				return;
+			}
+
+			this.scene.start("Level", { levelNumber: nextLevelNumber });
+		});
+
+		this.tweens.add({
+			targets: this.blurOverlay,
+			alpha: 1,
+			duration: Level.INTRO_OVERLAY_FADE_IN_DURATION,
+			ease: "Quad.Out"
+		});
+
+		this.tweens.add({
+			targets: this.panel,
+			y: this.panelRestY,
+			duration: Level.INTRO_PANEL_DROP_DURATION,
+			ease: "Bounce.Out"
+		});
 	}
 
 	private spawnClient(spawnX = this.getRandomClientSpawnX()) {
@@ -562,40 +798,25 @@ export default class Level extends Phaser.Scene {
 	}
 
 	private spawnInitialClients() {
-
-		for (let index = 0; index < Level.INITIAL_CLIENT_COUNT; index++) {
-			this.spawnClient();
-		}
-
-		this.hasCompletedFirstClientRound = true;
+		this.currentWaveIndex = 0;
+		this.spawnCurrentWave();
 	}
 
 	private spawnNextClientWave() {
+		if (this.currentWaveIndex >= this.currentLevelPlan.waveSizes.length - 1) {
+			return;
+		}
 
-		const clientCount = this.hasCompletedFirstClientRound
-			? this.getRandomClientWaveSize()
-			: Level.INITIAL_CLIENT_COUNT;
+		this.currentWaveIndex++;
+		this.spawnCurrentWave();
+	}
+
+	private spawnCurrentWave() {
+		const clientCount = this.currentLevelPlan.waveSizes[this.currentWaveIndex] ?? 0;
 
 		for (let index = 0; index < clientCount; index++) {
 			this.spawnClient();
 		}
-
-		this.hasCompletedFirstClientRound = true;
-	}
-
-	private getRandomClientWaveSize() {
-
-		const roll = Math.random();
-
-		if (roll < Level.TRIPLE_CLIENT_CHANCE) {
-			return 3;
-		}
-
-		if (roll < Level.TRIPLE_CLIENT_CHANCE + Level.DOUBLE_CLIENT_CHANCE) {
-			return 2;
-		}
-
-		return 1;
 	}
 
 	private getRandomClientSpawnX() {
@@ -641,6 +862,8 @@ export default class Level extends Phaser.Scene {
 	create() {
 
 		this.editorCreate();
+		this.panelRestY = this.panel.y;
+		this.applyLevelPlanToIntroPanel();
 		this.initializeCoinCounter();
 		this.setupDipInputs();
 		this.setupIntroOverlay();

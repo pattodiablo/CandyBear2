@@ -241,6 +241,15 @@ export default class AClient extends Phaser.GameObjects.Container {
 		return !!this.requestedProduct;
 	}
 
+	public getRemainingRequestTime() {
+
+		if (!this.requestedProduct || this.requestExpiresAt <= 0) {
+			return Number.POSITIVE_INFINITY;
+		}
+
+		return Math.max(0, this.requestExpiresAt - this.scene.time.now);
+	}
+
 	public consumeRequestAndExit(showYum = false) {
 
 		this.questionRevealTimer?.remove(false);
@@ -259,11 +268,12 @@ export default class AClient extends Phaser.GameObjects.Container {
 			ease: "Sine.In",
 			onComplete: () => {
 				const levelScene = this.scene as Level;
+				let yumPrefab;
 				if (showYum) {
 					this.scene.sound.play(`eating${Phaser.Math.Between(1, 3)}`);
-					levelScene.showYumAt(exitX);
+					yumPrefab = levelScene.showYumAt(exitX);
 				}
-				levelScene.respawnClient(this);
+				levelScene.respawnClient(this, yumPrefab);
 			}
 		});
 	}

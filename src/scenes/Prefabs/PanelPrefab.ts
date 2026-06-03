@@ -47,34 +47,54 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		bigStar1.scaleY = 0.7;
 		this.add(bigStar1);
 
-		// bigStar_2
-		const bigStar_2 = scene.add.image(149, -162, "BigStar");
-		bigStar_2.scaleX = 0.7;
-		bigStar_2.scaleY = 0.7;
-		this.add(bigStar_2);
+		// bigStar3
+		const bigStar3 = scene.add.image(149, -162, "BigStar");
+		bigStar3.scaleX = 0.7;
+		bigStar3.scaleY = 0.7;
+		this.add(bigStar3);
 
 		// FinalLabels
-		const finalLabels = scene.add.container(44, 0);
+		const finalLabels = scene.add.container(0, 0);
 		this.add(finalLabels);
+
+		// earnedToday
+		const earnedToday = scene.add.text(40, 86, "", {});
+		earnedToday.setOrigin(0.5, 0.5);
+		earnedToday.text = "Earnings today";
+		earnedToday.setStyle({ "color": "#A96625", "fontFamily": "Klop", "fontSize": "30px" });
+		finalLabels.add(earnedToday);
+
+		// totalCoins
+		const totalCoins = scene.add.text(43, 13, "", {});
+		totalCoins.setOrigin(0.5, 0.5);
+		totalCoins.text = "0";
+		totalCoins.setStyle({ "color": "#FFE769", "fontFamily": "Klop", "fontSize": "100px", "stroke": "#FEB134", "strokeThickness": 15 });
+		finalLabels.add(totalCoins);
 
 		this.panel = panel;
 		this.readyBtn = readyBtn;
 		this.nextdayBtn = nextdayBtn;
 		this.bigStar2 = bigStar2;
 		this.bigStar1 = bigStar1;
-		this.bigStar_2 = bigStar_2;
+		this.bigStar3 = bigStar3;
+		this.earnedToday = earnedToday;
+		this.totalCoins = totalCoins;
+		this.finalLabels = finalLabels;
 
 		/* START-USER-CTR-CODE */
 		finalLabels.add(nextdayBtn);
 		finalLabels.add(starHolder);
 		finalLabels.add(bigStar2);
 		finalLabels.add(bigStar1);
-		finalLabels.add(bigStar_2);
+		finalLabels.add(bigStar3);
 		finalLabels.setVisible(false);
 
 		this.readyBtnBaseScaleX = readyBtn.scaleX;
 		this.readyBtnBaseScaleY = readyBtn.scaleY;
 		this.readyBtnBaseY = readyBtn.y;
+		this.nextDayButtonBaseScaleX = nextdayBtn.scaleX;
+		this.nextDayButtonBaseScaleY = nextdayBtn.scaleY;
+		this.nextDayButtonBaseY = nextdayBtn.y;
 
 		this.dayLabelText = scene.add.text(44, -70, "Day 1", {
 			color: "#DF3D7A",
@@ -94,7 +114,10 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 	private nextdayBtn: Phaser.GameObjects.Image;
 	private bigStar2: Phaser.GameObjects.Image;
 	private bigStar1: Phaser.GameObjects.Image;
-	private bigStar_2: Phaser.GameObjects.Image;
+	private bigStar3: Phaser.GameObjects.Image;
+	private earnedToday: Phaser.GameObjects.Text;
+	private totalCoins: Phaser.GameObjects.Text;
+	private finalLabels: Phaser.GameObjects.Container;
 
 	/* START-USER-CODE */
 	private static readonly READY_BUTTON_HOVER_SCALE = 0.74;
@@ -105,9 +128,15 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 	private readyBtnBaseScaleX!: number;
 	private readyBtnBaseScaleY!: number;
 	private readyBtnBaseY!: number;
+	private nextDayButtonBaseScaleX!: number;
+	private nextDayButtonBaseScaleY!: number;
+	private nextDayButtonBaseY!: number;
 	private isReadyButtonPressed = false;
+	private isNextDayButtonPressed = false;
 
 	public enableReadyButton(onClick: () => void) {
+		this.finalLabels.setVisible(false);
+		this.readyBtn.setVisible(true);
 
 		this.readyBtn.setInteractive({ useHandCursor: true });
 		this.readyBtn.removeAllListeners();
@@ -156,6 +185,84 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		this.animateReadyButton(this.readyBtnBaseScaleX, this.readyBtnBaseScaleY, this.readyBtnBaseY);
 	}
 
+	public enableNextDayButton(onClick: () => void) {
+		this.nextdayBtn.setVisible(true);
+		this.nextdayBtn.setInteractive({ useHandCursor: true });
+		this.nextdayBtn.removeAllListeners();
+		this.isNextDayButtonPressed = false;
+		this.animateNextDayButton(this.nextDayButtonBaseScaleX, this.nextDayButtonBaseScaleY, this.nextDayButtonBaseY);
+
+		this.nextdayBtn.on(Phaser.Input.Events.POINTER_OVER, () => {
+			if (this.isNextDayButtonPressed) {
+				return;
+			}
+
+			this.animateNextDayButton(
+				PanelPrefab.READY_BUTTON_HOVER_SCALE,
+				PanelPrefab.READY_BUTTON_HOVER_SCALE,
+				this.nextDayButtonBaseY - 2
+			);
+		});
+
+		this.nextdayBtn.on(Phaser.Input.Events.POINTER_OUT, () => {
+			if (this.isNextDayButtonPressed) {
+				return;
+			}
+
+			this.animateNextDayButton(this.nextDayButtonBaseScaleX, this.nextDayButtonBaseScaleY, this.nextDayButtonBaseY);
+		});
+
+		this.nextdayBtn.once(Phaser.Input.Events.POINTER_DOWN, () => {
+			this.isNextDayButtonPressed = true;
+			this.animateNextDayButton(
+				PanelPrefab.READY_BUTTON_PRESSED_SCALE,
+				PanelPrefab.READY_BUTTON_PRESSED_SCALE,
+				this.nextDayButtonBaseY + PanelPrefab.READY_BUTTON_PRESS_OFFSET_Y,
+				() => {
+					this.nextdayBtn.disableInteractive();
+					onClick();
+				}
+			);
+		});
+	}
+
+	public disableNextDayButton() {
+
+		this.nextdayBtn.disableInteractive();
+		this.nextdayBtn.removeAllListeners();
+		this.isNextDayButtonPressed = false;
+		this.animateNextDayButton(this.nextDayButtonBaseScaleX, this.nextDayButtonBaseScaleY, this.nextDayButtonBaseY);
+	}
+
+	public showFinalState(onNextDayClick?: () => void) {
+
+		this.disableReadyButton();
+		this.disableNextDayButton();
+		this.readyBtn.setVisible(false);
+		this.earnedToday.setVisible(true);
+		this.totalCoins.setVisible(true);
+		this.finalLabels.setVisible(true);
+
+		if (onNextDayClick) {
+			this.enableNextDayButton(onNextDayClick);
+		}
+	}
+
+	public showIntroState() {
+
+		this.earnedToday.setVisible(false);
+		this.totalCoins.setVisible(false);
+		this.finalLabels.setVisible(false);
+		this.readyBtn.setVisible(true);
+		this.disableReadyButton();
+		this.disableNextDayButton();
+	}
+
+	public setEarnedTodayTotal(total: number) {
+
+		this.totalCoins.setText(`${Math.max(0, Math.floor(total))}`);
+	}
+
 	public setDayLabel(text: string, color = "DF3D7A") {
 
 		this.dayLabelText.setText(text);
@@ -167,6 +274,20 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		this.scene.tweens.killTweensOf(this.readyBtn);
 		this.scene.tweens.add({
 			targets: this.readyBtn,
+			scaleX,
+			scaleY,
+			y,
+			duration: PanelPrefab.READY_BUTTON_TWEEN_DURATION,
+			ease: "Quad.Out",
+			onComplete,
+		});
+	}
+
+	private animateNextDayButton(scaleX: number, scaleY: number, y: number, onComplete?: () => void) {
+
+		this.scene.tweens.killTweensOf(this.nextdayBtn);
+		this.scene.tweens.add({
+			targets: this.nextdayBtn,
 			scaleX,
 			scaleY,
 			y,

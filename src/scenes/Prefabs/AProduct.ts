@@ -80,6 +80,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 	private floatTween?: Phaser.Tweens.Tween;
 	private burnTween?: Phaser.Tweens.Tween;
 	private selectionTimeout?: Phaser.Time.TimerEvent;
+	private workplaceRetryTimer?: Phaser.Time.TimerEvent;
 	private burnProgress = 0;
 	private currentFryerId?: "fryer1" | "fryer2";
 	private currentWorkplaceId?: "workplace1" | "workplace2";
@@ -325,11 +326,13 @@ export default class AProduct extends Phaser.GameObjects.Image {
 	}
 
 	private pickUpFromFryer() {
+		this.clearWorkplaceTransferRetry();
 
 		const levelScene = this.scene as Level;
 		const workplace = levelScene.claimAvailableWorkplace();
 
 		if (!workplace) {
+			this.queueWorkplaceTransferRetry();
 			return;
 		}
 
@@ -358,6 +361,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 	private discardBurnedProduct() {
 
 		const levelScene = this.scene as Level;
+		this.clearWorkplaceTransferRetry();
 		this.clearBurnState(true);
 		levelScene.releaseFryer(this.currentFryerId);
 		this.currentFryerId = undefined;
@@ -678,6 +682,33 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		if (!keepTint) {
 			this.clearTint();
 		}
+	}
+
+	private queueWorkplaceTransferRetry() {
+
+		if (!this.active || !this.isCooked || this.isBurned || this.isLaunching || this.currentWorkplaceId) {
+			return;
+		}
+
+		this.clearWorkplaceTransferRetry();
+		this.workplaceRetryTimer = this.scene.time.addEvent({
+			delay: 150,
+			loop: true,
+			callback: () => {
+				if (!this.active || !this.isCooked || this.isBurned || this.isLaunching || this.currentWorkplaceId) {
+					this.clearWorkplaceTransferRetry();
+					return;
+				}
+
+				this.pickUpFromFryer();
+			}
+		});
+	}
+
+	private clearWorkplaceTransferRetry() {
+
+		this.workplaceRetryTimer?.remove(false);
+		this.workplaceRetryTimer = undefined;
 	}
 
 	private startSelectionTimeout(onTimeout: () => void) {

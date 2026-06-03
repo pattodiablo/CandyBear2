@@ -6,6 +6,7 @@
 /* START-USER-IMPORTS */
 import Phaser from "phaser";
 import assetPackUrl from "../../static/assets/asset-pack.json";
+import { hasOpenedGameBefore, markGameAsOpened } from "./levelProgress";
 /* END-USER-IMPORTS */
 
 export default class Preload extends Phaser.Scene {
@@ -82,7 +83,13 @@ export default class Preload extends Phaser.Scene {
 			}
 		}
 
-		this.scene.start("Level");
+		if (!hasOpenedGameBefore()) {
+			markGameAsOpened();
+			this.scene.start("Level", { levelNumber: 1 });
+			return;
+		}
+
+		this.scene.start("SceneSelector");
 	}
 
 	/* END-USER-CODE */

@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { SpinePlugin } from "@esotericsoftware/spine-phaser-v4";
 import Level from "./scenes/Level";
+import SceneSelector from "./scenes/SceneSelector";
 import preloadAssetPackUrl from "../static/assets/preload-asset-pack.json";
 import Preload from "./scenes/Preload";
 
@@ -40,7 +41,7 @@ window.addEventListener('load', function () {
 			mode: Phaser.Scale.ScaleModes.FIT,
 			autoCenter: Phaser.Scale.Center.CENTER_BOTH
 		},
-		scene: [Boot, Preload, Level]
+		scene: [Boot, Preload, Level, SceneSelector]
 	});
 
 	game.scene.start("Boot");

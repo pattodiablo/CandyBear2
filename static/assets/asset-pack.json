@@ -39,6 +39,13 @@
                 "key": "Charola"
             },
             {
+                "url": [
+                    "assets/audio/cheersSound.mp3"
+                ],
+                "type": "audio",
+                "key": "cheersSound"
+            },
+            {
                 "url": "assets/ChocolateDip.png",
                 "type": "image",
                 "key": "ChocolateDip"
@@ -91,6 +98,61 @@
                 ],
                 "type": "audio",
                 "key": "coinDrop2"
+            },
+            {
+                "url": "assets/confetti1.png",
+                "type": "image",
+                "key": "confetti1"
+            },
+            {
+                "url": "assets/confetti10.png",
+                "type": "image",
+                "key": "confetti10"
+            },
+            {
+                "url": "assets/confetti2.png",
+                "type": "image",
+                "key": "confetti2"
+            },
+            {
+                "url": "assets/confetti3.png",
+                "type": "image",
+                "key": "confetti3"
+            },
+            {
+                "url": "assets/confetti4.png",
+                "type": "image",
+                "key": "confetti4"
+            },
+            {
+                "url": "assets/confetti5.png",
+                "type": "image",
+                "key": "confetti5"
+            },
+            {
+                "url": "assets/confetti6.png",
+                "type": "image",
+                "key": "confetti6"
+            },
+            {
+                "url": "assets/confetti7.png",
+                "type": "image",
+                "key": "confetti7"
+            },
+            {
+                "url": "assets/confetti8.png",
+                "type": "image",
+                "key": "confetti8"
+            },
+            {
+                "url": "assets/confetti9.png",
+                "type": "image",
+                "key": "confetti9"
+            },
+            {
+                "url": "assets/dayHolder.png",
+                "type": "image",
+                "key": "dayHolder"
             },
             {
                 "url": "assets/dayOneLabel.png",
@@ -182,6 +244,11 @@
                 "key": "nextdayBtn"
             },
             {
+                "url": "assets/NextPage.png",
+                "type": "image",
+                "key": "NextPage"
+            },
+            {
                 "url": [
                     "assets/audio/pop1.mp3"
                 ],
@@ -201,6 +268,11 @@
                 ],
                 "type": "audio",
                 "key": "pop3"
+            },
+            {
+                "url": "assets/PrevPage.png",
+                "type": "image",
+                "key": "PrevPage"
             },
             {
                 "url": "assets/Product1Berry.png",
@@ -266,6 +338,11 @@
                 "url": "assets/smallStar.png",
                 "type": "image",
                 "key": "smallStar"
+            },
+            {
+                "url": "assets/smallStarHolder.png",
+                "type": "image",
+                "key": "smallStarHolder"
             },
             {
                 "url": "assets/StarHolder.png",
