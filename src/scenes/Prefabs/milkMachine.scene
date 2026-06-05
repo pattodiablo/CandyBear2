@@ -1,0 +1,58 @@
+{
+    "id": "a8825630-102d-408c-b1cb-5925ed4db3e2",
+    "sceneType": "PREFAB",
+    "settings": {
+        "exportClass": true,
+        "autoImport": true,
+        "preloadMethodName": "",
+        "preloadPackFiles": [],
+        "createMethodName": "",
+        "compilerOutputLanguage": "TYPE_SCRIPT",
+        "borderWidth": 1280,
+        "borderHeight": 720
+    },
+    "displayList": [
+        {
+            "type": "Container",
+            "id": "00bf8ea2-fc3f-46ea-9d26-d415a4613ef4",
+            "label": "container_1",
+            "list": [
+                {
+                    "type": "Image",
+                    "id": "23d027a0-9e7b-4224-a696-0beababa31ad",
+                    "label": "milkmachine",
+                    "texture": {
+                        "key": "Milkmachine"
+                    }
+                },
+                {
+                    "type": "Image",
+                    "id": "a10edbb1-1ea3-459b-875d-802bb4ba311d",
+                    "label": "milkRefill1",
+                    "scope": "CLASS",
+                    "texture": {},
+                    "x": -52,
+                    "y": 53,
+                    "visible": false
+                },
+                {
+                    "type": "Image",
+                    "id": "100cbe00-40ff-4f2e-a60e-b4037a1d43f8",
+                    "label": "milkRefill2",
+                    "scope": "CLASS",
+                    "texture": {},
+                    "x": 53,
+                    "y": 53,
+                    "visible": false
+                }
+            ]
+        }
+    ],
+    "plainObjects": [],
+    "meta": {
+        "app": "Phaser Editor - Scene Editor",
+        "url": "https://phaser.io/editor",
+        "contentType": "phasereditor2d.core.scene.SceneContentType",
+        "version": 5
+    }
+}

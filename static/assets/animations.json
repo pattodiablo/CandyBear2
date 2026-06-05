@@ -1,0 +1,293 @@
+{
+    "anims": [
+        {
+            "key": "MilkRefill",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0001.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0003.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0005.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0007.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0009.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0011.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0013.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0015.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0017.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0019.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0021.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0023.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0025.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0027.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0029.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0031.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0033.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0035.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0037.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0039.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0041.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0043.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0045.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0047.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0049.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0051.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0053.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0055.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0057.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0059.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0061.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0063.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0065.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0067.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0069.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0071.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0073.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0075.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0077.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0079.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0081.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0083.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0085.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0087.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0089.png",
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 12,
+            "skipMissedFrames": true,
+            "randomFrame": false
+        }
+    ],
+    "globalTimeScale": 1,
+    "meta": {
+        "app": "Phaser Editor 2D v3",
+        "contentType": "Phaser v3 Animations"
+    },
+    "settings": {
+        "sourceLang": "JAVA_SCRIPT",
+        "esModule": false,
+        "generateCode": false
+    }
+}

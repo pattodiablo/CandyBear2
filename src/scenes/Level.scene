@@ -24,12 +24,14 @@
             "y": 563
         },
         {
-            "type": "Image",
+            "prefabId": "a8825630-102d-408c-b1cb-5925ed4db3e2",
             "id": "d4300e91-7766-466a-be6d-8370e393eb3e",
+            "unlock": [
+                "x",
+                "y"
+            ],
             "label": "milkmachine",
-            "texture": {
-                "key": "Milkmachine"
-            },
+            "scope": "PUBLIC",
             "x": 611,
             "y": 590
         },
@@ -170,6 +172,39 @@
             "y": 539
         },
         {
+            "prefabId": "10dc66d6-8928-4081-a55a-d56eacc644f9",
+            "id": "454f4127-38e5-4495-9550-6115422386e5",
+            "unlock": [
+                "x",
+                "y"
+            ],
+            "label": "milkGlass",
+            "x": 210,
+            "y": 536
+        },
+        {
+            "type": "Image",
+            "id": "cdbfca69-069d-47c6-bc09-667d5c46a320",
+            "label": "charola1",
+            "scope": "PUBLIC",
+            "texture": {
+                "key": "Charola"
+            },
+            "x": 927,
+            "y": 407
+        },
+        {
+            "type": "Image",
+            "id": "3d0f90d5-c5b0-4200-9f13-d32ef8f928c4",
+            "label": "charola2",
+            "scope": "PUBLIC",
+            "texture": {
+                "key": "Charola"
+            },
+            "x": 315,
+            "y": 407
+        },
+        {
             "type": "Image",
             "id": "691671dd-1ff0-4f04-b6e7-a3c4ba3ddec4",
             "label": "lamp",
@@ -202,17 +237,6 @@
         },
         {
             "prefabId": "60be42aa-8f5d-439a-b281-d01000ca8a78",
-            "id": "d3d5e537-d5a0-45ad-947e-f7a26515f246",
-            "unlock": [
-                "x",
-                "y"
-            ],
-            "label": "rawProduct",
-            "x": 207,
-            "y": 547
-        },
-        {
-            "prefabId": "60be42aa-8f5d-439a-b281-d01000ca8a78",
             "id": "0e00d68f-5bcb-4692-a1c1-d5abc2676a89",
             "unlock": [
                 "x",
@@ -221,21 +245,10 @@
             ],
             "label": "rawProduct_1",
             "texture": {
-                "key": "RawProduct1"
+                "key": "Product2Raw"
             },
             "x": 81,
             "y": 653
-        },
-        {
-            "prefabId": "60be42aa-8f5d-439a-b281-d01000ca8a78",
-            "id": "0f5153d7-21ca-42a6-a10b-d39d9dea57a7",
-            "unlock": [
-                "x",
-                "y"
-            ],
-            "label": "rawProduct_2",
-            "x": 209,
-            "y": 655
         },
         {
             "type": "Image",

@@ -2,6 +2,11 @@
     "section1": {
         "files": [
             {
+                "url": "assets/animations.json",
+                "type": "animation",
+                "key": "animations"
+            },
+            {
                 "url": [
                     "assets/audio/backgroundMusic.mp3"
                 ],
@@ -217,6 +222,12 @@
                 "key": "glace2"
             },
             {
+                "atlasURL": "assets/GlassAnim/GlassAnim.json",
+                "textureURL": "assets/GlassAnim/GlassAnim.png",
+                "type": "atlas",
+                "key": "GlassAnim"
+            },
+            {
                 "url": "assets/Holder.png",
                 "type": "image",
                 "key": "Holder"
@@ -237,6 +248,11 @@
                 "url": "assets/Milkmachine.png",
                 "type": "image",
                 "key": "Milkmachine"
+            },
+            {
+                "url": "assets/milkProduct.png",
+                "type": "image",
+                "key": "milkProduct"
             },
             {
                 "url": "assets/nextdayBtn.png",
@@ -305,6 +321,26 @@
                 "key": "Product1Zombie"
             },
             {
+                "url": "assets/Product2Candy.png",
+                "type": "image",
+                "key": "Product2Candy"
+            },
+            {
+                "url": "assets/Product2Chocolate.png",
+                "type": "image",
+                "key": "Product2Chocolate"
+            },
+            {
+                "url": "assets/Product2Cooked.png",
+                "type": "image",
+                "key": "Product2Cooked"
+            },
+            {
+                "url": "assets/Product2Raw.png",
+                "type": "image",
+                "key": "Product2Raw"
+            },
+            {
                 "url": "assets/RawProduct1.png",
                 "type": "image",
                 "key": "RawProduct1"
@@ -328,6 +364,11 @@
                 "url": "assets/readyBtn.png",
                 "type": "image",
                 "key": "readyBtn"
+            },
+            {
+                "url": "assets/SandwichProduct.png",
+                "type": "image",
+                "key": "SandwichProduct"
             },
             {
                 "url": "assets/smallHeart.png",

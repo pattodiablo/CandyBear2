@@ -260,7 +260,7 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 
 	public setEarnedTodayTotal(total: number) {
 
-		this.totalCoins.setText(`${Math.max(0, Math.floor(total))}`);
+		this.totalCoins.setText(`+${Math.max(0, Math.floor(total))}`);
 	}
 
 	public setDayLabel(text: string, color = "DF3D7A") {

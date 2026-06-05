@@ -8,6 +8,7 @@ import SpineClient from "./SpineClient";
 import Phaser from "phaser";
 import type AProduct from "./AProduct";
 import type Level from "../Level";
+import type milkglass from "./milkglass";
 /* END-USER-IMPORTS */
 
 export default class AClient extends Phaser.GameObjects.Container {
@@ -47,6 +48,8 @@ export default class AClient extends Phaser.GameObjects.Container {
 	private clientBear: SpineClient;
 	public Product1_Chocolate: {key:string,frame?:string|number} = {"key":"Product1Chocolate"};
 	public Product1_Candy: {key:string,frame?:string|number} = {"key":"Product1Candy"};
+	public Product2_Chocolate: {key:string,frame?:string|number} = {"key":"Product2Chocolate"};
+	public Product2_Candy: {key:string,frame?:string|number} = {"key":"Product2Candy"};
 	public ClientBack: {key:string,frame?:string|number} = {"key":"ClientBack"};
 
 	/* START-USER-CODE */
@@ -87,13 +90,18 @@ export default class AClient extends Phaser.GameObjects.Container {
 	}
 
 	private handleDeliveryTargetClick() {
+		const levelScene = this.scene as Level;
+
+		if (levelScene.hasSelectedDelivery()) {
+			levelScene.resolveDeliverySelection(this);
+			return;
+		}
 
 		if (!this.canReceiveDelivery()) {
 			return;
 		}
 
-			const levelScene = this.scene as Level;
-			levelScene.resolveDeliverySelection(this);
+		levelScene.resolveDeliverySelection(this);
 	}
 
 	private startEntrance() {
@@ -141,7 +149,13 @@ export default class AClient extends Phaser.GameObjects.Container {
 
 		this.questionRevealTimer = undefined;
 		this.applyClientAppearance({ key: "ClientBear" });
-		this.requestedProduct = Math.random() < 0.5 ? this.Product1_Chocolate : this.Product1_Candy;
+		const requestPool = [
+			this.Product1_Chocolate,
+			this.Product1_Candy,
+			this.Product2_Chocolate,
+			this.Product2_Candy
+		];
+		this.requestedProduct = Phaser.Utils.Array.GetRandom(requestPool);
 		this.applyProductSample(this.requestedProduct);
 		this.productSample.setVisible(true);
 		this.clientQuestion.setAlpha(0);
@@ -227,7 +241,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 		this.consumeRequestAndExit();
 	}
 
-	public matchesProduct(product: AProduct) {
+	public matchesProduct(product: AProduct | milkglass) {
 
 		if (!this.requestedProduct) {
 			return false;

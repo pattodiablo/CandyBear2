@@ -19,6 +19,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		this.baseX = this.x;
 		this.baseY = this.y;
 		this.baseAngle = this.angle;
+		this.syncAppearanceSetWithInitialTexture(texture ?? this.texture.key);
 		this.applyAppearance(this.Raw);
 		this.setScale(0, 0);
 		this.setInteractive({
@@ -44,6 +45,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 
 	/* START-USER-CODE */
 	public fryDuration = 3000;
+	private static readonly PRODUCT2_EXTRA_FRY_DURATION = 3000;
 	private static readonly BURN_DURATION = 6000;
 	private static readonly HOLDER_ACTIVE_DURATION = 100;
 	private static readonly BURN_START_DELAY = 2000;
@@ -84,6 +86,25 @@ export default class AProduct extends Phaser.GameObjects.Image {
 	private burnProgress = 0;
 	private currentFryerId?: "fryer1" | "fryer2";
 	private currentWorkplaceId?: "workplace1" | "workplace2";
+
+	private syncAppearanceSetWithInitialTexture(textureKey: string) {
+
+		const rawTextureMatch = textureKey.match(/^Product(\d+)Raw$/);
+
+		if (!rawTextureMatch) {
+			return;
+		}
+
+		const variantPrefix = `Product${rawTextureMatch[1]}`;
+		this.Raw = { key: `${variantPrefix}Raw` };
+		this.Cooked = { key: `${variantPrefix}Cooked` };
+		this.ChocolateDip = { key: `${variantPrefix}Chocolate` };
+		this.CandyDip = { key: `${variantPrefix}Candy` };
+
+		if (rawTextureMatch[1] === "2") {
+			this.fryDuration += AProduct.PRODUCT2_EXTRA_FRY_DURATION;
+		}
+	}
 
 	private handlePointerOver() {
 		if (this.isLaunching || this.isRaised || this.isCooking || this.isSelectingDip || this.isSelectingDelivery) {

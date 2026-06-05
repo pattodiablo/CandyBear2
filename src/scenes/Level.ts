@@ -3,6 +3,8 @@
 
 /* START OF COMPILED CODE */
 
+import milkMachine from "./Prefabs/milkMachine";
+import milkglass from "./Prefabs/milkglass";
 import AProduct from "./Prefabs/AProduct";
 import PanelPrefab from "./Prefabs/PanelPrefab";
 /* START-USER-IMPORTS */
@@ -13,6 +15,7 @@ import Coin from "./Prefabs/Coin";
 import ConfettiPrefab from "./Prefabs/ConfettiPrefab";
 import { getStoredTotalCoins, storeCompletedLevel, storeTotalCoins } from "./levelProgress";
 import { SkinsAndAnimationBoundsProvider } from "@esotericsoftware/spine-phaser-v4";
+import type { MilkSlotId } from "./Prefabs/milkMachine";
 
 interface LevelPlan {
 	levelNumber: number;
@@ -43,7 +46,8 @@ export default class Level extends Phaser.Scene {
 		const workstation = this.add.image(654, 563, "Workstation");
 
 		// milkmachine
-		this.add.image(611, 590, "Milkmachine");
+		const milkmachine = new milkMachine(this, 611, 590);
+		this.add.existing(milkmachine);
 
 		// toaster
 		this.add.image(827, 582, "toaster");
@@ -84,6 +88,16 @@ export default class Level extends Phaser.Scene {
 		// candyicon
 		this.add.image(1174, 539, "candyicon");
 
+		// milkGlass
+		const milkGlass = new milkglass(this, 210, 536);
+		this.add.existing(milkGlass);
+
+		// charola1
+		const charola1 = this.add.image(927, 407, "Charola");
+
+		// charola2
+		const charola2 = this.add.image(315, 407, "Charola");
+
 		// lamp
 		this.add.image(193, 57, "lamp");
 
@@ -94,17 +108,9 @@ export default class Level extends Phaser.Scene {
 		const rawProduct1 = new AProduct(this, 78, 547);
 		this.add.existing(rawProduct1);
 
-		// rawProduct
-		const rawProduct = new AProduct(this, 207, 547);
-		this.add.existing(rawProduct);
-
 		// rawProduct_1
-		const rawProduct_1 = new AProduct(this, 81, 653, "RawProduct1");
+		const rawProduct_1 = new AProduct(this, 81, 653, "Product2Raw");
 		this.add.existing(rawProduct_1);
-
-		// rawProduct_2
-		const rawProduct_2 = new AProduct(this, 209, 655);
-		this.add.existing(rawProduct_2);
 
 		// blurOverlay
 		const blurOverlay = this.add.image(0, 0, "blurOverlay");
@@ -121,12 +127,15 @@ export default class Level extends Phaser.Scene {
 		this.add.image(52, 58, "bigCoin");
 
 		this.workstation = workstation;
+		this.milkmachine = milkmachine;
 		this.fryer1 = fryer1;
 		this.fryer2 = fryer2;
 		this.workplace1 = workplace1;
 		this.workplace2 = workplace2;
 		this.chocolateDip = chocolateDip;
 		this.candyDip = candyDip;
+		this.charola1 = charola1;
+		this.charola2 = charola2;
 		this.blurOverlay = blurOverlay;
 		this.panel = panel;
 
@@ -134,12 +143,15 @@ export default class Level extends Phaser.Scene {
 	}
 
 	private workstation!: Phaser.GameObjects.Image;
+	public milkmachine!: milkMachine;
 	public fryer1!: Phaser.GameObjects.Image;
 	public fryer2!: Phaser.GameObjects.Image;
 	public workplace1!: Phaser.GameObjects.Image;
 	public workplace2!: Phaser.GameObjects.Image;
 	public chocolateDip!: Phaser.GameObjects.Image;
 	public candyDip!: Phaser.GameObjects.Image;
+	public charola1!: Phaser.GameObjects.Image;
+	public charola2!: Phaser.GameObjects.Image;
 	private blurOverlay!: Phaser.GameObjects.Image;
 	private panel!: PanelPrefab;
 
@@ -190,8 +202,10 @@ export default class Level extends Phaser.Scene {
 	private fryer2Occupied = false;
 	private workplace1Occupied = false;
 	private workplace2Occupied = false;
+	private milkRefill1Occupied = false;
+	private milkRefill2Occupied = false;
 	private selectedDipProduct?: AProduct;
-	private selectedDeliveryProduct?: AProduct;
+	private selectedDeliveryProduct?: AProduct | milkglass;
 	private coinCount = 0;
 	private earnedCoinsToday = 0;
 	private coinCounterText?: Phaser.GameObjects.Text;
@@ -224,6 +238,8 @@ export default class Level extends Phaser.Scene {
 		this.fryer2Occupied = false;
 		this.workplace1Occupied = false;
 		this.workplace2Occupied = false;
+		this.milkRefill1Occupied = false;
+		this.milkRefill2Occupied = false;
 		this.selectedDipProduct = undefined;
 		this.selectedDeliveryProduct = undefined;
 	}
@@ -492,6 +508,27 @@ export default class Level extends Phaser.Scene {
 		return null;
 	}
 
+	public claimAvailableMilkSlot() {
+
+		if (!this.milkRefill1Occupied) {
+			this.milkRefill1Occupied = true;
+			return {
+				id: "milkRefill1" as MilkSlotId,
+				target: this.milkmachine.getSlotTarget("milkRefill1")
+			};
+		}
+
+		if (!this.milkRefill2Occupied) {
+			this.milkRefill2Occupied = true;
+			return {
+				id: "milkRefill2" as MilkSlotId,
+				target: this.milkmachine.getSlotTarget("milkRefill2")
+			};
+		}
+
+		return null;
+	}
+
 	public releaseWorkplace(workplaceId?: "workplace1" | "workplace2") {
 
 		if (workplaceId === "workplace1") {
@@ -501,6 +538,20 @@ export default class Level extends Phaser.Scene {
 
 		if (workplaceId === "workplace2") {
 			this.workplace2Occupied = false;
+		}
+	}
+
+	public releaseMilkSlot(slotId?: MilkSlotId) {
+
+		if (slotId === "milkRefill1") {
+			this.milkRefill1Occupied = false;
+			this.milkmachine.clearSlot("milkRefill1");
+			return;
+		}
+
+		if (slotId === "milkRefill2") {
+			this.milkRefill2Occupied = false;
+			this.milkmachine.clearSlot("milkRefill2");
 		}
 	}
 
@@ -546,7 +597,7 @@ export default class Level extends Phaser.Scene {
 		return dipCandidates[0];
 	}
 
-	public beginDeliverySelection(product: AProduct) {
+	public beginDeliverySelection(product: AProduct | milkglass) {
 
 		if (this.selectedDeliveryProduct && this.selectedDeliveryProduct !== product) {
 			this.selectedDeliveryProduct.cancelDeliverySelection();
@@ -555,11 +606,16 @@ export default class Level extends Phaser.Scene {
 		this.selectedDeliveryProduct = product;
 	}
 
-	public clearDeliverySelection(product?: AProduct) {
+	public clearDeliverySelection(product?: AProduct | milkglass) {
 
 		if (!product || this.selectedDeliveryProduct === product) {
 			this.selectedDeliveryProduct = undefined;
 		}
+	}
+
+	public hasSelectedDelivery() {
+
+		return !!this.selectedDeliveryProduct;
 	}
 
 	public resolveDeliverySelection(target: AClient) {
@@ -573,7 +629,7 @@ export default class Level extends Phaser.Scene {
 		directDeliveryProduct?.directDeliverToClient(target);
 	}
 
-	public getDirectDeliveryTarget(product: AProduct) {
+	public getDirectDeliveryTarget(product: AProduct | milkglass) {
 
 		const matchingTargets = this.activeClients.filter((client) => {
 			return client.active && client.canReceiveDelivery() && client.matchesProduct(product);
@@ -593,7 +649,7 @@ export default class Level extends Phaser.Scene {
 	public getDirectDeliveryProduct(target: AClient) {
 
 		const matchingProducts = this.children.list
-			.filter((child): child is AProduct => child instanceof AProduct)
+			.filter((child): child is AProduct | milkglass => child instanceof AProduct || child instanceof milkglass)
 			.filter((product) => product.canReceiveDirectDelivery() && target.matchesProduct(product));
 
 		if (matchingProducts.length !== 1) {
