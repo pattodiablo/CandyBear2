@@ -95,6 +95,7 @@ export default class milkMachine extends Phaser.GameObjects.Container {
 
 		slotSprite.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
 			slotSprite.stop();
+			this.scene.sound.play(`pop${Phaser.Math.Between(1, 3)}`);
 			onComplete?.();
 		});
 		slotSprite.play({ key: "MilkRefill", repeat: 0 });

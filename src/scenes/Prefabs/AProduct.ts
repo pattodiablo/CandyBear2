@@ -86,6 +86,9 @@ export default class AProduct extends Phaser.GameObjects.Image {
 	private burnProgress = 0;
 	private currentFryerId?: "fryer1" | "fryer2";
 	private currentWorkplaceId?: "workplace1" | "workplace2";
+	private currentTrayId?: "charola1" | "charola2";
+	private traySlotX?: number;
+	private traySlotY?: number;
 
 	private syncAppearanceSetWithInitialTexture(textureKey: string) {
 
@@ -120,6 +123,21 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		}
 
 		const levelScene = this.scene as Level;
+
+		if (this.currentTrayId) {
+			if (this.isReadyForDelivery) {
+				const directDeliveryTarget = levelScene.getDirectDeliveryTarget(this);
+
+				if (directDeliveryTarget) {
+					this.directDeliverToClient(directDeliveryTarget);
+					return;
+				}
+
+				this.startDeliverySelection();
+			}
+
+			return;
+		}
 
 		if (this.isAtWorkplace) {
 			if (this.isReadyForDelivery) {
@@ -165,7 +183,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 	public canReceiveDirectDelivery() {
 
 		return this.active
-			&& this.isAtWorkplace
+			&& (this.isAtWorkplace || !!this.currentTrayId)
 			&& this.isReadyForDelivery
 			&& !this.isLaunching
 			&& !this.isSelectingDip
@@ -184,6 +202,47 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		this.isSelectingDelivery = true;
 		levelScene.beginDeliverySelection(this);
 		this.deliverToClient(client);
+	}
+
+	public canAutoPlaceInTray() {
+
+		return this.active
+			&& this.isAtWorkplace
+			&& this.isReadyForDelivery
+			&& !this.isLaunching
+			&& !this.isSelectingDip
+			&& !this.isSelectingDelivery;
+	}
+
+	public autoPlaceInTray(trayId: "charola1" | "charola2", targetX: number, targetY: number) {
+
+		if (!this.canAutoPlaceInTray()) {
+			return;
+		}
+
+		const levelScene = this.scene as Level;
+		this.isAtWorkplace = false;
+		this.isReadyForDelivery = false;
+		this.isLaunching = true;
+		this.currentTrayId = trayId;
+		this.traySlotX = targetX;
+		this.traySlotY = targetY;
+		levelScene.releaseWorkplace(this.currentWorkplaceId);
+		this.currentWorkplaceId = undefined;
+		this.playSwooshSound();
+
+		this.scene.tweens.add({
+			targets: this,
+			x: targetX,
+			y: targetY,
+			duration: 320,
+			ease: "Cubic.InOut",
+			onComplete: () => {
+				this.isLaunching = false;
+				this.isReadyForDelivery = true;
+				levelScene.reserveTraySlot(trayId, this);
+			}
+		});
 	}
 
 	private raiseProduct() {
@@ -576,10 +635,17 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		}
 
 		const levelScene = this.scene as Level;
+		const trayId = this.currentTrayId;
 		this.clearSelectionTimeout();
 		levelScene.clearDeliverySelection(this);
 		levelScene.releaseWorkplace(this.currentWorkplaceId);
+		if (trayId) {
+			levelScene.releaseTraySlot(trayId, this);
+		}
 		this.currentWorkplaceId = undefined;
+		this.currentTrayId = undefined;
+		this.traySlotX = undefined;
+		this.traySlotY = undefined;
 		this.isSelectingDelivery = false;
 		this.isLaunching = true;
 		this.playSwooshSound();
@@ -616,12 +682,19 @@ export default class AProduct extends Phaser.GameObjects.Image {
 
 	public cancelDeliverySelection() {
 
-		if (!this.isSelectingDelivery || !this.currentWorkplaceId) {
+		if (!this.isSelectingDelivery) {
 			return;
 		}
 
 		const levelScene = this.scene as Level;
 		const workplace = this.currentWorkplaceId === "workplace1" ? levelScene.workplace1 : levelScene.workplace2;
+		const hasTraySlot = this.currentTrayId && this.traySlotX !== undefined && this.traySlotY !== undefined;
+		const fallbackX = hasTraySlot ? this.traySlotX : workplace?.x;
+		const fallbackY = hasTraySlot ? this.traySlotY : workplace?.y;
+
+		if (fallbackX === undefined || fallbackY === undefined) {
+			return;
+		}
 
 		this.clearSelectionTimeout();
 		levelScene.clearDeliverySelection(this);
@@ -630,18 +703,64 @@ export default class AProduct extends Phaser.GameObjects.Image {
 
 		this.scene.tweens.add({
 			targets: this,
-			x: workplace.x,
-			y: workplace.y,
+			x: fallbackX,
+			y: fallbackY,
 			scaleX: this.baseScaleX,
 			scaleY: this.baseScaleY,
 			duration: 220,
 			ease: "Cubic.Out",
 			onComplete: () => {
 				this.isLaunching = false;
-				this.isAtWorkplace = true;
+				this.isAtWorkplace = !this.currentTrayId;
 				this.isReadyForDelivery = true;
 			}
 		});
+	}
+
+	public placeInTray(trayId: "charola1" | "charola2", targetX: number, targetY: number) {
+
+		if (!this.isSelectingDelivery) {
+			return;
+		}
+
+		const levelScene = this.scene as Level;
+		this.clearSelectionTimeout();
+		levelScene.clearDeliverySelection(this);
+		levelScene.releaseWorkplace(this.currentWorkplaceId);
+		this.currentWorkplaceId = undefined;
+		this.isSelectingDelivery = false;
+		this.isLaunching = true;
+		this.currentTrayId = trayId;
+		this.traySlotX = targetX;
+		this.traySlotY = targetY;
+		this.playSwooshSound();
+
+		this.scene.tweens.add({
+			targets: this,
+			x: targetX,
+			y: targetY,
+			duration: 320,
+			ease: "Cubic.InOut",
+			onComplete: () => {
+				this.isLaunching = false;
+				this.isAtWorkplace = false;
+				this.isReadyForDelivery = true;
+				levelScene.reserveTraySlot(trayId, this);
+			}
+		});
+	}
+
+	public snapToTraySlot(trayId: "charola1" | "charola2", x: number, y: number) {
+
+		if (!this.active) {
+			return;
+		}
+
+		this.currentTrayId = trayId;
+		this.traySlotX = x;
+		this.traySlotY = y;
+		this.isAtWorkplace = false;
+		this.setPosition(x, y);
 	}
 
 	public cancelDipSelection() {

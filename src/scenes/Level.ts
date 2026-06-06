@@ -162,12 +162,16 @@ export default class Level extends Phaser.Scene {
 	private static readonly DIFFICULTY_OSCILLATION_AMPLITUDE = 0.95;
 	private static readonly DIFFICULTY_OSCILLATION_FREQUENCY = 0.72;
 	private static readonly WAVE_OSCILLATION_FREQUENCY = 1.18;
-	private static readonly MAX_WAVE_SIZE = 3;
+	private static readonly MAX_WAVE_SIZE = 5;
 	private static readonly MAX_WAVE_COUNT = 10;
 	private static readonly LEVEL_TWO_TOTAL_CLIENTS = 4;
-	private static readonly MAX_TOTAL_CLIENTS = 18;
-	private static readonly TOTAL_CLIENT_GROWTH_PER_LEVEL = 0.42;
+	private static readonly MAX_TOTAL_CLIENTS = 25;
+	private static readonly TOTAL_CLIENT_GROWTH_PER_LEVEL = 0.52;
 	private static readonly TOTAL_CLIENT_OSCILLATION_WEIGHT = 0.9;
+	private static readonly WAVE_SIZE_GROWTH_FACTOR = 0.4;
+	private static readonly WAVE_SIZE_OSCILLATION_BOOST = 0.5;
+	private static readonly TRAY_CAPACITY = 3;
+	private static readonly TRAY_SLOT_OFFSET = 42;
 	private static readonly CAMPAIGN_LEVEL_PLANS = Array.from(
 		{ length: Level.CAMPAIGN_LEVEL_COUNT },
 		(_, index) => Level.createLevelPlan(index + 1)
@@ -204,6 +208,8 @@ export default class Level extends Phaser.Scene {
 	private workplace2Occupied = false;
 	private milkRefill1Occupied = false;
 	private milkRefill2Occupied = false;
+	private charola1Products: AProduct[] = [];
+	private charola2Products: AProduct[] = [];
 	private selectedDipProduct?: AProduct;
 	private selectedDeliveryProduct?: AProduct | milkglass;
 	private coinCount = 0;
@@ -282,7 +288,15 @@ export default class Level extends Phaser.Scene {
 			Level.LEVEL_TWO_TOTAL_CLIENTS,
 			Level.MAX_TOTAL_CLIENTS
 		);
-		const minimumWaveCount = Math.ceil(totalClientsTarget / Level.MAX_WAVE_SIZE);
+		// Effective max wave size grows from 3 toward 5 driven by difficulty and oscillation
+		const difficultyWaveSizeBoost = Math.max(0, difficulty - 1.0) * Level.WAVE_SIZE_GROWTH_FACTOR;
+		const oscillationWaveSizeBoost = Math.max(0, oscillation) * Level.WAVE_SIZE_OSCILLATION_BOOST;
+		const effectiveMaxWaveSize = Phaser.Math.Clamp(
+			Math.round(3 + difficultyWaveSizeBoost + oscillationWaveSizeBoost),
+			3,
+			Level.MAX_WAVE_SIZE
+		);
+		const minimumWaveCount = Math.ceil(totalClientsTarget / effectiveMaxWaveSize);
 		const waveCount = Phaser.Math.Clamp(
 			Math.max(
 				minimumWaveCount,
@@ -301,7 +315,7 @@ export default class Level extends Phaser.Scene {
 			for (let offset = 0; offset < waveCount && remainingClients > 0; offset++) {
 				const waveIndex = (distributionStep + offset) % waveCount;
 
-				if (waveSizes[waveIndex] >= Level.MAX_WAVE_SIZE) {
+				if (waveSizes[waveIndex] >= effectiveMaxWaveSize) {
 					continue;
 				}
 
@@ -552,6 +566,53 @@ export default class Level extends Phaser.Scene {
 		if (slotId === "milkRefill2") {
 			this.milkRefill2Occupied = false;
 			this.milkmachine.clearSlot("milkRefill2");
+		}
+	}
+
+	public reserveTraySlot(trayId: "charola1" | "charola2", product: AProduct) {
+		const arr = trayId === "charola1" ? this.charola1Products : this.charola2Products;
+		if (arr.includes(product)) {
+			return;
+		}
+		if (arr.length >= Level.TRAY_CAPACITY) {
+			return;
+		}
+		arr.push(product);
+		this.reflowTrayProducts(trayId);
+	}
+
+	public releaseTraySlot(trayId: "charola1" | "charola2", product: AProduct) {
+		const arr = trayId === "charola1" ? this.charola1Products : this.charola2Products;
+		const idx = arr.indexOf(product);
+		if (idx === -1) {
+			return;
+		}
+		arr.splice(idx, 1);
+		this.reflowTrayProducts(trayId);
+	}
+
+	private reflowTrayProducts(trayId: "charola1" | "charola2") {
+		const arr = trayId === "charola1" ? this.charola1Products : this.charola2Products;
+		const tray = trayId === "charola1" ? this.charola1 : this.charola2;
+		if (!tray) {
+			return;
+		}
+		const baseX = tray.x;
+		const baseY = tray.y + 8;
+		const offsets = [] as number[];
+		if (arr.length === 1) {
+			offsets.push(0);
+		} else if (arr.length === 2) {
+			offsets.push(-Level.TRAY_SLOT_OFFSET / 2, Level.TRAY_SLOT_OFFSET / 2);
+		} else {
+			offsets.push(-Level.TRAY_SLOT_OFFSET, 0, Level.TRAY_SLOT_OFFSET);
+		}
+
+		for (let i = 0; i < arr.length; i++) {
+			const prod = arr[i];
+			const x = baseX + (offsets[i] ?? 0);
+			const y = baseY;
+			prod.snapToTraySlot(trayId, x, y);
 		}
 	}
 

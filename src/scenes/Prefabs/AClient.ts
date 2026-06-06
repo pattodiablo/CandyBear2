@@ -50,6 +50,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 	public Product1_Candy: {key:string,frame?:string|number} = {"key":"Product1Candy"};
 	public Product2_Chocolate: {key:string,frame?:string|number} = {"key":"Product2Chocolate"};
 	public Product2_Candy: {key:string,frame?:string|number} = {"key":"Product2Candy"};
+	public MilkGlass_Filled: {key:string,frame?:string|number} = {"key":"GlassAnim","frame":"Vaso0089.png"};
 	public ClientBack: {key:string,frame?:string|number} = {"key":"ClientBack"};
 
 	/* START-USER-CODE */
@@ -153,7 +154,8 @@ export default class AClient extends Phaser.GameObjects.Container {
 			this.Product1_Chocolate,
 			this.Product1_Candy,
 			this.Product2_Chocolate,
-			this.Product2_Candy
+			this.Product2_Candy,
+			this.MilkGlass_Filled
 		];
 		this.requestedProduct = Phaser.Utils.Array.GetRandom(requestPool);
 		this.applyProductSample(this.requestedProduct);
