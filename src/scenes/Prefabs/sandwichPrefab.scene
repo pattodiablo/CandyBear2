@@ -1,0 +1,32 @@
+{
+    "id": "1a5a7c05-9433-4d24-b582-e6e50f7dea93",
+    "sceneType": "PREFAB",
+    "settings": {
+        "exportClass": true,
+        "autoImport": true,
+        "preloadMethodName": "",
+        "preloadPackFiles": [],
+        "createMethodName": "",
+        "compilerOutputLanguage": "TYPE_SCRIPT",
+        "borderWidth": 1280,
+        "borderHeight": 720
+    },
+    "displayList": [
+        {
+            "type": "Image",
+            "id": "78efd593-011a-4b00-a10c-8fde7832656e",
+            "label": "sandwichProduct",
+            "texture": {
+                "key": "sandWichAnim",
+                "frame": "sandwich0001.png"
+            }
+        }
+    ],
+    "plainObjects": [],
+    "meta": {
+        "app": "Phaser Editor - Scene Editor",
+        "url": "https://phaser.io/editor",
+        "contentType": "phasereditor2d.core.scene.SceneContentType",
+        "version": 5
+    }
+}

@@ -4,6 +4,7 @@
 /* START OF COMPILED CODE */
 
 /* START-USER-IMPORTS */
+import Phaser from "phaser";
 /* END-USER-IMPORTS */
 
 export default class PanelPrefab extends Phaser.GameObjects.Container {
@@ -82,6 +83,14 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		this.finalLabels = finalLabels;
 
 		/* START-USER-CTR-CODE */
+		this.starHolder = starHolder;
+		this.stars = [bigStar1, bigStar2, bigStar3];
+		this.starBaseScales = this.stars.map((star) => ({
+			scaleX: star.scaleX,
+			scaleY: star.scaleY,
+		}));
+		this.resetStarsToDeactivated();
+
 		finalLabels.add(nextdayBtn);
 		finalLabels.add(starHolder);
 		finalLabels.add(bigStar2);
@@ -124,6 +133,16 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 	private static readonly READY_BUTTON_PRESSED_SCALE = 0.67;
 	private static readonly READY_BUTTON_PRESS_OFFSET_Y = 4;
 	private static readonly READY_BUTTON_TWEEN_DURATION = 90;
+	private static readonly DEACTIVATED_STAR_ALPHA = 0.35;
+	private static readonly DEACTIVATED_STAR_TINT = 0x9a9a9a;
+	private static readonly STAR_REVEAL_STAGGER = 420;
+	private static readonly STAR_POP_DURATION = 220;
+	private static readonly STAR_SETTLE_DURATION = 120;
+	private static readonly MAX_STARS = 3;
+	private starHolder!: Phaser.GameObjects.Image;
+	private readonly stars: Phaser.GameObjects.Image[];
+	private readonly starBaseScales: Array<{ scaleX: number; scaleY: number }>;
+	private starRevealTimer?: Phaser.Time.TimerEvent;
 	private dayLabelText!: Phaser.GameObjects.Text;
 	private readyBtnBaseScaleX!: number;
 	private readyBtnBaseScaleY!: number;
@@ -234,28 +253,140 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		this.animateNextDayButton(this.nextDayButtonBaseScaleX, this.nextDayButtonBaseScaleY, this.nextDayButtonBaseY);
 	}
 
-	public showFinalState(onNextDayClick?: () => void) {
+	public static calculateEarnedStars(performance: LevelStarPerformance) {
 
+		const { successfulClients, totalClients, discardedProductLosses } = performance;
+
+		if (totalClients <= 0) {
+			return 0;
+		}
+
+		const isPerfect = successfulClients === totalClients && discardedProductLosses === 0;
+
+		if (isPerfect) {
+			return PanelPrefab.MAX_STARS;
+		}
+
+		if (successfulClients <= 0) {
+			return 0;
+		}
+
+		return Phaser.Math.Clamp(
+			Math.ceil((successfulClients / totalClients) * 2),
+			1,
+			2
+		);
+	}
+
+	public prepareFinalState() {
+
+		this.clearStarRevealTimers();
 		this.disableReadyButton();
 		this.disableNextDayButton();
 		this.readyBtn.setVisible(false);
 		this.earnedToday.setVisible(true);
 		this.totalCoins.setVisible(true);
 		this.finalLabels.setVisible(true);
+		this.starHolder.setVisible(true);
+		this.resetStarsToDeactivated();
+	}
 
-		if (onNextDayClick) {
-			this.enableNextDayButton(onNextDayClick);
-		}
+	public showFinalState(performance: LevelStarPerformance, onNextDayClick?: () => void) {
+
+		this.prepareFinalState();
+		const earnedStars = PanelPrefab.calculateEarnedStars(performance);
+
+		this.revealEarnedStars(earnedStars, () => {
+			if (onNextDayClick) {
+				this.enableNextDayButton(onNextDayClick);
+			}
+		});
 	}
 
 	public showIntroState() {
 
+		this.clearStarRevealTimers();
 		this.earnedToday.setVisible(false);
 		this.totalCoins.setVisible(false);
 		this.finalLabels.setVisible(false);
 		this.readyBtn.setVisible(true);
 		this.disableReadyButton();
 		this.disableNextDayButton();
+		this.resetStarsToDeactivated();
+	}
+
+	private resetStarsToDeactivated() {
+
+		this.stars.forEach((star, index) => {
+			const baseScale = this.starBaseScales[index];
+			this.scene.tweens.killTweensOf(star);
+			star.setVisible(true);
+			star.setAlpha(PanelPrefab.DEACTIVATED_STAR_ALPHA);
+			star.setTint(PanelPrefab.DEACTIVATED_STAR_TINT);
+			star.setScale(baseScale.scaleX, baseScale.scaleY);
+		});
+	}
+
+	private revealEarnedStars(earnedCount: number, onComplete?: () => void) {
+
+		const normalizedEarnedCount = Phaser.Math.Clamp(earnedCount, 0, PanelPrefab.MAX_STARS);
+
+		if (normalizedEarnedCount <= 0) {
+			onComplete?.();
+			return;
+		}
+
+		const revealAtIndex = (index: number) => {
+			if (index >= normalizedEarnedCount) {
+				onComplete?.();
+				return;
+			}
+
+			this.animateStarUnlock(this.stars[index], index, () => {
+				this.starRevealTimer = this.scene.time.delayedCall(PanelPrefab.STAR_REVEAL_STAGGER, () => {
+					this.starRevealTimer = undefined;
+					revealAtIndex(index + 1);
+				});
+			});
+		};
+
+		revealAtIndex(0);
+	}
+
+	private animateStarUnlock(star: Phaser.GameObjects.Image, index: number, onComplete?: () => void) {
+
+		const baseScale = this.starBaseScales[index];
+		star.clearTint();
+		star.setAlpha(1);
+		star.setScale(0);
+
+		this.scene.tweens.add({
+			targets: star,
+			scaleX: baseScale.scaleX * 1.18,
+			scaleY: baseScale.scaleY * 1.18,
+			duration: PanelPrefab.STAR_POP_DURATION,
+			ease: "Back.Out",
+			onComplete: () => {
+				this.scene.sound.play(`pop${Phaser.Math.Between(1, 3)}`);
+				this.scene.tweens.add({
+					targets: star,
+					scaleX: baseScale.scaleX,
+					scaleY: baseScale.scaleY,
+					duration: PanelPrefab.STAR_SETTLE_DURATION,
+					ease: "Sine.Out",
+					onComplete,
+				});
+			},
+		});
+	}
+
+	private clearStarRevealTimers() {
+
+		this.starRevealTimer?.remove(false);
+		this.starRevealTimer = undefined;
+		this.stars.forEach((star) => {
+			this.scene.tweens.killTweensOf(star);
+		});
 	}
 
 	public setEarnedTodayTotal(total: number) {
@@ -303,5 +434,11 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 }
 
 /* END OF COMPILED CODE */
+
+export interface LevelStarPerformance {
+	successfulClients: number;
+	totalClients: number;
+	discardedProductLosses: number;
+}
 
 // You can write more code here

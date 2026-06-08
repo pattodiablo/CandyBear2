@@ -278,6 +278,45 @@
             "frameRate": 12,
             "skipMissedFrames": true,
             "randomFrame": false
+        },
+        {
+            "key": "sandwichRoast",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "sandWichAnim",
+                    "frame": "sandwich0001.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "sandWichAnim",
+                    "frame": "sandwich0002.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "sandWichAnim",
+                    "frame": "sandwich0003.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "sandWichAnim",
+                    "frame": "sandwich0004.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "sandWichAnim",
+                    "frame": "sandwich0005.png",
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 1,
+            "skipMissedFrames": true,
+            "randomFrame": false
         }
     ],
     "globalTimeScale": 1,

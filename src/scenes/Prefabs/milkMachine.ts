@@ -76,6 +76,8 @@ export default class milkMachine extends Phaser.GameObjects.Container {
 		const marker = this.getSlotMarker(slotId);
 		const worldPoint = new Phaser.Math.Vector2();
 		this.getWorldTransformMatrix().transformPoint(marker.x, marker.y, worldPoint);
+		// Offset target slightly upward so milk glasses rest a bit above the marker
+		worldPoint.y -= 10;
 		return worldPoint;
 	}
 

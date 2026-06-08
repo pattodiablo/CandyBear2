@@ -373,6 +373,12 @@
                 "key": "readyBtn"
             },
             {
+                "atlasURL": "assets/GlassAnim/sandWichAnim.json",
+                "textureURL": "assets/GlassAnim/sandWichAnim.png",
+                "type": "atlas",
+                "key": "sandWichAnim"
+            },
+            {
                 "url": "assets/SandwichProduct.png",
                 "type": "image",
                 "key": "SandwichProduct"

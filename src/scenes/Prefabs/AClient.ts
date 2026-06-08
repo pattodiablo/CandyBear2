@@ -9,6 +9,7 @@ import Phaser from "phaser";
 import type AProduct from "./AProduct";
 import type Level from "../Level";
 import type milkglass from "./milkglass";
+import type sandwichPrefab from "./sandwichPrefab";
 /* END-USER-IMPORTS */
 
 export default class AClient extends Phaser.GameObjects.Container {
@@ -51,6 +52,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 	public Product2_Chocolate: {key:string,frame?:string|number} = {"key":"Product2Chocolate"};
 	public Product2_Candy: {key:string,frame?:string|number} = {"key":"Product2Candy"};
 	public MilkGlass_Filled: {key:string,frame?:string|number} = {"key":"GlassAnim","frame":"Vaso0089.png"};
+	public Sandwich_Filled: {key:string,frame?:string|number} = {"key":"sandWichAnim","frame":"sandwich0005.png"};
 	public ClientBack: {key:string,frame?:string|number} = {"key":"ClientBack"};
 
 	/* START-USER-CODE */
@@ -155,7 +157,8 @@ export default class AClient extends Phaser.GameObjects.Container {
 			this.Product1_Candy,
 			this.Product2_Chocolate,
 			this.Product2_Candy,
-			this.MilkGlass_Filled
+			this.MilkGlass_Filled,
+			this.Sandwich_Filled
 		];
 		this.requestedProduct = Phaser.Utils.Array.GetRandom(requestPool);
 		this.applyProductSample(this.requestedProduct);
@@ -243,7 +246,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 		this.consumeRequestAndExit();
 	}
 
-	public matchesProduct(product: AProduct | milkglass) {
+	public matchesProduct(product: AProduct | milkglass | sandwichPrefab) {
 
 		if (!this.requestedProduct) {
 			return false;
@@ -286,6 +289,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 				const levelScene = this.scene as Level;
 				let yumPrefab;
 				if (showYum) {
+					levelScene.recordSuccessfulDelivery();
 					this.scene.sound.play(`eating${Phaser.Math.Between(1, 3)}`);
 					yumPrefab = levelScene.showYumAt(exitX);
 				}

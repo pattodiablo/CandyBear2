@@ -448,7 +448,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		this.isCooked = false;
 		this.isBurned = false;
 		this.isLaunching = true;
-		levelScene.showSpentCoinsAt(this.x, this.y);
+		levelScene.showProductDiscardLossAt(this.x, this.y);
 
 		this.scene.tweens.add({
 			targets: this,
@@ -672,7 +672,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 					return;
 				}
 
-				levelScene.showSpentCoinsAt(client.x, client.y - 64);
+				levelScene.showProductDiscardLossAt(client.x, client.y - 64);
 				client.consumeRequestAndExit();
 
 				this.fallOffscreen();

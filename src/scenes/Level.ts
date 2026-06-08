@@ -4,18 +4,21 @@
 /* START OF COMPILED CODE */
 
 import milkMachine from "./Prefabs/milkMachine";
+import ToasterPrefab from "./Prefabs/ToasterPrefab";
 import milkglass from "./Prefabs/milkglass";
 import AProduct from "./Prefabs/AProduct";
-import PanelPrefab from "./Prefabs/PanelPrefab";
+import PanelPrefab, { type LevelStarPerformance } from "./Prefabs/PanelPrefab";
+import sandwichPrefab from "./Prefabs/sandwichPrefab";
 /* START-USER-IMPORTS */
 import Phaser from "phaser";
 import AClient from "./Prefabs/AClient";	
 import YumPrefab from "./Prefabs/YumPrefab";
 import Coin from "./Prefabs/Coin";
 import ConfettiPrefab from "./Prefabs/ConfettiPrefab";
-import { getStoredTotalCoins, storeCompletedLevel, storeTotalCoins } from "./levelProgress";
+import { getStoredTotalCoins, storeCompletedLevel, storeLevelStars, storeTotalCoins } from "./levelProgress";
 import { SkinsAndAnimationBoundsProvider } from "@esotericsoftware/spine-phaser-v4";
 import type { MilkSlotId } from "./Prefabs/milkMachine";
+import type { ToasterSlotId } from "./Prefabs/ToasterPrefab";
 
 interface LevelPlan {
 	levelNumber: number;
@@ -50,10 +53,11 @@ export default class Level extends Phaser.Scene {
 		this.add.existing(milkmachine);
 
 		// toaster
-		this.add.image(827, 582, "toaster");
+		const toaster = new ToasterPrefab(this, 827, 582);
+		this.add.existing(toaster);
 
 		// fryer1
-		const fryer1 = this.add.image(390, 522, "Fryer");
+		const fryer1 = this.add.image(390, 523, "Fryer");
 
 		// fryer2
 		const fryer2 = this.add.image(390, 654, "Fryer");
@@ -126,8 +130,13 @@ export default class Level extends Phaser.Scene {
 		// bigCoin
 		this.add.image(52, 58, "bigCoin");
 
+		// sandwichProduct
+		const sandwichProduct = new sandwichPrefab(this, 209, 651);
+		this.add.existing(sandwichProduct);
+
 		this.workstation = workstation;
 		this.milkmachine = milkmachine;
+		this.toaster = toaster;
 		this.fryer1 = fryer1;
 		this.fryer2 = fryer2;
 		this.workplace1 = workplace1;
@@ -144,6 +153,7 @@ export default class Level extends Phaser.Scene {
 
 	private workstation!: Phaser.GameObjects.Image;
 	public milkmachine!: milkMachine;
+	public toaster!: ToasterPrefab;
 	public fryer1!: Phaser.GameObjects.Image;
 	public fryer2!: Phaser.GameObjects.Image;
 	public workplace1!: Phaser.GameObjects.Image;
@@ -183,6 +193,14 @@ export default class Level extends Phaser.Scene {
 	private static readonly INTRO_PANEL_START_OFFSET = 220;
 	private static readonly CLIENT_SIDE_PADDING = 100;
 	private static readonly CLIENT_MIN_SPACING = 180;
+	private static readonly MAX_ACTIVE_CLIENTS = 5;
+	private static readonly CLIENT_SPAWN_SLOT_COUNT = 5;
+	private static readonly CLIENT_SPAWN_RETRY_DELAY = 350;
+	private static readonly IMMEDIATE_CLIENT_STAGGER = 300;
+	private static readonly IMMEDIATE_CLIENT_JITTER_MAX = 2000;
+	private static readonly DELAYED_CLIENT_MIN_DELAY = 4000;
+	private static readonly DELAYED_CLIENT_MAX_DELAY = 5000;
+	private static readonly DELAYED_CLIENT_STAGGER = 350;
 	private static readonly REWARD_COIN_Y = 307;
 	private static readonly REWARD_COIN_LAND_Y = 422;
 	private static readonly REWARD_COIN_RISE = 18;
@@ -208,10 +226,11 @@ export default class Level extends Phaser.Scene {
 	private workplace2Occupied = false;
 	private milkRefill1Occupied = false;
 	private milkRefill2Occupied = false;
+	private toasterSlotOccupied = false;
 	private charola1Products: AProduct[] = [];
 	private charola2Products: AProduct[] = [];
 	private selectedDipProduct?: AProduct;
-	private selectedDeliveryProduct?: AProduct | milkglass;
+	private selectedDeliveryProduct?: AProduct | milkglass | sandwichPrefab;
 	private coinCount = 0;
 	private earnedCoinsToday = 0;
 	private coinCounterText?: Phaser.GameObjects.Text;
@@ -221,6 +240,12 @@ export default class Level extends Phaser.Scene {
 	private currentWaveIndex = 0;
 	private hasCelebratedLevelCompletion = false;
 	private panelRestY = 0;
+	private successfulClientsServed = 0;
+	private discardedProductLosses = 0;
+	private scheduledWaveClients = 0;
+	private queuedClientEntries = 0;
+	private waveSpawnTimers: Phaser.Time.TimerEvent[] = [];
+	private clientSpawnRetryTimer?: Phaser.Time.TimerEvent;
 
 	init(data: LevelSceneData = {}) {
 		this.resetRuntimeState();
@@ -246,8 +271,37 @@ export default class Level extends Phaser.Scene {
 		this.workplace2Occupied = false;
 		this.milkRefill1Occupied = false;
 		this.milkRefill2Occupied = false;
+		this.toasterSlotOccupied = false;
 		this.selectedDipProduct = undefined;
 		this.selectedDeliveryProduct = undefined;
+		this.successfulClientsServed = 0;
+		this.discardedProductLosses = 0;
+		this.clearWaveSpawnTimers();
+	}
+
+	public recordSuccessfulDelivery() {
+		this.successfulClientsServed++;
+	}
+
+	public recordProductDiscardLoss() {
+		this.discardedProductLosses++;
+	}
+
+	public showProductDiscardLossAt(x: number, y: number, amount = Level.COIN_OFFSETS.length) {
+		this.recordProductDiscardLoss();
+		this.showSpentCoinsAt(x, y, amount);
+	}
+
+	private getLevelClientCount() {
+		return this.currentLevelPlan.waveSizes.reduce((total, waveSize) => total + waveSize, 0);
+	}
+
+	private getStarPerformance(): LevelStarPerformance {
+		return {
+			successfulClients: this.successfulClientsServed,
+			totalClients: this.getLevelClientCount(),
+			discardedProductLosses: this.discardedProductLosses,
+		};
 	}
 
 	private static createLevelPlan(levelNumber: number): LevelPlan {
@@ -569,6 +623,26 @@ export default class Level extends Phaser.Scene {
 		}
 	}
 
+	public claimAvailableToasterSlot() {
+
+		if (!this.toasterSlotOccupied) {
+			this.toasterSlotOccupied = true;
+			return {
+				id: "toasterSlot1" as ToasterSlotId,
+				target: this.toaster.getSlotTarget("toasterSlot1")
+			};
+		}
+
+		return null;
+	}
+
+	public releaseToasterSlot(slotId?: ToasterSlotId) {
+
+		if (slotId === "toasterSlot1") {
+			this.toasterSlotOccupied = false;
+		}
+	}
+
 	public reserveTraySlot(trayId: "charola1" | "charola2", product: AProduct) {
 		const arr = trayId === "charola1" ? this.charola1Products : this.charola2Products;
 		if (arr.includes(product)) {
@@ -658,7 +732,7 @@ export default class Level extends Phaser.Scene {
 		return dipCandidates[0];
 	}
 
-	public beginDeliverySelection(product: AProduct | milkglass) {
+	public beginDeliverySelection(product: AProduct | milkglass | sandwichPrefab) {
 
 		if (this.selectedDeliveryProduct && this.selectedDeliveryProduct !== product) {
 			this.selectedDeliveryProduct.cancelDeliverySelection();
@@ -667,7 +741,7 @@ export default class Level extends Phaser.Scene {
 		this.selectedDeliveryProduct = product;
 	}
 
-	public clearDeliverySelection(product?: AProduct | milkglass) {
+	public clearDeliverySelection(product?: AProduct | milkglass | sandwichPrefab) {
 
 		if (!product || this.selectedDeliveryProduct === product) {
 			this.selectedDeliveryProduct = undefined;
@@ -690,7 +764,7 @@ export default class Level extends Phaser.Scene {
 		directDeliveryProduct?.directDeliverToClient(target);
 	}
 
-	public getDirectDeliveryTarget(product: AProduct | milkglass) {
+	public getDirectDeliveryTarget(product: AProduct | milkglass | sandwichPrefab) {
 
 		const matchingTargets = this.activeClients.filter((client) => {
 			return client.active && client.canReceiveDelivery() && client.matchesProduct(product);
@@ -710,7 +784,7 @@ export default class Level extends Phaser.Scene {
 	public getDirectDeliveryProduct(target: AClient) {
 
 		const matchingProducts = this.children.list
-			.filter((child): child is AProduct | milkglass => child instanceof AProduct || child instanceof milkglass)
+			.filter((child): child is AProduct | milkglass | sandwichPrefab => child instanceof AProduct || child instanceof milkglass || child instanceof sandwichPrefab)
 			.filter((product) => product.canReceiveDirectDelivery() && target.matchesProduct(product));
 
 		if (matchingProducts.length !== 1) {
@@ -833,7 +907,9 @@ export default class Level extends Phaser.Scene {
 
 		previousClient.destroy();
 
-		if (this.activeClients.length === 0) {
+		this.processClientEntryQueue();
+
+		if (this.activeClients.length === 0 && this.getPendingWaveSpawns() === 0) {
 			if (this.hasMoreClientWaves()) {
 				this.spawnNextClientWave();
 				return;
@@ -855,6 +931,10 @@ export default class Level extends Phaser.Scene {
 		this.hasCelebratedLevelCompletion = true;
 		storeTotalCoins(this.coinCount);
 		storeCompletedLevel(this.currentLevelPlan.levelNumber);
+		storeLevelStars(
+			this.currentLevelPlan.levelNumber,
+			PanelPrefab.calculateEarnedStars(this.getStarPerformance())
+		);
 		if (finalYum) {
 			finalYum.once(Phaser.GameObjects.Events.DESTROY, () => {
 				this.time.delayedCall(Level.LEVEL_COMPLETE_CONFETTI_DELAY, () => {
@@ -889,14 +969,7 @@ export default class Level extends Phaser.Scene {
 		this.panel.setAlpha(1);
 		this.panel.y = panelStartY;
 		this.panel.setEarnedTodayTotal(this.earnedCoinsToday);
-		this.panel.showFinalState(() => {
-			if (this.currentLevelPlan.levelNumber >= Level.CAMPAIGN_LEVEL_COUNT) {
-				this.scene.start("SceneSelector");
-				return;
-			}
-
-			this.scene.start("Level", { levelNumber: nextLevelNumber });
-		});
+		this.panel.prepareFinalState();
 
 		this.tweens.add({
 			targets: this.blurOverlay,
@@ -909,16 +982,39 @@ export default class Level extends Phaser.Scene {
 			targets: this.panel,
 			y: this.panelRestY,
 			duration: Level.INTRO_PANEL_DROP_DURATION,
-			ease: "Bounce.Out"
+			ease: "Bounce.Out",
+			onComplete: () => {
+				this.panel.showFinalState(
+					this.getStarPerformance(),
+					() => {
+						if (this.currentLevelPlan.levelNumber >= Level.CAMPAIGN_LEVEL_COUNT) {
+							this.scene.start("SceneSelector");
+							return;
+						}
+
+						this.scene.start("Level", { levelNumber: nextLevelNumber });
+					}
+				);
+			}
 		});
 	}
 
-	private spawnClient(spawnX = this.getRandomClientSpawnX()) {
+	private spawnClient(spawnX: number) {
 
 		const client = new AClient(this, spawnX, this.clientSpawnY);
 		this.add.existing(client);
 		this.activeClients.push(client);
 		this.placeClientBehindWorkstation(client);
+	}
+
+	private getActiveClientCount() {
+
+		return this.activeClients.filter((client) => client.active).length;
+	}
+
+	private getPendingWaveSpawns() {
+
+		return this.scheduledWaveClients + this.queuedClientEntries;
 	}
 
 	private spawnInitialClients() {
@@ -936,33 +1032,145 @@ export default class Level extends Phaser.Scene {
 	}
 
 	private spawnCurrentWave() {
+
+		this.clearWaveSpawnTimers();
 		const clientCount = this.currentLevelPlan.waveSizes[this.currentWaveIndex] ?? 0;
 
+		if (clientCount <= 0) {
+			return;
+		}
+
+		const shuffledIndices = Phaser.Utils.Array.Shuffle(Array.from({ length: clientCount }, (_, index) => index));
+		const delayedCount = this.getDelayedClientCount(clientCount);
+		const delayedIndices = new Set(shuffledIndices.slice(0, delayedCount));
+		const immediateOrder = new Map(
+			shuffledIndices
+				.filter((index) => !delayedIndices.has(index))
+				.map((index, order) => [index, order] as const)
+		);
+
+		this.scheduledWaveClients = clientCount;
+		this.queuedClientEntries = 0;
+
 		for (let index = 0; index < clientCount; index++) {
-			this.spawnClient();
+			const delay = delayedIndices.has(index)
+				? this.getDelayedClientSpawnDelay(index)
+				: this.getImmediateClientSpawnDelay(immediateOrder.get(index) ?? 0);
+
+			const timer = this.time.delayedCall(delay, () => {
+				this.onWaveClientScheduled();
+			});
+			this.waveSpawnTimers.push(timer);
 		}
 	}
 
-	private getRandomClientSpawnX() {
+	private onWaveClientScheduled() {
+
+		if (this.scheduledWaveClients <= 0) {
+			return;
+		}
+
+		this.scheduledWaveClients--;
+		this.queuedClientEntries++;
+		this.processClientEntryQueue();
+	}
+
+	private processClientEntryQueue() {
+
+		while (
+			this.queuedClientEntries > 0
+			&& this.getActiveClientCount() < Level.MAX_ACTIVE_CLIENTS
+		) {
+			const spawnX = this.getAvailableClientSpawnX();
+
+			if (spawnX === null) {
+				break;
+			}
+
+			this.queuedClientEntries--;
+			this.spawnClient(spawnX);
+		}
+
+		if (this.queuedClientEntries > 0) {
+			this.scheduleClientSpawnRetry();
+		}
+	}
+
+	private scheduleClientSpawnRetry() {
+
+		if (this.clientSpawnRetryTimer) {
+			return;
+		}
+
+		this.clientSpawnRetryTimer = this.time.delayedCall(Level.CLIENT_SPAWN_RETRY_DELAY, () => {
+			this.clientSpawnRetryTimer = undefined;
+			this.processClientEntryQueue();
+		});
+	}
+
+	private getDelayedClientCount(clientCount: number) {
+
+		if (clientCount <= 1) {
+			return 0;
+		}
+
+		const maxDelayed = Math.max(1, Math.floor(clientCount / 2));
+		return Phaser.Math.Between(1, maxDelayed);
+	}
+
+	private getImmediateClientSpawnDelay(order: number) {
+
+		return (order * Level.IMMEDIATE_CLIENT_STAGGER)
+			+ Phaser.Math.Between(0, Level.IMMEDIATE_CLIENT_JITTER_MAX);
+	}
+
+	private getDelayedClientSpawnDelay(index: number) {
+
+		return Phaser.Math.Between(Level.DELAYED_CLIENT_MIN_DELAY, Level.DELAYED_CLIENT_MAX_DELAY)
+			+ (index * Level.DELAYED_CLIENT_STAGGER);
+	}
+
+	private clearWaveSpawnTimers() {
+
+		this.waveSpawnTimers.forEach((timer) => {
+			timer.remove(false);
+		});
+		this.waveSpawnTimers = [];
+		this.clientSpawnRetryTimer?.remove(false);
+		this.clientSpawnRetryTimer = undefined;
+		this.scheduledWaveClients = 0;
+		this.queuedClientEntries = 0;
+	}
+
+	private getClientSpawnSlots() {
 
 		const minX = Level.CLIENT_SIDE_PADDING;
 		const maxX = this.scale.width - Level.CLIENT_SIDE_PADDING;
-		const occupiedX = this.activeClients.filter((client) => client.active).map((client) => client.x);
 
-		for (let attempt = 0; attempt < 12; attempt++) {
-			const candidateX = Phaser.Math.Between(minX, maxX);
-			const hasEnoughSpacing = occupiedX.every((x) => Math.abs(x - candidateX) >= Level.CLIENT_MIN_SPACING);
-
-			if (hasEnoughSpacing) {
-				return candidateX;
-			}
+		if (Level.CLIENT_SPAWN_SLOT_COUNT <= 1) {
+			return [Math.round((minX + maxX) * 0.5)];
 		}
 
-		if (occupiedX.length === 1) {
-			return occupiedX[0] < this.scale.width * 0.5 ? maxX : minX;
+		return Array.from({ length: Level.CLIENT_SPAWN_SLOT_COUNT }, (_, index) => {
+			const progress = index / (Level.CLIENT_SPAWN_SLOT_COUNT - 1);
+			return Math.round(minX + (progress * (maxX - minX)));
+		});
+	}
+
+	private getAvailableClientSpawnX() {
+
+		const occupiedX = this.activeClients
+			.filter((client) => client.active)
+			.map((client) => client.x);
+		const availableSlots = this.getClientSpawnSlots().filter((slotX) => {
+			return occupiedX.every((x) => Math.abs(x - slotX) >= Level.CLIENT_MIN_SPACING);
+		});
+
+		if (availableSlots.length === 0) {
+			return null;
 		}
 
-		return Phaser.Math.Between(minX, maxX);
+		return Phaser.Utils.Array.GetRandom(availableSlots);
 	}
 
 	private placeClientBehindWorkstation(client: AClient) {
@@ -983,6 +1191,77 @@ export default class Level extends Phaser.Scene {
 		});
 	}
 
+	private setupTrayInputs() {
+		if (this.charola1) {
+			this.charola1.setInteractive({ useHandCursor: true });
+			this.charola1.on(Phaser.Input.Events.POINTER_DOWN, () => {
+				this.resolveTrayPlacement("charola1");
+			});
+		}
+
+		if (this.charola2) {
+			this.charola2.setInteractive({ useHandCursor: true });
+			this.charola2.on(Phaser.Input.Events.POINTER_DOWN, () => {
+				this.resolveTrayPlacement("charola2");
+			});
+		}
+	}
+
+	public claimAvailableTraySlot(trayId: "charola1" | "charola2") {
+		const arr = trayId === "charola1" ? this.charola1Products : this.charola2Products;
+		const tray = trayId === "charola1" ? this.charola1 : this.charola2;
+
+		if (!tray) {
+			return null;
+		}
+
+		if (arr.length >= Level.TRAY_CAPACITY) {
+			return null;
+		}
+
+		const finalCount = arr.length + 1;
+		let offsets: number[] = [];
+
+		if (finalCount === 1) {
+			offsets = [0];
+		} else if (finalCount === 2) {
+			offsets = [-Level.TRAY_SLOT_OFFSET / 2, Level.TRAY_SLOT_OFFSET / 2];
+		} else {
+			offsets = [-Level.TRAY_SLOT_OFFSET, 0, Level.TRAY_SLOT_OFFSET];
+		}
+
+		const index = arr.length;
+		const x = tray.x + (offsets[index] ?? 0);
+		const y = tray.y + 8;
+		return { x, y };
+	}
+
+	private resolveTrayPlacement(trayId: "charola1" | "charola2") {
+		const slot = this.claimAvailableTraySlot(trayId);
+		if (!slot) {
+			this.sound.play("deny");
+			return;
+		}
+
+		// If the player has a selected delivery product, place it
+		if (this.selectedDeliveryProduct && this.selectedDeliveryProduct instanceof AProduct) {
+			(this.selectedDeliveryProduct as AProduct).placeInTray(trayId, slot.x, slot.y);
+			return;
+		}
+
+		// Otherwise, auto-assign first eligible workplace product
+		const candidates = this.children.list
+			.filter((child): child is AProduct => child instanceof AProduct)
+			.filter((p) => p.canAutoPlaceInTray());
+
+		if (candidates.length === 0) {
+			this.sound.play("looseMoney");
+			return;
+		}
+
+		candidates[0].autoPlaceInTray(trayId, slot.x, slot.y);
+	}
+
 	create() {
 
 		this.editorCreate();
@@ -990,6 +1269,7 @@ export default class Level extends Phaser.Scene {
 		this.applyLevelPlanToIntroPanel();
 		this.initializeCoinCounter();
 		this.setupDipInputs();
+		this.setupTrayInputs();
 		this.setupIntroOverlay();
 		this.playSceneIntro();
 	}

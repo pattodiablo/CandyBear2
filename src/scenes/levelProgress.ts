@@ -1,5 +1,6 @@
 const STORAGE_KEY = "candybear2-highest-completed-level";
 const TOTAL_COINS_STORAGE_KEY = "candybear2-total-coins";
+const LEVEL_STARS_STORAGE_KEY = "candybear2-level-stars";
 const FIRST_SESSION_STORAGE_KEY = "candybear2-has-opened-before";
 
 export function getHighestCompletedLevel() {
@@ -59,4 +60,45 @@ export function markGameAsOpened() {
 
 export function getHighestUnlockedLevel(maxLevel: number) {
 	return Math.min(maxLevel, Math.max(1, getHighestCompletedLevel() + 1));
+}
+
+function readLevelStarsRecord() {
+	if (typeof window === "undefined") {
+		return {} as Record<string, number>;
+	}
+
+	try {
+		const storedValue = window.localStorage.getItem(LEVEL_STARS_STORAGE_KEY);
+		if (!storedValue) {
+			return {} as Record<string, number>;
+		}
+
+		const parsedValue = JSON.parse(storedValue) as Record<string, unknown>;
+		return Object.fromEntries(
+			Object.entries(parsedValue)
+				.map(([levelKey, stars]) => [levelKey, Number(stars)] as const)
+				.filter(([, stars]) => Number.isFinite(stars) && stars >= 0)
+		) as Record<string, number>;
+	} catch {
+		return {} as Record<string, number>;
+	}
+}
+
+export function getLevelStars(levelNumber: number) {
+	const normalizedLevel = Math.max(0, Math.floor(levelNumber));
+	return readLevelStarsRecord()[String(normalizedLevel)] ?? 0;
+}
+
+export function storeLevelStars(levelNumber: number, stars: number) {
+	if (typeof window === "undefined") {
+		return;
+	}
+
+	const normalizedLevel = Math.max(0, Math.floor(levelNumber));
+	const normalizedStars = Math.min(3, Math.max(0, Math.floor(stars)));
+	const levelStars = readLevelStarsRecord();
+	const previousStars = levelStars[String(normalizedLevel)] ?? 0;
+
+	levelStars[String(normalizedLevel)] = Math.max(previousStars, normalizedStars);
+	window.localStorage.setItem(LEVEL_STARS_STORAGE_KEY, JSON.stringify(levelStars));
 }

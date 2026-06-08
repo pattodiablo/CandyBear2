@@ -285,7 +285,7 @@ export default class milkglass extends Phaser.GameObjects.Image {
 
 				if (!client.canReceiveDelivery()) {
 
-					levelScene.showSpentCoinsAt(client.x, client.y - 64);
+					levelScene.showProductDiscardLossAt(client.x, client.y - 64);
 					this.playCancelOrder();
 					this.fallOffscreen();
 					return;
@@ -298,7 +298,7 @@ export default class milkglass extends Phaser.GameObjects.Image {
 					return;
 				}
 
-				levelScene.showSpentCoinsAt(client.x, client.y - 64);
+				levelScene.showProductDiscardLossAt(client.x, client.y - 64);
 				client.consumeRequestAndExit();
 				this.fallOffscreen();
 			}

@@ -36,12 +36,14 @@
             "y": 590
         },
         {
-            "type": "Image",
+            "prefabId": "893bd902-74cd-481c-9cf5-37b911c0ccdc",
             "id": "d522e9fc-f9d3-4d3d-9ff8-3d22db667f57",
+            "unlock": [
+                "x",
+                "y"
+            ],
             "label": "toaster",
-            "texture": {
-                "key": "toaster"
-            },
+            "scope": "PUBLIC",
             "x": 827,
             "y": 582
         },
@@ -54,7 +56,7 @@
                 "key": "Fryer"
             },
             "x": 390,
-            "y": 522
+            "y": 523
         },
         {
             "type": "Image",
@@ -289,6 +291,17 @@
             },
             "x": 52,
             "y": 58
+        },
+        {
+            "prefabId": "1a5a7c05-9433-4d24-b582-e6e50f7dea93",
+            "id": "b4f9a8dd-be0f-4745-9cde-6fbdfc8fac66",
+            "unlock": [
+                "x",
+                "y"
+            ],
+            "label": "sandwichProduct",
+            "x": 209,
+            "y": 651
         }
     ],
     "plainObjects": [],
