@@ -49,14 +49,14 @@ export default class AProduct extends Phaser.GameObjects.Image {
 	private static readonly BURN_DURATION = 6000;
 	private static readonly HOLDER_ACTIVE_DURATION = 100;
 	private static readonly BURN_START_DELAY = 2000;
-	private static readonly RAISED_OFFSET_Y = 50;
+	private static readonly RAISED_OFFSET_Y = 70;
 	private static readonly FRYER_OFFSET_Y = 20;
 	private static readonly FRY_FLOAT_OFFSET_Y = 10;
 	private static readonly SPIN_ANGLE = 360;
 	private static readonly HIT_AREA_SCALE = 1.5;
 	private static readonly WORKPLACE_DELAY = 200;
 	private static readonly WORKPLACE_LIFT_OFFSET_Y = 35;
-	private static readonly WORKPLACE_SELECTION_SCALE = 1.12;
+	private static readonly WORKPLACE_SELECTION_SCALE = 1.3;
 	private static readonly DIP_SCALE_DURATION = 120;
 	private static readonly SELECTION_TIMEOUT = 2500;
 	private static readonly BURN_TINT = Phaser.Display.Color.ValueToColor(0x5c4634);

@@ -245,6 +245,13 @@
                 "key": "lamp"
             },
             {
+                "url": [
+                    "assets/audio/looseMoney.mp3"
+                ],
+                "type": "audio",
+                "key": "looseMoney"
+            },
+            {
                 "url": "assets/Milkmachine.png",
                 "type": "image",
                 "key": "Milkmachine"

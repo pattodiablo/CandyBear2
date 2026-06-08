@@ -42,7 +42,7 @@ export default class milkglass extends Phaser.GameObjects.Image {
 	private static readonly SPIN_ANGLE = 360;
 	private static readonly HIT_AREA_SCALE = 1.5;
 	private static readonly FILLED_FRAME = "Vaso0089.png";
-	private static readonly MACHINE_SELECTION_SCALE = 1.12;
+	private static readonly MACHINE_SELECTION_SCALE = 1.2;
 	private static readonly SELECTION_TIMEOUT = 2500;
 	private readonly baseScaleX: number;
 	private readonly baseScaleY: number;
@@ -284,7 +284,9 @@ export default class milkglass extends Phaser.GameObjects.Image {
 				this.angle = this.baseAngle;
 
 				if (!client.canReceiveDelivery()) {
+
 					levelScene.showSpentCoinsAt(client.x, client.y - 64);
+					this.playCancelOrder();
 					this.fallOffscreen();
 					return;
 				}
@@ -302,6 +304,12 @@ export default class milkglass extends Phaser.GameObjects.Image {
 			}
 		});
 	}
+
+	private playCancelOrder() {
+	
+			const looseMoneySoundKey = "looseMoney";
+			this.scene.sound.play(looseMoneySoundKey);
+		}
 
 	public cancelDeliverySelection() {
 
@@ -390,8 +398,8 @@ export default class milkglass extends Phaser.GameObjects.Image {
 
 		this.scene.tweens.add({
 			targets: this,
-			scaleX: this.baseScaleX * 1.08,
-			scaleY: this.baseScaleY * 1.08,
+			scaleX: this.baseScaleX * 1.2,
+			scaleY: this.baseScaleY * 1.2,
 			duration: 120,
 			ease: "Back.Out",
 			onComplete: () => {
@@ -413,8 +421,8 @@ export default class milkglass extends Phaser.GameObjects.Image {
 
 		this.scene.tweens.add({
 			targets: this,
-			scaleX: this.baseScaleX * 1.12,
-			scaleY: this.baseScaleY * 1.12,
+			scaleX: this.baseScaleX * 1.2,
+			scaleY: this.baseScaleY * 1.2,
 			duration: 90,
 			yoyo: true,
 			ease: "Quad.Out",

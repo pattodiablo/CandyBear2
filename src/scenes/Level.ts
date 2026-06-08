@@ -848,23 +848,30 @@ export default class Level extends Phaser.Scene {
 	}
 
 	private handleLevelCleared(finalYum?: YumPrefab) {
-		if (this.hasCelebratedLevelCompletion || !finalYum) {
+		if (this.hasCelebratedLevelCompletion) {
 			return;
 		}
 
 		this.hasCelebratedLevelCompletion = true;
 		storeTotalCoins(this.coinCount);
 		storeCompletedLevel(this.currentLevelPlan.levelNumber);
-		finalYum.once(Phaser.GameObjects.Events.DESTROY, () => {
-			this.time.delayedCall(Level.LEVEL_COMPLETE_CONFETTI_DELAY, () => {
-				if (!this.sys.isActive()) {
-					return;
-				}
+		if (finalYum) {
+			finalYum.once(Phaser.GameObjects.Events.DESTROY, () => {
+				this.time.delayedCall(Level.LEVEL_COMPLETE_CONFETTI_DELAY, () => {
+					if (!this.sys.isActive()) {
+						return;
+					}
 
-				ConfettiPrefab.launch(this);
-				this.playLevelCompletePanel();
+					ConfettiPrefab.launch(this);
+					this.playLevelCompletePanel();
+				});
 			});
-		});
+			return;
+		}
+
+		// No finalYum provided — complete level immediately
+		ConfettiPrefab.launch(this);
+		this.playLevelCompletePanel();
 	}
 
 	private playLevelCompletePanel() {
