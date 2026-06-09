@@ -5,7 +5,7 @@
 
 /* START-USER-IMPORTS */
 import dayHolderPrefab from "./Prefabs/dayHolderPrefab";
-import { getHighestUnlockedLevel } from "./levelProgress";
+import { getHighestUnlockedLevel, getLevelStars } from "./levelProgress";
 /* END-USER-IMPORTS */
 
 export default class SceneSelector extends Phaser.Scene {
@@ -51,17 +51,31 @@ export default class SceneSelector extends Phaser.Scene {
 	private static readonly GRID_START_Y = 219;
 	private static readonly GRID_COLUMN_GAP = 229;
 	private static readonly GRID_ROW_GAP = 220;
-	private readonly dayHolders: dayHolderPrefab[] = [];
+	private dayHolders: dayHolderPrefab[] = [];
 	private currentPageIndex = 0;
 	private highestUnlockedLevel = 1;
 
+	init() {
+
+		this.currentPageIndex = 0;
+	}
+
 	create() {
 
+		this.flushLoadedContent();
 		this.editorCreate();
 		this.highestUnlockedLevel = getHighestUnlockedLevel(SceneSelector.TOTAL_DAY_HOLDERS);
 		this.createDayHolders();
 		this.initializePagination();
 		this.refreshPage();
+	}
+
+	private flushLoadedContent() {
+
+		this.dayHolders.length = 0;
+		this.children.removeAll(true);
+		this.tweens.killAll();
+		this.time.removeAllEvents();
 	}
 
 	private createDayHolders() {
@@ -75,6 +89,7 @@ export default class SceneSelector extends Phaser.Scene {
 			const levelNumber = index + 1;
 
 			dayHolder.setDayNumber(levelNumber);
+			dayHolder.setEarnedStars(getLevelStars(levelNumber));
 			dayHolder.setUnlocked(levelNumber <= this.highestUnlockedLevel);
 			dayHolder.setVisible(false);
 			dayHolder.on("selected", () => {

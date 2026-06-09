@@ -21,6 +21,7 @@
                     "type": "Image",
                     "id": "72857f1d-c2ed-4b94-ae1c-cde10b88acd0",
                     "label": "dayHolder",
+                    "scope": "CLASS",
                     "texture": {
                         "key": "dayHolder"
                     },
@@ -55,7 +56,7 @@
                 {
                     "type": "Image",
                     "id": "76a3eb94-3979-44eb-9676-7dad3e8f1842",
-                    "label": "smallStarHolder",
+                    "label": "smallStarHolder1",
                     "scope": "CLASS",
                     "texture": {
                         "key": "smallStarHolder"

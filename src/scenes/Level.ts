@@ -7,7 +7,7 @@ import milkMachine from "./Prefabs/milkMachine";
 import ToasterPrefab from "./Prefabs/ToasterPrefab";
 import milkglass from "./Prefabs/milkglass";
 import AProduct from "./Prefabs/AProduct";
-import PanelPrefab, { type LevelStarPerformance } from "./Prefabs/PanelPrefab";
+import PanelPrefab from "./Prefabs/PanelPrefab";
 import sandwichPrefab from "./Prefabs/sandwichPrefab";
 /* START-USER-IMPORTS */
 import Phaser from "phaser";
@@ -19,6 +19,7 @@ import { getStoredTotalCoins, storeCompletedLevel, storeLevelStars, storeTotalCo
 import { SkinsAndAnimationBoundsProvider } from "@esotericsoftware/spine-phaser-v4";
 import type { MilkSlotId } from "./Prefabs/milkMachine";
 import type { ToasterSlotId } from "./Prefabs/ToasterPrefab";
+import type { LevelStarPerformance } from "./Prefabs/PanelPrefab";
 
 interface LevelPlan {
 	levelNumber: number;
@@ -134,6 +135,9 @@ export default class Level extends Phaser.Scene {
 		const sandwichProduct = new sandwichPrefab(this, 209, 651);
 		this.add.existing(sandwichProduct);
 
+		// menuBtn
+		const menuBtn = this.add.image(1229, 47, "menuBtn");
+
 		this.workstation = workstation;
 		this.milkmachine = milkmachine;
 		this.toaster = toaster;
@@ -147,6 +151,7 @@ export default class Level extends Phaser.Scene {
 		this.charola2 = charola2;
 		this.blurOverlay = blurOverlay;
 		this.panel = panel;
+		this.menuBtn = menuBtn;
 
 		this.events.emit("scene-awake");
 	}
@@ -164,6 +169,7 @@ export default class Level extends Phaser.Scene {
 	public charola2!: Phaser.GameObjects.Image;
 	private blurOverlay!: Phaser.GameObjects.Image;
 	private panel!: PanelPrefab;
+	private menuBtn!: Phaser.GameObjects.Image;
 
 	/* START-USER-CODE */
 	public static readonly CAMPAIGN_LEVEL_COUNT = 40;
@@ -201,6 +207,8 @@ export default class Level extends Phaser.Scene {
 	private static readonly DELAYED_CLIENT_MIN_DELAY = 4000;
 	private static readonly DELAYED_CLIENT_MAX_DELAY = 5000;
 	private static readonly DELAYED_CLIENT_STAGGER = 350;
+	private static readonly DAY_INDICATOR_CENTER_OFFSET_X = 100;
+	private static readonly DAY_INDICATOR_Y = 40;
 	private static readonly REWARD_COIN_Y = 307;
 	private static readonly REWARD_COIN_LAND_Y = 422;
 	private static readonly REWARD_COIN_RISE = 18;
@@ -234,6 +242,11 @@ export default class Level extends Phaser.Scene {
 	private coinCount = 0;
 	private earnedCoinsToday = 0;
 	private coinCounterText?: Phaser.GameObjects.Text;
+	private dayIndicatorLabel?: Phaser.GameObjects.Text;
+	private dayIndicatorNumber?: Phaser.GameObjects.Text;
+	private clientsLeftLabel?: Phaser.GameObjects.Text;
+	private clientsLeftNumber?: Phaser.GameObjects.Text;
+	private clientsRemainingInLevel = 0;
 	private backgroundMusic?: Phaser.Sound.BaseSound;
 	private selectedLevelNumber = 1;
 	private currentLevelPlan: LevelPlan = Level.getLevelPlan(1);
@@ -246,9 +259,27 @@ export default class Level extends Phaser.Scene {
 	private queuedClientEntries = 0;
 	private waveSpawnTimers: Phaser.Time.TimerEvent[] = [];
 	private clientSpawnRetryTimer?: Phaser.Time.TimerEvent;
+	private exitConfirmContainer?: Phaser.GameObjects.Container;
+	private exitConfirmYesButton?: Phaser.GameObjects.Container;
+	private exitConfirmNoButton?: Phaser.GameObjects.Container;
+	private isExitConfirmVisible = false;
+	private isGameplayPaused = false;
+	private savedGameplayTimeScale = 1;
+	private static readonly EXIT_CONFIRM_DEPTH = 1002;
+	private static readonly MENU_BUTTON_DEPTH_OFFSET = 11;
+	private static readonly EXIT_BUTTON_PADDING_X = 32;
+	private static readonly EXIT_BUTTON_PADDING_Y = 10;
+	private static readonly EXIT_BUTTON_CORNER_RADIUS = 18;
+	private static readonly EXIT_BUTTON_STROKE_WIDTH = 4;
+	private static readonly EXIT_BUTTON_TEXT_COLOR = "#ffffff";
+	private static readonly EXIT_BUTTON_YES_Y = 22;
+	private static readonly EXIT_BUTTON_NO_Y = 122;
 
 	init(data: LevelSceneData = {}) {
-		this.resetRuntimeState();
+
+		this.events.off(Phaser.Scenes.Events.SHUTDOWN, this.flushLoadedContent, this);
+		this.events.on(Phaser.Scenes.Events.SHUTDOWN, this.flushLoadedContent, this);
+
 		this.coinCount = getStoredTotalCoins();
 		this.earnedCoinsToday = 0;
 
@@ -260,11 +291,23 @@ export default class Level extends Phaser.Scene {
 		this.currentLevelPlan = Level.getLevelPlan(this.selectedLevelNumber);
 		this.currentWaveIndex = 0;
 		this.hasCelebratedLevelCompletion = false;
+		this.isGameplayPaused = false;
+		this.savedGameplayTimeScale = 1;
+		this.time.timeScale = 1;
+		this.resetRuntimeState();
 	}
 
 	private resetRuntimeState() {
 
+		for (const client of this.activeClients) {
+			if (client.active) {
+				client.destroy();
+			}
+		}
+
 		this.activeClients = [];
+		this.charola1Products = [];
+		this.charola2Products = [];
 		this.fryer1Occupied = false;
 		this.fryer2Occupied = false;
 		this.workplace1Occupied = false;
@@ -276,7 +319,64 @@ export default class Level extends Phaser.Scene {
 		this.selectedDeliveryProduct = undefined;
 		this.successfulClientsServed = 0;
 		this.discardedProductLosses = 0;
+		this.scheduledWaveClients = 0;
+		this.queuedClientEntries = 0;
+		this.isExitConfirmVisible = false;
+		this.isGameplayPaused = false;
+		this.savedGameplayTimeScale = 1;
+		this.clientsRemainingInLevel = this.getLevelClientCount();
 		this.clearWaveSpawnTimers();
+	}
+
+	private clearHudReferences() {
+
+		this.coinCounterText = undefined;
+		this.dayIndicatorLabel = undefined;
+		this.dayIndicatorNumber = undefined;
+		this.clientsLeftLabel = undefined;
+		this.clientsLeftNumber = undefined;
+		this.exitConfirmContainer = undefined;
+		this.exitConfirmYesButton = undefined;
+		this.exitConfirmNoButton = undefined;
+	}
+
+	private flushLoadedContent() {
+
+		this.clearHudReferences();
+		this.clearWaveSpawnTimers();
+
+		for (const client of this.activeClients) {
+			if (client.active) {
+				client.destroy();
+			}
+		}
+
+		this.activeClients = [];
+
+		if (this.backgroundMusic) {
+			this.backgroundMusic.stop();
+			this.backgroundMusic.destroy();
+			this.backgroundMusic = undefined;
+		}
+
+		this.tweens.killAll();
+		this.time.removeAllEvents();
+		this.time.timeScale = 1;
+		this.children.removeAll(true);
+
+		this.charola1Products = [];
+		this.charola2Products = [];
+		this.fryer1Occupied = false;
+		this.fryer2Occupied = false;
+		this.workplace1Occupied = false;
+		this.workplace2Occupied = false;
+		this.milkRefill1Occupied = false;
+		this.milkRefill2Occupied = false;
+		this.toasterSlotOccupied = false;
+		this.selectedDipProduct = undefined;
+		this.selectedDeliveryProduct = undefined;
+		this.isExitConfirmVisible = false;
+		this.isGameplayPaused = false;
 	}
 
 	public recordSuccessfulDelivery() {
@@ -408,19 +508,316 @@ export default class Level extends Phaser.Scene {
 		this.panel.setDayLabel(`Day ${this.currentLevelPlan.levelNumber}`);
 	}
 
+	private getHudTextStyle(color: string) {
+
+		return {
+			color,
+			fontFamily: "Klop",
+			fontSize: "40px",
+			fontStyle: "bold",
+			stroke: "#fff8f3",
+			strokeThickness: 6,
+		};
+	}
+
 	private initializeCoinCounter() {
 
-		this.coinCounterText = this.add.text(90, 40, "0", {
-			color: "#5c2c16",
-			fontFamily: "Arial",
-			fontSize: "28px",
-			fontStyle: "bold",
-			stroke: "#fff4d6",
-			strokeThickness: 6,
-		});
+		this.coinCounterText = this.add.text(90, Level.DAY_INDICATOR_Y, "0", this.getHudTextStyle("#2D120B"));
+		this.coinCounterText.setOrigin(0, 0.5);
 		this.coinCounterText.setScrollFactor(0);
 		this.coinCounterText.setDepth(this.workstation.depth + 10);
 		this.updateCoinCounter();
+	}
+
+	private initializeDayIndicator() {
+
+		this.dayIndicatorLabel = this.add.text(0, Level.DAY_INDICATOR_Y, "Day ", this.getHudTextStyle("#FD7CB6"));
+		this.dayIndicatorNumber = this.add.text(0, Level.DAY_INDICATOR_Y, String(this.currentLevelPlan.levelNumber), this.getHudTextStyle("#2D120B"));
+		this.dayIndicatorLabel.setOrigin(0, 0.5);
+		this.dayIndicatorNumber.setOrigin(0, 0.5);
+		this.layoutHudLabelPair(
+			this.dayIndicatorLabel,
+			this.dayIndicatorNumber,
+			(this.scale.width * 0.5) - Level.DAY_INDICATOR_CENTER_OFFSET_X
+		);
+
+		for (const dayText of [this.dayIndicatorLabel, this.dayIndicatorNumber]) {
+			dayText.setScrollFactor(0);
+			dayText.setDepth(this.workstation.depth + 10);
+		}
+	}
+
+	private initializeClientsLeftIndicator() {
+
+		this.clientsLeftLabel = this.add.text(0, Level.DAY_INDICATOR_Y, "Left: ", this.getHudTextStyle("#FD7CB6"));
+		this.clientsLeftNumber = this.add.text(0, Level.DAY_INDICATOR_Y, "0", this.getHudTextStyle("#2D120B"));
+		this.clientsLeftLabel.setOrigin(0, 0.5);
+		this.clientsLeftNumber.setOrigin(0, 0.5);
+
+		for (const clientsLeftText of [this.clientsLeftLabel, this.clientsLeftNumber]) {
+			clientsLeftText.setScrollFactor(0);
+			clientsLeftText.setDepth(this.workstation.depth + 10);
+		}
+
+		this.syncClientsRemainingInLevel();
+	}
+
+	private syncClientsRemainingInLevel() {
+
+		this.clientsRemainingInLevel = this.getLevelClientCount();
+		this.updateClientsLeftIndicator();
+	}
+
+	private layoutHudLabelPair(label: Phaser.GameObjects.Text, value: Phaser.GameObjects.Text, anchorX: number) {
+
+		const totalWidth = label.width + value.width;
+		label.setX(anchorX - (totalWidth * 0.5));
+		value.setX(label.x + label.width);
+	}
+
+	private updateClientsLeftIndicator() {
+
+		if (!this.clientsLeftLabel?.scene || !this.clientsLeftNumber?.scene) {
+			return;
+		}
+
+		this.clientsLeftNumber.setText(String(this.clientsRemainingInLevel));
+		this.layoutHudLabelPair(
+			this.clientsLeftLabel,
+			this.clientsLeftNumber,
+			(this.scale.width * 0.5) + Level.DAY_INDICATOR_CENTER_OFFSET_X
+		);
+	}
+
+	private completeLevelClient() {
+
+		this.clientsRemainingInLevel = Math.max(0, this.clientsRemainingInLevel - 1);
+		this.updateClientsLeftIndicator();
+	}
+
+	private setupMenuButton() {
+
+		this.menuBtn.setScrollFactor(0);
+		this.menuBtn.setDepth(this.workstation.depth + Level.MENU_BUTTON_DEPTH_OFFSET);
+		this.menuBtn.setInteractive({ useHandCursor: true });
+
+		this.menuBtn.on(Phaser.Input.Events.POINTER_OVER, () => {
+			this.menuBtn.setScale(1.08);
+		});
+
+		this.menuBtn.on(Phaser.Input.Events.POINTER_OUT, () => {
+			this.menuBtn.setScale(1);
+		});
+
+		this.menuBtn.on(Phaser.Input.Events.POINTER_DOWN, () => {
+			if (this.isExitConfirmVisible) {
+				return;
+			}
+
+			this.menuBtn.setScale(0.95);
+			this.showExitConfirmation();
+		});
+	}
+
+	private createExitConfirmationUi() {
+
+		const centerX = this.scale.width * 0.5;
+		const centerY = this.scale.height * 0.5;
+		const container = this.add.container(centerX, centerY);
+
+		const background = this.add.image(0, 0, "dayOneLabel");
+		background.setScale(0.75);
+		container.add(background);
+
+		const message = this.add.text(0, -70, "Are you sure\nto exit?", {
+			color: "#DF3D7A",
+			fontFamily: "Klop",
+			fontSize: "42px",
+			fontStyle: "bold",
+			align: "center",
+			stroke: "#fff8f3",
+			strokeThickness: 6,
+		});
+		message.setOrigin(0.5);
+		container.add(message);
+
+		this.exitConfirmYesButton = this.createExitDialogButton(0, Level.EXIT_BUTTON_YES_Y, "Yes");
+		this.exitConfirmNoButton = this.createExitDialogButton(0, Level.EXIT_BUTTON_NO_Y, "No");
+		container.add([this.exitConfirmYesButton, this.exitConfirmNoButton]);
+
+		container.setScrollFactor(0);
+		container.setDepth(Level.EXIT_CONFIRM_DEPTH);
+		container.setVisible(false);
+		container.setAlpha(0);
+		this.exitConfirmContainer = container;
+	}
+
+	private createExitDialogButton(x: number, y: number, label: string) {
+
+		const container = this.add.container(x, y);
+		const labelText = this.add.text(0, 0, label, {
+			color: Level.EXIT_BUTTON_TEXT_COLOR,
+			fontFamily: "Klop",
+			fontSize: "44px",
+			fontStyle: "bold",
+			stroke: "#3E0307",
+			strokeThickness: 4,
+		});
+		labelText.setOrigin(0.5);
+
+		const buttonWidth = labelText.width + (Level.EXIT_BUTTON_PADDING_X * 2);
+		const buttonHeight = labelText.height + (Level.EXIT_BUTTON_PADDING_Y * 2);
+		const halfButtonWidth = buttonWidth * 0.5;
+		const halfButtonHeight = buttonHeight * 0.5;
+		const strokeInset = Level.EXIT_BUTTON_STROKE_WIDTH * 0.5;
+		const fillRadius = Math.max(0, Level.EXIT_BUTTON_CORNER_RADIUS - strokeInset);
+		const background = this.add.graphics();
+		background.fillStyle(0xFD7DB6, 1);
+		background.fillRoundedRect(
+			-halfButtonWidth + strokeInset,
+			-halfButtonHeight + strokeInset,
+			buttonWidth - Level.EXIT_BUTTON_STROKE_WIDTH,
+			buttonHeight - Level.EXIT_BUTTON_STROKE_WIDTH,
+			fillRadius
+		);
+		background.lineStyle(Level.EXIT_BUTTON_STROKE_WIDTH, 0xffffff, 1);
+		background.strokeRoundedRect(
+			-halfButtonWidth,
+			-halfButtonHeight,
+			buttonWidth,
+			buttonHeight,
+			Level.EXIT_BUTTON_CORNER_RADIUS
+		);
+
+		container.add([background, labelText]);
+		container.setSize(buttonWidth, buttonHeight);
+		container.setInteractive({ useHandCursor: true });
+
+		return container;
+	}
+
+	private bindExitConfirmationButtons() {
+
+		if (!this.exitConfirmYesButton || !this.exitConfirmNoButton) {
+			return;
+		}
+
+		for (const button of [this.exitConfirmYesButton, this.exitConfirmNoButton]) {
+			button.setScale(1);
+			button.setInteractive({ useHandCursor: true });
+			button.removeAllListeners();
+		}
+
+		this.exitConfirmYesButton.on(Phaser.Input.Events.POINTER_OVER, () => {
+			this.exitConfirmYesButton?.setScale(1.06);
+		});
+		this.exitConfirmYesButton.on(Phaser.Input.Events.POINTER_OUT, () => {
+			this.exitConfirmYesButton?.setScale(1);
+		});
+		this.exitConfirmYesButton.on(Phaser.Input.Events.POINTER_DOWN, () => {
+			this.exitConfirmYesButton?.setScale(0.94);
+			this.confirmExitToSceneSelector();
+		});
+
+		this.exitConfirmNoButton.on(Phaser.Input.Events.POINTER_OVER, () => {
+			this.exitConfirmNoButton?.setScale(1.06);
+		});
+		this.exitConfirmNoButton.on(Phaser.Input.Events.POINTER_OUT, () => {
+			this.exitConfirmNoButton?.setScale(1);
+		});
+		this.exitConfirmNoButton.on(Phaser.Input.Events.POINTER_DOWN, () => {
+			this.exitConfirmNoButton?.setScale(0.94);
+			this.hideExitConfirmation();
+		});
+	}
+
+	private pauseGameplay() {
+
+		if (this.isGameplayPaused) {
+			return;
+		}
+
+		this.isGameplayPaused = true;
+		this.savedGameplayTimeScale = this.time.timeScale;
+		this.time.timeScale = 0;
+
+		if (this.backgroundMusic?.isPlaying) {
+			this.backgroundMusic.pause();
+		}
+	}
+
+	private resumeGameplay() {
+
+		if (!this.isGameplayPaused) {
+			return;
+		}
+
+		this.isGameplayPaused = false;
+		this.time.timeScale = this.savedGameplayTimeScale;
+
+		if (this.backgroundMusic && !this.backgroundMusic.isPlaying) {
+			this.backgroundMusic.resume();
+		}
+	}
+
+	private showExitConfirmation() {
+
+		if (this.isExitConfirmVisible) {
+			return;
+		}
+
+		if (!this.exitConfirmContainer) {
+			this.createExitConfirmationUi();
+		}
+
+		this.pauseGameplay();
+		this.isExitConfirmVisible = true;
+		this.bindExitConfirmationButtons();
+		this.menuBtn.setScale(1);
+
+		this.blurOverlay.setVisible(true);
+		this.blurOverlay.setAlpha(1);
+		this.blurOverlay.setInteractive(
+			new Phaser.Geom.Rectangle(0, 0, this.scale.width, this.scale.height),
+			Phaser.Geom.Rectangle.Contains
+		);
+		this.exitConfirmContainer!.setVisible(true);
+		this.exitConfirmContainer!.setAlpha(1);
+	}
+
+	private hideExitConfirmation() {
+
+		if (!this.isExitConfirmVisible || !this.exitConfirmContainer) {
+			return;
+		}
+
+		this.isExitConfirmVisible = false;
+		this.exitConfirmYesButton?.disableInteractive();
+		this.exitConfirmNoButton?.disableInteractive();
+		this.exitConfirmContainer.setVisible(false);
+		this.exitConfirmContainer.setAlpha(0);
+		this.exitConfirmYesButton?.setScale(1);
+		this.exitConfirmNoButton?.setScale(1);
+		this.resumeGameplay();
+
+		if (!this.panel.visible) {
+			this.tweens.add({
+				targets: this.blurOverlay,
+				alpha: 0,
+				duration: Level.INTRO_OVERLAY_FADE_OUT_DURATION,
+				ease: "Quad.InOut",
+				onComplete: () => {
+					this.blurOverlay.disableInteractive();
+					this.blurOverlay.setVisible(false);
+				},
+			});
+		}
+	}
+
+	private confirmExitToSceneSelector() {
+
+		this.backgroundMusic?.stop();
+		this.scene.start("SceneSelector");
 	}
 
 	private setupIntroOverlay() {
@@ -906,6 +1303,7 @@ export default class Level extends Phaser.Scene {
 		this.activeClients = this.activeClients.filter((client) => client !== previousClient && client.active);
 
 		previousClient.destroy();
+		this.completeLevelClient();
 
 		this.processClientEntryQueue();
 
@@ -1264,13 +1662,17 @@ export default class Level extends Phaser.Scene {
 
 	create() {
 
+		this.flushLoadedContent();
 		this.editorCreate();
 		this.panelRestY = this.panel.y;
 		this.applyLevelPlanToIntroPanel();
 		this.initializeCoinCounter();
+		this.initializeDayIndicator();
+		this.initializeClientsLeftIndicator();
 		this.setupDipInputs();
 		this.setupTrayInputs();
 		this.setupIntroOverlay();
+		this.setupMenuButton();
 		this.playSceneIntro();
 	}
 

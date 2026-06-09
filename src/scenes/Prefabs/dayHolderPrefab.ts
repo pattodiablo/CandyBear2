@@ -32,11 +32,11 @@ export default class dayHolderPrefab extends Phaser.GameObjects.Container {
 		dayNumber.setStyle({ "color": "#A96625", "fontFamily": "Klop", "fontSize": "40px" });
 		this.add(dayNumber);
 
-		// smallStarHolder
-		const smallStarHolder = scene.add.image(-41, 25, "smallStarHolder");
-		smallStarHolder.scaleX = 0.7;
-		smallStarHolder.scaleY = 0.7;
-		this.add(smallStarHolder);
+		// smallStarHolder1
+		const smallStarHolder1 = scene.add.image(-41, 25, "smallStarHolder");
+		smallStarHolder1.scaleX = 0.7;
+		smallStarHolder1.scaleY = 0.7;
+		this.add(smallStarHolder1);
 
 		// smallStarHolder2
 		const smallStarHolder2 = scene.add.image(0, 25, "smallStarHolder");
@@ -50,13 +50,15 @@ export default class dayHolderPrefab extends Phaser.GameObjects.Container {
 		smallStarHolder3.scaleY = 0.7;
 		this.add(smallStarHolder3);
 
-		this.dayNumber = dayNumber;
 		this.dayHolder = dayHolder;
-		this.smallStarHolder = smallStarHolder;
+		this.dayNumber = dayNumber;
+		this.smallStarHolder1 = smallStarHolder1;
 		this.smallStarHolder2 = smallStarHolder2;
 		this.smallStarHolder3 = smallStarHolder3;
 
 		/* START-USER-CTR-CODE */
+		this.starSlots = [smallStarHolder1, smallStarHolder2, smallStarHolder3];
+		this.setEarnedStars(0);
 		this.baseScaleX = this.scaleX;
 		this.baseScaleY = this.scaleY;
 		this.baseAngle = this.angle;
@@ -69,13 +71,15 @@ export default class dayHolderPrefab extends Phaser.GameObjects.Container {
 		/* END-USER-CTR-CODE */
 	}
 
-	private dayNumber: Phaser.GameObjects.Text;
 	private dayHolder: Phaser.GameObjects.Image;
-	private smallStarHolder: Phaser.GameObjects.Image;
+	private dayNumber: Phaser.GameObjects.Text;
+	private smallStarHolder1: Phaser.GameObjects.Image;
 	private smallStarHolder2: Phaser.GameObjects.Image;
 	private smallStarHolder3: Phaser.GameObjects.Image;
 
 	/* START-USER-CODE */
+	private static readonly MAX_STARS = 3;
+	private readonly starSlots: Phaser.GameObjects.Image[];
 	private static readonly HOVER_SCALE = 1.1;
 	private static readonly HOVER_ROTATION_MIN = -6;
 	private static readonly HOVER_ROTATION_MAX = 6;
@@ -179,6 +183,15 @@ export default class dayHolderPrefab extends Phaser.GameObjects.Container {
 
 	public setDayNumber(value: number | string) {
 		this.dayNumber.setText(String(value));
+	}
+
+	public setEarnedStars(earnedStars: number) {
+
+		const normalizedStars = Phaser.Math.Clamp(Math.floor(earnedStars), 0, dayHolderPrefab.MAX_STARS);
+
+		this.starSlots.forEach((starSlot, index) => {
+			starSlot.setVisible(index < normalizedStars);
+		});
 	}
 
 	public setUnlocked(unlocked: boolean) {

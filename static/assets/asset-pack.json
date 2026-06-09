@@ -252,6 +252,11 @@
                 "key": "looseMoney"
             },
             {
+                "url": "assets/menuBtn.png",
+                "type": "image",
+                "key": "menuBtn"
+            },
+            {
                 "url": "assets/Milkmachine.png",
                 "type": "image",
                 "key": "Milkmachine"

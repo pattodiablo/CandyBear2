@@ -247,6 +247,7 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 
 	public disableNextDayButton() {
 
+		this.nextdayBtn.setVisible(false);
 		this.nextdayBtn.disableInteractive();
 		this.nextdayBtn.removeAllListeners();
 		this.isNextDayButtonPressed = false;

@@ -302,6 +302,17 @@
             "label": "sandwichProduct",
             "x": 209,
             "y": 651
+        },
+        {
+            "type": "Image",
+            "id": "f8bc67b8-db62-4326-88cc-b1decb978f2a",
+            "label": "menuBtn",
+            "scope": "CLASS",
+            "texture": {
+                "key": "menuBtn"
+            },
+            "x": 1229,
+            "y": 47
         }
     ],
     "plainObjects": [],
