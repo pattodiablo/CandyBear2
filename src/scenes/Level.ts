@@ -109,16 +109,20 @@ export default class Level extends Phaser.Scene {
 		const candyDip = this.add.image(1175, 543, "CandyDip");
 
 		// chocolateIcon
-		this.add.image(1039, 539, "chocolateIcon");
+		const chocolateIcon = this.add.image(1039, 539, "chocolateIcon");
+		chocolateIcon.visible = false;
 
 		// candyicon
-		this.add.image(1174, 539, "candyicon");
+		const candyicon = this.add.image(1174, 539, "candyicon");
+		candyicon.visible = false;
 
 		// charola1
 		const charola1 = this.add.image(927, 407, "Charola");
+		charola1.scaleX = 1.2;
 
 		// charola2
 		const charola2 = this.add.image(315, 407, "Charola");
+		charola2.scaleX = 1.2;
 
 		// lamp
 		this.add.image(193, 57, "lamp");
@@ -158,6 +162,17 @@ export default class Level extends Phaser.Scene {
 
 		// menuBtn
 		const menuBtn = this.add.image(1229, 47, "menuBtn");
+
+		// cookieJar
+		const cookieJar = this.add.image(93, 369, "cookieJar");
+		cookieJar.scaleX = 0.7;
+		cookieJar.scaleY = 0.7;
+
+		// glace2
+		this.add.image(1220, 377, "glace2");
+
+		// glace1
+		this.add.image(1137, 381, "glace1");
 
 		this.workstation = workstation;
 		this.milkmachine = milkmachine;

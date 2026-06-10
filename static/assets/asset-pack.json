@@ -155,6 +155,11 @@
                 "key": "confetti9"
             },
             {
+                "url": "assets/cookieJar.png",
+                "type": "image",
+                "key": "cookieJar"
+            },
+            {
                 "url": "assets/dayHolder.png",
                 "type": "image",
                 "key": "dayHolder"
@@ -400,14 +405,14 @@
                 "key": "Product2Raw"
             },
             {
-                "url": "assets/product3Locked.png",
-                "type": "image",
-                "key": "product4Locked"
-            },
-            {
                 "url": "assets/product4Locked.png",
                 "type": "image",
                 "key": "product3Locked"
+            },
+            {
+                "url": "assets/product3Locked.png",
+                "type": "image",
+                "key": "product4Locked"
             },
             {
                 "url": "assets/RawProduct1.png",

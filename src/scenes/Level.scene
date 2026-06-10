@@ -165,7 +165,8 @@
                 "key": "chocolateIcon"
             },
             "x": 1039,
-            "y": 539
+            "y": 539,
+            "visible": false
         },
         {
             "type": "Image",
@@ -175,7 +176,8 @@
                 "key": "candyicon"
             },
             "x": 1174,
-            "y": 539
+            "y": 539,
+            "visible": false
         },
         {
             "type": "Image",
@@ -186,7 +188,8 @@
                 "key": "Charola"
             },
             "x": 927,
-            "y": 407
+            "y": 407,
+            "scaleX": 1.2
         },
         {
             "type": "Image",
@@ -197,7 +200,8 @@
                 "key": "Charola"
             },
             "x": 315,
-            "y": 407
+            "y": 407,
+            "scaleX": 1.2
         },
         {
             "type": "Image",
@@ -321,6 +325,38 @@
             },
             "x": 1229,
             "y": 47
+        },
+        {
+            "type": "Image",
+            "id": "b0105290-b9a4-42bf-9667-a39f9533906d",
+            "label": "cookieJar",
+            "texture": {
+                "key": "cookieJar"
+            },
+            "x": 93,
+            "y": 369,
+            "scaleX": 0.7,
+            "scaleY": 0.7
+        },
+        {
+            "type": "Image",
+            "id": "5630fced-f814-4260-9bac-5cf43286c85c",
+            "label": "glace2",
+            "texture": {
+                "key": "glace2"
+            },
+            "x": 1220,
+            "y": 377
+        },
+        {
+            "type": "Image",
+            "id": "d8ed592e-126b-4e27-8c83-7679c9659371",
+            "label": "glace1",
+            "texture": {
+                "key": "glace1"
+            },
+            "x": 1137,
+            "y": 381
         }
     ],
     "plainObjects": [],
