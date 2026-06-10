@@ -10,7 +10,6 @@ import type AProduct from "./AProduct";
 import type Level from "../Level";
 import type milkglass from "./milkglass";
 import type sandwichPrefab from "./sandwichPrefab";
-import { getAvailableClientRequests } from "../clientOrderPool";
 /* END-USER-IMPORTS */
 
 export default class AClient extends Phaser.GameObjects.Container {
@@ -153,7 +152,14 @@ export default class AClient extends Phaser.GameObjects.Container {
 
 		this.questionRevealTimer = undefined;
 		this.applyClientAppearance({ key: "ClientBear" });
-		const requestPool = getAvailableClientRequests();
+		const requestPool = [
+			this.Product1_Chocolate,
+			this.Product1_Candy,
+			this.Product2_Chocolate,
+			this.Product2_Candy,
+			this.MilkGlass_Filled,
+			this.Sandwich_Filled
+		];
 		this.requestedProduct = Phaser.Utils.Array.GetRandom(requestPool);
 		this.applyProductSample(this.requestedProduct);
 		this.productSample.setVisible(true);

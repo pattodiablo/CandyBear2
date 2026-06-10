@@ -341,23 +341,6 @@ export default class milkglass extends Phaser.GameObjects.Image {
 		});
 	}
 
-	public reactivateFromProgression() {
-
-		this.setInteractive({
-			hitArea: new Phaser.Geom.Circle(
-				this.displayOriginX,
-				this.displayOriginY,
-				Math.max(this.width, this.height) * milkglass.HIT_AREA_SCALE * 0.5
-			),
-			hitAreaCallback: Phaser.Geom.Circle.Contains,
-			useHandCursor: true
-		});
-
-		if (this.scaleX < 0.01 && this.scaleY < 0.01) {
-			this.playSpawnTween();
-		}
-	}
-
 	public matchesAppearance(appearance: { key: string; frame?: string | number }) {
 
 		if (this.texture.key !== appearance.key) {

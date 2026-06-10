@@ -1,29 +1,7 @@
-import { ACQUIRED_PRODUCTS_STORAGE_KEY } from "./productProgress";
-import { ACQUIRED_WORKSTATIONS_STORAGE_KEY } from "./workstationProgress";
-
 const STORAGE_KEY = "candybear2-highest-completed-level";
 const TOTAL_COINS_STORAGE_KEY = "candybear2-total-coins";
 const LEVEL_STARS_STORAGE_KEY = "candybear2-level-stars";
 const FIRST_SESSION_STORAGE_KEY = "candybear2-has-opened-before";
-
-export const GAME_STORAGE_KEYS = [
-	STORAGE_KEY,
-	TOTAL_COINS_STORAGE_KEY,
-	LEVEL_STARS_STORAGE_KEY,
-	FIRST_SESSION_STORAGE_KEY,
-	ACQUIRED_PRODUCTS_STORAGE_KEY,
-	ACQUIRED_WORKSTATIONS_STORAGE_KEY,
-] as const;
-
-export function clearAllStoredProgress() {
-	if (typeof window === "undefined") {
-		return;
-	}
-
-	for (const storageKey of GAME_STORAGE_KEYS) {
-		window.localStorage.removeItem(storageKey);
-	}
-}
 
 export function getHighestCompletedLevel() {
 	if (typeof window === "undefined") {

@@ -32,7 +32,6 @@ export default class milkMachine extends Phaser.GameObjects.Container {
 		this.milkRefill2 = milkRefill2;
 
 		/* START-USER-CTR-CODE */
-		this.machineBody = milkmachine;
 		this.slotSprites = {
 			milkRefill1: this.createSlotSprite(milkRefill1),
 			milkRefill2: this.createSlotSprite(milkRefill2)
@@ -44,7 +43,6 @@ export default class milkMachine extends Phaser.GameObjects.Container {
 	private milkRefill2: Phaser.GameObjects.Image;
 
 	/* START-USER-CODE */
-	private machineBody!: Phaser.GameObjects.Image;
 	private static readonly DEFAULT_FRAME = "Vaso0001.png";
 	private static readonly FILLED_FRAME = "Vaso0089.png";
 	private readonly slotSprites: Record<MilkSlotId, Phaser.GameObjects.Sprite>;
@@ -112,10 +110,6 @@ export default class milkMachine extends Phaser.GameObjects.Container {
 		slotSprite.stop();
 		slotSprite.setVisible(false);
 		slotSprite.setTexture("GlassAnim", milkMachine.DEFAULT_FRAME);
-	}
-
-	public setMachineTexture(textureKey: string) {
-		this.machineBody.setTexture(textureKey);
 	}
 
 	// Write your code here.
