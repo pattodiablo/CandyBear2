@@ -2,7 +2,7 @@ import Phaser from "phaser";
 import { SpinePlugin } from "@esotericsoftware/spine-phaser-v4";
 import Level from "./scenes/Level";
 import SceneSelector from "./scenes/SceneSelector";
-import preloadAssetPackUrl from "../docs/assets/preload-asset-pack.json";
+import preloadAssetPackUrl from "../static/assets/preload-asset-pack.json";
 import Preload from "./scenes/Preload";
 
 declare global {

@@ -24,6 +24,11 @@
             font-family: sans-serif;
         }
 
+        canvas {
+            display: block;
+            touch-action: none;
+        }
+
         #mobile-launch-overlay {
             position: fixed;
             inset: 0;
@@ -36,17 +41,52 @@
 
         #mobile-launch-overlay.visible {
             display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
         }
 
-        #mobile-launch-button {
+        #mobile-launch-actions {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            width: min(320px, calc(100% - 32px));
+        }
+
+        .mobile-launch-button {
             border: 0;
             border-radius: 18px;
             padding: 18px 24px;
-            background: #f2cf66;
-            color: #2b2115;
+            width: 100%;
             font-size: 18px;
             font-weight: 700;
             box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+        }
+
+        #mobile-launch-button {
+            background: #f2cf66;
+            color: #2b2115;
+        }
+
+        #mobile-launch-button:disabled {
+            opacity: 0.55;
+            cursor: wait;
+        }
+
+        #mobile-flush-button {
+            background: #fd7db6;
+            color: #ffffff;
+            border: 3px solid #3e0307;
+        }
+
+        #mobile-flush-status {
+            min-height: 20px;
+            color: rgba(255, 255, 255, 0.9);
+            text-align: center;
+            font-size: 14px;
+            line-height: 1.4;
         }
 
         #mobile-launch-hint {
@@ -61,11 +101,15 @@
             line-height: 1.4;
         }
     </style>
-<script defer src="phaser-69325db5484b60dded91.bundle.js"></script><script defer src="main-03b2a4eed0fdb799a89b.bundle.js"></script></head>
+<script defer src="phaser-69325db5484b60dded91.bundle.js"></script><script defer src="main-381ca1018246d4201d67.bundle.js"></script></head>
 
 <body>
     <div id="mobile-launch-overlay">
-        <button id="mobile-launch-button" type="button">Tap To Play Fullscreen</button>
+        <div id="mobile-launch-actions">
+            <button id="mobile-launch-button" class="mobile-launch-button" type="button" disabled>Loading game...</button>
+            <button id="mobile-flush-button" class="mobile-launch-button" type="button">Clear Saved Data</button>
+            <div id="mobile-flush-status" aria-live="polite"></div>
+        </div>
         <div id="mobile-launch-hint">On some phones, fullscreen only works after a tap. If Safari blocks it, the game will still open using the full browser area.</div>
     </div>
     <script>
@@ -77,8 +121,25 @@
                 return;
             }
 
+            const GAME_STORAGE_KEYS = [
+                "candybear2-highest-completed-level",
+                "candybear2-total-coins",
+                "candybear2-level-stars",
+                "candybear2-has-opened-before",
+                "candybear2-acquired-products",
+                "candybear2-acquired-workstations"
+            ];
+
             const overlay = document.getElementById("mobile-launch-overlay");
             const launchButton = document.getElementById("mobile-launch-button");
+            const flushButton = document.getElementById("mobile-flush-button");
+            const flushStatus = document.getElementById("mobile-flush-status");
+
+            const clearStoredProgress = () => {
+                for (const storageKey of GAME_STORAGE_KEYS) {
+                    window.localStorage.removeItem(storageKey);
+                }
+            };
 
             const requestFullscreen = async () => {
                 const root = document.documentElement;
@@ -120,15 +181,72 @@
                 }
             };
 
+            const refreshGameScale = () => {
+                if (typeof window.refreshCandyBearGameScale === "function") {
+                    window.refreshCandyBearGameScale();
+                } else {
+                    window.dispatchEvent(new Event("resize"));
+                }
+            };
+
+            const bootGame = () => {
+                if (typeof window.bootCandyBearGame === "function") {
+                    window.bootCandyBearGame();
+                    return;
+                }
+
+                window.addEventListener("candybear-game-ready", () => {
+                    window.bootCandyBearGame?.();
+                }, { once: true });
+            };
+
             const launchGame = async () => {
-                await requestFullscreen();
-                await lockOrientation();
-                expandBrowserArea();
+                if (launchButton.disabled) {
+                    return;
+                }
+
+                launchButton.disabled = true;
                 overlay.classList.remove("visible");
+                expandBrowserArea();
+                bootGame();
+                await requestFullscreen();
+                refreshGameScale();
+                window.requestAnimationFrame(() => {
+                    refreshGameScale();
+                    window.requestAnimationFrame(refreshGameScale);
+                });
+                window.setTimeout(refreshGameScale, 200);
+                await lockOrientation();
+                window.setTimeout(refreshGameScale, 400);
+            };
+
+            const flushStoredProgress = () => {
+                const confirmed = window.confirm(
+                    "Clear all saved progress? This removes unlocked levels, stars, and coins."
+                );
+
+                if (!confirmed) {
+                    return;
+                }
+
+                clearStoredProgress();
+                flushStatus.textContent = "Saved data cleared. Tap play to start fresh.";
+            };
+
+            const enableLaunchButton = () => {
+                launchButton.disabled = false;
+                launchButton.textContent = "Tap To Play Fullscreen";
             };
 
             overlay.classList.add("visible");
             launchButton.addEventListener("click", launchGame, { once: true });
+            flushButton.addEventListener("click", flushStoredProgress);
+
+            if (typeof window.bootCandyBearGame === "function") {
+                enableLaunchButton();
+            } else {
+                window.addEventListener("candybear-game-ready", enableLaunchButton, { once: true });
+            }
         })();
     </script>
 </body>

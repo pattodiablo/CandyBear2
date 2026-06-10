@@ -2,6 +2,8 @@ const path = require("path");
 const webpack = require("webpack");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const { CleanWebpackPlugin } = require("clean-webpack-plugin");
+const CopyPlugin = require("copy-webpack-plugin");
+
 module.exports = {
     entry: {
         main: "./src/index.ts"
@@ -65,13 +67,17 @@ module.exports = {
             template: path.join(__dirname, "src/index.html"),
             minify: false
         }),
-        new CleanWebpackPlugin({
-            cleanOnceBeforeBuildPatterns: [
-                "**/*",
-                "!assets",
-                "!assets/**",
-                "!publicroot",
-            ],
+        new CleanWebpackPlugin(),
+        new CopyPlugin({
+            patterns: [
+                {
+                    from: "static",
+                    globOptions: {
+                        // asset pack files are imported in code as modules
+                        ignore: ["**/publicroot", "**/*-pack.json"]
+                    }
+                }
+            ]
         }),
         new webpack.HotModuleReplacementPlugin(),
     ]
