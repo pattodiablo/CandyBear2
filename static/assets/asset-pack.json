@@ -405,12 +405,12 @@
                 "key": "Product2Raw"
             },
             {
-                "url": "assets/product4Locked.png",
+                "url": "assets/product3Locked.png",
                 "type": "image",
                 "key": "product3Locked"
             },
             {
-                "url": "assets/product3Locked.png",
+                "url": "assets/product4Locked.png",
                 "type": "image",
                 "key": "product4Locked"
             },
