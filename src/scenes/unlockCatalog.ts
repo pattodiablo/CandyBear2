@@ -46,16 +46,16 @@ export const UNLOCK_CATALOG: Record<UnlockId, UnlockCatalogEntry> = {
 	},
 	holder3: {
 		id: "holder3",
-		displayName: "Milk Glass",
-		previewTextureKey: "GlassAnim",
-		previewFrame: "Vaso0001.png",
+		displayName: "Sandwich",
+		previewTextureKey: "sandWichAnim",
+		previewFrame: "sandwich0001.png",
 		coinCost: 95,
 	},
 	holder4: {
 		id: "holder4",
-		displayName: "Sandwich",
-		previewTextureKey: "sandWichAnim",
-		previewFrame: "sandwich0001.png",
+		displayName: "Milk Glass",
+		previewTextureKey: "GlassAnim",
+		previewFrame: "Vaso0001.png",
 		coinCost: 105,
 	},
 };
@@ -80,4 +80,26 @@ export function getTotalUnlockCost() {
 
 export function isProductUnlockId(unlockId: UnlockId): unlockId is Exclude<ProductSlotId, "holder1"> {
 	return unlockId === "holder2" || unlockId === "holder3" || unlockId === "holder4";
+}
+
+const PRODUCT_BUNDLED_WORKSTATIONS: Partial<Record<Exclude<ProductSlotId, "holder1">, WorkstationId>> = {
+	holder3: "toaster",
+	holder4: "milkmachine",
+};
+
+export function getBundledWorkstationsForProductUnlock(
+	productSlotId: Exclude<ProductSlotId, "holder1">,
+): WorkstationId[] {
+	const workstationId = PRODUCT_BUNDLED_WORKSTATIONS[productSlotId];
+	return workstationId ? [workstationId] : [];
+}
+
+const WORKSTATIONS_UNLOCKED_WITH_PRODUCT = new Set<WorkstationId>(
+	Object.values(PRODUCT_BUNDLED_WORKSTATIONS).filter(
+		(workstationId): workstationId is WorkstationId => workstationId !== undefined,
+	),
+);
+
+export function shouldShowWorkstationLockIcon(workstationId: WorkstationId) {
+	return !WORKSTATIONS_UNLOCKED_WITH_PRODUCT.has(workstationId);
 }

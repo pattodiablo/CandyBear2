@@ -402,12 +402,12 @@
             {
                 "url": "assets/product3Locked.png",
                 "type": "image",
-                "key": "product3Locked"
+                "key": "product4Locked"
             },
             {
                 "url": "assets/product4Locked.png",
                 "type": "image",
-                "key": "product4Locked"
+                "key": "product3Locked"
             },
             {
                 "url": "assets/RawProduct1.png",

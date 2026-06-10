@@ -27,14 +27,14 @@ const CLIENT_REQUEST_DEFINITIONS: ClientRequestDefinition[] = [
 		productSlot: "holder2",
 	},
 	{
-		appearance: { key: "GlassAnim", frame: "Vaso0089.png" },
+		appearance: { key: "sandWichAnim", frame: "sandwich0005.png" },
 		productSlot: "holder3",
-		workstation: "milkmachine",
+		workstation: "toaster",
 	},
 	{
-		appearance: { key: "sandWichAnim", frame: "sandwich0005.png" },
+		appearance: { key: "GlassAnim", frame: "Vaso0089.png" },
 		productSlot: "holder4",
-		workstation: "toaster",
+		workstation: "milkmachine",
 	},
 ];
 

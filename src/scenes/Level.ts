@@ -34,10 +34,13 @@ import {
 	getWorkstationTextureKey,
 } from "./workstationProgress";
 import {
+	getBundledWorkstationsForProductUnlock,
 	getUnlockCatalogEntry,
 	isProductUnlockId,
+	shouldShowWorkstationLockIcon,
 	type UnlockId,
 } from "./unlockCatalog";
+import { bindDeveloperCheatCode, DEVELOPER_CHEAT_COINS } from "./developerCheat";
 
 interface LevelPlan {
 	levelNumber: number;
@@ -331,6 +334,7 @@ export default class Level extends Phaser.Scene {
 	private static readonly PROGRESSION_LOCK_HOVER_DURATION = 200;
 	private static readonly PROGRESSION_LOCK_RESET_DURATION = 160;
 	private progressionLockIcons: Phaser.GameObjects.Image[] = [];
+	private unbindDeveloperCheat?: () => void;
 
 	init(data: LevelSceneData = {}) {
 
@@ -407,6 +411,8 @@ export default class Level extends Phaser.Scene {
 
 	private flushLoadedContent() {
 
+		this.unbindDeveloperCheat?.();
+		this.unbindDeveloperCheat = undefined;
 		this.clearHudReferences();
 		this.clearWaveSpawnTimers();
 
@@ -806,7 +812,7 @@ export default class Level extends Phaser.Scene {
 			applyTexture(getWorkstationTextureKey(workstationId, isAcquired));
 			setEnabled(isAcquired);
 
-			if (!isAcquired) {
+			if (!isAcquired && shouldShowWorkstationLockIcon(workstationId)) {
 				this.showProgressionLockIcon(target, workstationId, lockOffsetY);
 			}
 		}
@@ -843,8 +849,8 @@ export default class Level extends Phaser.Scene {
 		}> = [
 			{ slotId: "holder1", holder: this.holder1, product: this.rawProduct1 },
 			{ slotId: "holder2", holder: this.holder2, product: this.rawProduct2 },
-			{ slotId: "holder3", holder: this.holder3, product: this.milkGlass },
-			{ slotId: "holder4", holder: this.holder4, product: this.sandwichProduct },
+			{ slotId: "holder3", holder: this.holder3, product: this.sandwichProduct },
+			{ slotId: "holder4", holder: this.holder4, product: this.milkGlass },
 		];
 
 		for (const { slotId, holder, product } of productSlots) {
@@ -1307,6 +1313,10 @@ export default class Level extends Phaser.Scene {
 
 		if (isProductUnlockId(this.currentUnlockId)) {
 			storeProductAcquired(this.currentUnlockId);
+
+			for (const workstationId of getBundledWorkstationsForProductUnlock(this.currentUnlockId)) {
+				storeWorkstationAcquired(workstationId);
+			}
 		} else {
 			storeWorkstationAcquired(this.currentUnlockId);
 		}
@@ -1402,6 +1412,21 @@ export default class Level extends Phaser.Scene {
 	private updateCoinCounter() {
 
 		this.coinCounterText?.setText(`${this.coinCount}`);
+	}
+
+	private setupDeveloperCheat() {
+
+		this.unbindDeveloperCheat?.();
+		this.unbindDeveloperCheat = bindDeveloperCheatCode(this, () => {
+			this.applyDeveloperMoneyCheat();
+		});
+	}
+
+	private applyDeveloperMoneyCheat() {
+
+		this.coinCount = DEVELOPER_CHEAT_COINS;
+		storeTotalCoins(this.coinCount);
+		this.updateCoinCounter();
 	}
 
 	private addCoins(amount: number) {
@@ -2183,6 +2208,7 @@ export default class Level extends Phaser.Scene {
 		this.setupTrayInputs();
 		this.setupIntroOverlay();
 		this.setupMenuButton();
+		this.setupDeveloperCheat();
 		this.playSceneIntro();
 	}
 
