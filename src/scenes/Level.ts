@@ -167,12 +167,15 @@ export default class Level extends Phaser.Scene {
 		const cookieJar = this.add.image(93, 369, "cookieJar");
 		cookieJar.scaleX = 0.7;
 		cookieJar.scaleY = 0.7;
+		cookieJar.visible = false;
 
 		// glace2
-		this.add.image(1220, 377, "glace2");
+		const glace2 = this.add.image(1220, 377, "glace2");
+		glace2.visible = false;
 
 		// glace1
-		this.add.image(1137, 381, "glace1");
+		const glace1 = this.add.image(1137, 381, "glace1");
+		glace1.visible = false;
 
 		this.workstation = workstation;
 		this.milkmachine = milkmachine;

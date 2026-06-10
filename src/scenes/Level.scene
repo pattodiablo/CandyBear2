@@ -336,7 +336,8 @@
             "x": 93,
             "y": 369,
             "scaleX": 0.7,
-            "scaleY": 0.7
+            "scaleY": 0.7,
+            "visible": false
         },
         {
             "type": "Image",
@@ -346,7 +347,8 @@
                 "key": "glace2"
             },
             "x": 1220,
-            "y": 377
+            "y": 377,
+            "visible": false
         },
         {
             "type": "Image",
@@ -356,7 +358,8 @@
                 "key": "glace1"
             },
             "x": 1137,
-            "y": 381
+            "y": 381,
+            "visible": false
         }
     ],
     "plainObjects": [],
