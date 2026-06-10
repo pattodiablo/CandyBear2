@@ -72,7 +72,8 @@
         {
             "type": "Image",
             "id": "77e12487-c7aa-43f9-aedc-7ffd3f437610",
-            "label": "holder",
+            "label": "holder1",
+            "scope": "CLASS",
             "texture": {
                 "key": "Holder"
             },
@@ -82,7 +83,8 @@
         {
             "type": "Image",
             "id": "2655ce1f-66c8-4278-8eda-384defc90028",
-            "label": "holder_1",
+            "label": "holder2",
+            "scope": "CLASS",
             "texture": {
                 "key": "Holder"
             },
@@ -92,7 +94,8 @@
         {
             "type": "Image",
             "id": "8d337a3c-b413-4fe7-8a69-e24bfb57e39a",
-            "label": "holder_2",
+            "label": "holder3",
+            "scope": "CLASS",
             "texture": {
                 "key": "Holder"
             },
@@ -102,7 +105,8 @@
         {
             "type": "Image",
             "id": "491587c9-778c-4cca-b320-9662a64fc100",
-            "label": "holder_3",
+            "label": "holder4",
+            "scope": "CLASS",
             "texture": {
                 "key": "Holder"
             },
@@ -174,17 +178,6 @@
             "y": 539
         },
         {
-            "prefabId": "10dc66d6-8928-4081-a55a-d56eacc644f9",
-            "id": "454f4127-38e5-4495-9550-6115422386e5",
-            "unlock": [
-                "x",
-                "y"
-            ],
-            "label": "milkGlass",
-            "x": 210,
-            "y": 536
-        },
-        {
             "type": "Image",
             "id": "cdbfca69-069d-47c6-bc09-667d5c46a320",
             "label": "charola1",
@@ -234,6 +227,7 @@
                 "y"
             ],
             "label": "rawProduct1",
+            "scope": "CLASS",
             "x": 78,
             "y": 547
         },
@@ -245,12 +239,37 @@
                 "y",
                 "texture"
             ],
-            "label": "rawProduct_1",
+            "label": "rawProduct2",
+            "scope": "CLASS",
             "texture": {
                 "key": "Product2Raw"
             },
             "x": 81,
             "y": 653
+        },
+        {
+            "prefabId": "10dc66d6-8928-4081-a55a-d56eacc644f9",
+            "id": "454f4127-38e5-4495-9550-6115422386e5",
+            "unlock": [
+                "x",
+                "y"
+            ],
+            "label": "milkGlass",
+            "scope": "CLASS",
+            "x": 210,
+            "y": 536
+        },
+        {
+            "prefabId": "1a5a7c05-9433-4d24-b582-e6e50f7dea93",
+            "id": "b4f9a8dd-be0f-4745-9cde-6fbdfc8fac66",
+            "unlock": [
+                "x",
+                "y"
+            ],
+            "label": "sandwichProduct",
+            "scope": "CLASS",
+            "x": 209,
+            "y": 651
         },
         {
             "type": "Image",
@@ -291,17 +310,6 @@
             },
             "x": 52,
             "y": 58
-        },
-        {
-            "prefabId": "1a5a7c05-9433-4d24-b582-e6e50f7dea93",
-            "id": "b4f9a8dd-be0f-4745-9cde-6fbdfc8fac66",
-            "unlock": [
-                "x",
-                "y"
-            ],
-            "label": "sandwichProduct",
-            "x": 209,
-            "y": 651
         },
         {
             "type": "Image",

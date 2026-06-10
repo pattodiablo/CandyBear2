@@ -2,8 +2,6 @@ const path = require("path");
 const webpack = require("webpack");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const { CleanWebpackPlugin } = require("clean-webpack-plugin");
-const CopyPlugin = require("copy-webpack-plugin");
-
 module.exports = {
     entry: {
         main: "./src/index.ts"
@@ -25,7 +23,7 @@ module.exports = {
         }
     },
     output: {
-        path: path.resolve(__dirname, "dist"),
+        path: path.resolve(__dirname, "docs"),
         filename: "[name]-[contenthash].bundle.js",
         assetModuleFilename: "asset-packs/[name]-[hash][ext][query]",
     },
@@ -53,7 +51,7 @@ module.exports = {
         historyApiFallback: true,
         allowedHosts: 'all',
         static: {
-            directory: path.resolve(__dirname, "./dist"),
+            directory: path.resolve(__dirname, "./docs"),
         },
         open: true,
         hot: true,
@@ -67,17 +65,13 @@ module.exports = {
             template: path.join(__dirname, "src/index.html"),
             minify: false
         }),
-        new CleanWebpackPlugin(),
-        new CopyPlugin({
-            patterns: [
-                {
-                    from: "static",
-                    globOptions: {
-                        // asset pack files are imported in code as modules
-                        ignore: ["**/publicroot", "**/*-pack.json"]
-                    }
-                }
-            ]
+        new CleanWebpackPlugin({
+            cleanOnceBeforeBuildPatterns: [
+                "**/*",
+                "!assets",
+                "!assets/**",
+                "!publicroot",
+            ],
         }),
         new webpack.HotModuleReplacementPlugin(),
     ]

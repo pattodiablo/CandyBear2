@@ -5,10 +5,10 @@
 
 import milkMachine from "./Prefabs/milkMachine";
 import ToasterPrefab from "./Prefabs/ToasterPrefab";
-import milkglass from "./Prefabs/milkglass";
 import AProduct from "./Prefabs/AProduct";
-import PanelPrefab from "./Prefabs/PanelPrefab";
+import milkglass from "./Prefabs/milkglass";
 import sandwichPrefab from "./Prefabs/sandwichPrefab";
+import PanelPrefab from "./Prefabs/PanelPrefab";
 /* START-USER-IMPORTS */
 import Phaser from "phaser";
 import AClient from "./Prefabs/AClient";	
@@ -20,6 +20,24 @@ import { SkinsAndAnimationBoundsProvider } from "@esotericsoftware/spine-phaser-
 import type { MilkSlotId } from "./Prefabs/milkMachine";
 import type { ToasterSlotId } from "./Prefabs/ToasterPrefab";
 import type { LevelStarPerformance } from "./Prefabs/PanelPrefab";
+import {
+	isProductAcquired,
+	storeProductAcquired,
+	type ProductSlotId,
+	UNLOCKED_HOLDER_TEXTURE_KEY,
+	getLockedTextureKey,
+} from "./productProgress";
+import {
+	isWorkstationAcquired,
+	storeWorkstationAcquired,
+	type WorkstationId,
+	getWorkstationTextureKey,
+} from "./workstationProgress";
+import {
+	getUnlockCatalogEntry,
+	isProductUnlockId,
+	type UnlockId,
+} from "./unlockCatalog";
 
 interface LevelPlan {
 	levelNumber: number;
@@ -63,17 +81,17 @@ export default class Level extends Phaser.Scene {
 		// fryer2
 		const fryer2 = this.add.image(390, 654, "Fryer");
 
-		// holder
-		this.add.image(80, 544, "Holder");
+		// holder1
+		const holder1 = this.add.image(80, 544, "Holder");
 
-		// holder_1
-		this.add.image(80, 650, "Holder");
+		// holder2
+		const holder2 = this.add.image(80, 650, "Holder");
 
-		// holder_2
-		this.add.image(210, 650, "Holder");
+		// holder3
+		const holder3 = this.add.image(210, 650, "Holder");
 
-		// holder_3
-		this.add.image(210, 544, "Holder");
+		// holder4
+		const holder4 = this.add.image(210, 544, "Holder");
 
 		// workplace1
 		const workplace1 = this.add.image(1175, 644, "workplace");
@@ -93,10 +111,6 @@ export default class Level extends Phaser.Scene {
 		// candyicon
 		this.add.image(1174, 539, "candyicon");
 
-		// milkGlass
-		const milkGlass = new milkglass(this, 210, 536);
-		this.add.existing(milkGlass);
-
 		// charola1
 		const charola1 = this.add.image(927, 407, "Charola");
 
@@ -113,9 +127,17 @@ export default class Level extends Phaser.Scene {
 		const rawProduct1 = new AProduct(this, 78, 547);
 		this.add.existing(rawProduct1);
 
-		// rawProduct_1
-		const rawProduct_1 = new AProduct(this, 81, 653, "Product2Raw");
-		this.add.existing(rawProduct_1);
+		// rawProduct2
+		const rawProduct2 = new AProduct(this, 81, 653, "Product2Raw");
+		this.add.existing(rawProduct2);
+
+		// milkGlass
+		const milkGlass = new milkglass(this, 210, 536);
+		this.add.existing(milkGlass);
+
+		// sandwichProduct
+		const sandwichProduct = new sandwichPrefab(this, 209, 651);
+		this.add.existing(sandwichProduct);
 
 		// blurOverlay
 		const blurOverlay = this.add.image(0, 0, "blurOverlay");
@@ -131,10 +153,6 @@ export default class Level extends Phaser.Scene {
 		// bigCoin
 		this.add.image(52, 58, "bigCoin");
 
-		// sandwichProduct
-		const sandwichProduct = new sandwichPrefab(this, 209, 651);
-		this.add.existing(sandwichProduct);
-
 		// menuBtn
 		const menuBtn = this.add.image(1229, 47, "menuBtn");
 
@@ -143,12 +161,20 @@ export default class Level extends Phaser.Scene {
 		this.toaster = toaster;
 		this.fryer1 = fryer1;
 		this.fryer2 = fryer2;
+		this.holder1 = holder1;
+		this.holder2 = holder2;
+		this.holder3 = holder3;
+		this.holder4 = holder4;
 		this.workplace1 = workplace1;
 		this.workplace2 = workplace2;
 		this.chocolateDip = chocolateDip;
 		this.candyDip = candyDip;
 		this.charola1 = charola1;
 		this.charola2 = charola2;
+		this.rawProduct1 = rawProduct1;
+		this.rawProduct2 = rawProduct2;
+		this.milkGlass = milkGlass;
+		this.sandwichProduct = sandwichProduct;
 		this.blurOverlay = blurOverlay;
 		this.panel = panel;
 		this.menuBtn = menuBtn;
@@ -161,12 +187,20 @@ export default class Level extends Phaser.Scene {
 	public toaster!: ToasterPrefab;
 	public fryer1!: Phaser.GameObjects.Image;
 	public fryer2!: Phaser.GameObjects.Image;
+	private holder1!: Phaser.GameObjects.Image;
+	private holder2!: Phaser.GameObjects.Image;
+	private holder3!: Phaser.GameObjects.Image;
+	private holder4!: Phaser.GameObjects.Image;
 	public workplace1!: Phaser.GameObjects.Image;
 	public workplace2!: Phaser.GameObjects.Image;
 	public chocolateDip!: Phaser.GameObjects.Image;
 	public candyDip!: Phaser.GameObjects.Image;
 	public charola1!: Phaser.GameObjects.Image;
 	public charola2!: Phaser.GameObjects.Image;
+	private rawProduct1!: AProduct;
+	private rawProduct2!: AProduct;
+	private milkGlass!: milkglass;
+	private sandwichProduct!: sandwichPrefab;
 	private blurOverlay!: Phaser.GameObjects.Image;
 	private panel!: PanelPrefab;
 	private menuBtn!: Phaser.GameObjects.Image;
@@ -223,8 +257,10 @@ export default class Level extends Phaser.Scene {
 	private static readonly SPENT_COIN_RISE_DURATION = 220;
 	private static readonly SPENT_COIN_FALL_DURATION_MIN = 280;
 	private static readonly SPENT_COIN_FALL_DURATION_MAX = 420;
-	public fryer2Enabled = true;
-	public workplace2Enabled = true;
+	public fryer2Enabled = false;
+	public milkMachineEnabled = false;
+	public toasterEnabled = false;
+	public workplace2Enabled = false;
 
 	private clientSpawnY = -103;
 	private activeClients: AClient[] = [];
@@ -262,7 +298,16 @@ export default class Level extends Phaser.Scene {
 	private exitConfirmContainer?: Phaser.GameObjects.Container;
 	private exitConfirmYesButton?: Phaser.GameObjects.Container;
 	private exitConfirmNoButton?: Phaser.GameObjects.Container;
+	private unlockPanelContainer?: Phaser.GameObjects.Container;
+	private unlockPreviewImage?: Phaser.GameObjects.Image;
+	private unlockNameText?: Phaser.GameObjects.Text;
+	private unlockCostText?: Phaser.GameObjects.Text;
+	private unlockBuyButton?: Phaser.GameObjects.Container;
+	private unlockCancelButton?: Phaser.GameObjects.Container;
+	private unlockPanelRestY = 0;
+	private currentUnlockId?: UnlockId;
 	private isExitConfirmVisible = false;
+	private isUnlockPanelVisible = false;
 	private isGameplayPaused = false;
 	private savedGameplayTimeScale = 1;
 	private static readonly EXIT_CONFIRM_DEPTH = 1002;
@@ -274,6 +319,18 @@ export default class Level extends Phaser.Scene {
 	private static readonly EXIT_BUTTON_TEXT_COLOR = "#ffffff";
 	private static readonly EXIT_BUTTON_YES_Y = 22;
 	private static readonly EXIT_BUTTON_NO_Y = 122;
+	private static readonly UNLOCK_PREVIEW_Y = -118;
+	private static readonly UNLOCK_PREVIEW_SCALE = 0.55;
+	private static readonly UNLOCK_NAME_Y = -28;
+	private static readonly UNLOCK_COST_Y = 24;
+	private static readonly UNLOCK_BUY_Y = 88;
+	private static readonly UNLOCK_CANCEL_Y = 168;
+	private static readonly PROGRESSION_LOCK_TEXTURE_KEY = "lock";
+	private static readonly PROGRESSION_LOCK_SCALE = 0.72;
+	private static readonly PROGRESSION_LOCK_DEPTH_OFFSET = 8;
+	private static readonly PROGRESSION_LOCK_HOVER_DURATION = 200;
+	private static readonly PROGRESSION_LOCK_RESET_DURATION = 160;
+	private progressionLockIcons: Phaser.GameObjects.Image[] = [];
 
 	init(data: LevelSceneData = {}) {
 
@@ -322,6 +379,8 @@ export default class Level extends Phaser.Scene {
 		this.scheduledWaveClients = 0;
 		this.queuedClientEntries = 0;
 		this.isExitConfirmVisible = false;
+		this.isUnlockPanelVisible = false;
+		this.currentUnlockId = undefined;
 		this.isGameplayPaused = false;
 		this.savedGameplayTimeScale = 1;
 		this.clientsRemainingInLevel = this.getLevelClientCount();
@@ -338,6 +397,12 @@ export default class Level extends Phaser.Scene {
 		this.exitConfirmContainer = undefined;
 		this.exitConfirmYesButton = undefined;
 		this.exitConfirmNoButton = undefined;
+		this.unlockPanelContainer = undefined;
+		this.unlockPreviewImage = undefined;
+		this.unlockNameText = undefined;
+		this.unlockCostText = undefined;
+		this.unlockBuyButton = undefined;
+		this.unlockCancelButton = undefined;
 	}
 
 	private flushLoadedContent() {
@@ -376,7 +441,10 @@ export default class Level extends Phaser.Scene {
 		this.selectedDipProduct = undefined;
 		this.selectedDeliveryProduct = undefined;
 		this.isExitConfirmVisible = false;
+		this.isUnlockPanelVisible = false;
+		this.currentUnlockId = undefined;
 		this.isGameplayPaused = false;
+		this.progressionLockIcons = [];
 	}
 
 	public recordSuccessfulDelivery() {
@@ -595,6 +663,209 @@ export default class Level extends Phaser.Scene {
 		this.updateClientsLeftIndicator();
 	}
 
+	private clearProgressionLockIcons() {
+
+		for (const lockIcon of this.progressionLockIcons) {
+			if (lockIcon.active) {
+				lockIcon.destroy();
+			}
+		}
+
+		this.progressionLockIcons = [];
+	}
+
+	private createProgressionLockIcon(x: number, y: number, depth: number, unlockId: UnlockId) {
+
+		const lockIcon = this.add.image(x, y, Level.PROGRESSION_LOCK_TEXTURE_KEY);
+		const baseX = x;
+		const baseY = y;
+
+		lockIcon.setOrigin(0.5);
+		lockIcon.setScale(Level.PROGRESSION_LOCK_SCALE);
+		lockIcon.setDepth(depth);
+		lockIcon.setInteractive({ useHandCursor: true });
+		lockIcon.setData("unlockId", unlockId);
+
+		lockIcon.on(Phaser.Input.Events.POINTER_DOWN, () => {
+			if (this.isExitConfirmVisible || this.isUnlockPanelVisible || this.panel.visible) {
+				return;
+			}
+
+			this.showUnlockPanel(unlockId);
+		});
+
+		lockIcon.on(Phaser.Input.Events.POINTER_OVER, () => {
+			const activeTween = lockIcon.getData("hoverTween") as Phaser.Tweens.Tween | undefined;
+			activeTween?.stop();
+
+			const hoverTween = this.tweens.add({
+				targets: lockIcon,
+				x: baseX + Phaser.Math.Between(-2, 2),
+				y: baseY - 5,
+				angle: Phaser.Math.Between(-8, 8),
+				duration: Level.PROGRESSION_LOCK_HOVER_DURATION,
+				ease: "Back.Out",
+			});
+			lockIcon.setData("hoverTween", hoverTween);
+		});
+
+		lockIcon.on(Phaser.Input.Events.POINTER_OUT, () => {
+			const activeTween = lockIcon.getData("hoverTween") as Phaser.Tweens.Tween | undefined;
+			activeTween?.stop();
+
+			const hoverTween = this.tweens.add({
+				targets: lockIcon,
+				x: baseX,
+				y: baseY,
+				angle: 0,
+				duration: Level.PROGRESSION_LOCK_RESET_DURATION,
+				ease: "Quad.Out",
+			});
+			lockIcon.setData("hoverTween", hoverTween);
+		});
+
+		this.progressionLockIcons.push(lockIcon);
+	}
+
+	private showProgressionLockIcon(
+		target: Phaser.GameObjects.Image | Phaser.GameObjects.Container,
+		unlockId: UnlockId,
+		offsetY = 0
+	) {
+
+		this.createProgressionLockIcon(
+			target.x,
+			target.y + offsetY,
+			target.depth + Level.PROGRESSION_LOCK_DEPTH_OFFSET,
+			unlockId
+		);
+	}
+
+	private applyLevelProgression() {
+
+		this.clearProgressionLockIcons();
+		this.applyProductSlotProgression();
+		this.applyWorkstationProgression();
+	}
+
+	private applyWorkstationProgression() {
+
+		const workstations: Array<{
+			workstationId: WorkstationId;
+			target: Phaser.GameObjects.Image | Phaser.GameObjects.Container;
+			lockOffsetY?: number;
+			applyTexture: (textureKey: string) => void;
+			setEnabled: (enabled: boolean) => void;
+		}> = [
+			{
+				workstationId: "fryer2",
+				target: this.fryer2,
+				applyTexture: (textureKey) => {
+					this.fryer2.setTexture(textureKey);
+				},
+				setEnabled: (enabled) => {
+					this.fryer2Enabled = enabled;
+				},
+			},
+			{
+				workstationId: "milkmachine",
+				target: this.milkmachine,
+				lockOffsetY: -12,
+				applyTexture: (textureKey) => {
+					this.milkmachine.setMachineTexture(textureKey);
+				},
+				setEnabled: (enabled) => {
+					this.milkMachineEnabled = enabled;
+				},
+			},
+			{
+				workstationId: "toaster",
+				target: this.toaster,
+				lockOffsetY: -8,
+				applyTexture: (textureKey) => {
+					this.toaster.toaster.setTexture(textureKey);
+				},
+				setEnabled: (enabled) => {
+					this.toasterEnabled = enabled;
+				},
+			},
+			{
+				workstationId: "workplace2",
+				target: this.workplace2,
+				applyTexture: (textureKey) => {
+					this.workplace2.setTexture(textureKey);
+				},
+				setEnabled: (enabled) => {
+					this.workplace2Enabled = enabled;
+				},
+			},
+		];
+
+		for (const { workstationId, target, lockOffsetY = 0, applyTexture, setEnabled } of workstations) {
+			const isAcquired = isWorkstationAcquired(workstationId);
+			applyTexture(getWorkstationTextureKey(workstationId, isAcquired));
+			setEnabled(isAcquired);
+
+			if (!isAcquired) {
+				this.showProgressionLockIcon(target, workstationId, lockOffsetY);
+			}
+		}
+	}
+
+	private activateProgressionProduct(
+		product: Phaser.GameObjects.Image | Phaser.GameObjects.Container
+	) {
+
+		product.setVisible(true);
+
+		if (product instanceof AProduct || product instanceof milkglass || product instanceof sandwichPrefab) {
+			product.reactivateFromProgression();
+		}
+	}
+
+	private deactivateProgressionProduct(
+		product: Phaser.GameObjects.Image | Phaser.GameObjects.Container
+	) {
+
+		product.setVisible(false);
+
+		if (product.input) {
+			product.disableInteractive();
+		}
+	}
+
+	private applyProductSlotProgression() {
+
+		const productSlots: Array<{
+			slotId: ProductSlotId;
+			holder: Phaser.GameObjects.Image;
+			product: Phaser.GameObjects.Image | Phaser.GameObjects.Container;
+		}> = [
+			{ slotId: "holder1", holder: this.holder1, product: this.rawProduct1 },
+			{ slotId: "holder2", holder: this.holder2, product: this.rawProduct2 },
+			{ slotId: "holder3", holder: this.holder3, product: this.milkGlass },
+			{ slotId: "holder4", holder: this.holder4, product: this.sandwichProduct },
+		];
+
+		for (const { slotId, holder, product } of productSlots) {
+			const isAcquired = isProductAcquired(slotId);
+
+			holder.setTexture(
+				isAcquired ? UNLOCKED_HOLDER_TEXTURE_KEY : getLockedTextureKey(slotId)
+			);
+
+			if (isAcquired) {
+				this.activateProgressionProduct(product);
+			} else {
+				this.deactivateProgressionProduct(product);
+			}
+
+			if (!isAcquired && slotId !== "holder1") {
+				this.showProgressionLockIcon(holder, slotId);
+			}
+		}
+	}
+
 	private setupMenuButton() {
 
 		this.menuBtn.setScrollFactor(0);
@@ -610,7 +881,7 @@ export default class Level extends Phaser.Scene {
 		});
 
 		this.menuBtn.on(Phaser.Input.Events.POINTER_DOWN, () => {
-			if (this.isExitConfirmVisible) {
+			if (this.isExitConfirmVisible || this.isUnlockPanelVisible) {
 				return;
 			}
 
@@ -799,19 +1070,249 @@ export default class Level extends Phaser.Scene {
 		this.exitConfirmYesButton?.setScale(1);
 		this.exitConfirmNoButton?.setScale(1);
 		this.resumeGameplay();
+		this.hideModalOverlayIfIdle();
+	}
 
-		if (!this.panel.visible) {
-			this.tweens.add({
-				targets: this.blurOverlay,
-				alpha: 0,
-				duration: Level.INTRO_OVERLAY_FADE_OUT_DURATION,
-				ease: "Quad.InOut",
-				onComplete: () => {
-					this.blurOverlay.disableInteractive();
-					this.blurOverlay.setVisible(false);
-				},
-			});
+	private hideModalOverlayIfIdle() {
+
+		if (this.panel.visible || this.isExitConfirmVisible || this.isUnlockPanelVisible) {
+			return;
 		}
+
+		this.tweens.add({
+			targets: this.blurOverlay,
+			alpha: 0,
+			duration: Level.INTRO_OVERLAY_FADE_OUT_DURATION,
+			ease: "Quad.InOut",
+			onComplete: () => {
+				this.blurOverlay.disableInteractive();
+				this.blurOverlay.setVisible(false);
+			},
+		});
+	}
+
+	private createUnlockPanelUi() {
+
+		const centerX = this.scale.width * 0.5;
+		const centerY = this.scale.height * 0.5;
+		const container = this.add.container(centerX, centerY);
+
+		const background = this.add.image(0, 0, "dayOneLabel");
+		background.setScale(0.75);
+		container.add(background);
+
+		const previewImage = this.add.image(0, Level.UNLOCK_PREVIEW_Y, "Product2Raw");
+		previewImage.setScale(Level.UNLOCK_PREVIEW_SCALE);
+		container.add(previewImage);
+
+		const nameText = this.add.text(0, Level.UNLOCK_NAME_Y, "", {
+			color: "#DF3D7A",
+			fontFamily: "Klop",
+			fontSize: "40px",
+			fontStyle: "bold",
+			align: "center",
+			stroke: "#fff8f3",
+			strokeThickness: 6,
+		});
+		nameText.setOrigin(0.5);
+		container.add(nameText);
+
+		const costText = this.add.text(0, Level.UNLOCK_COST_Y, "", {
+			color: "#A96625",
+			fontFamily: "Klop",
+			fontSize: "34px",
+			fontStyle: "bold",
+			align: "center",
+			stroke: "#fff8f3",
+			strokeThickness: 4,
+		});
+		costText.setOrigin(0.5);
+		container.add(costText);
+
+		this.unlockBuyButton = this.createExitDialogButton(0, Level.UNLOCK_BUY_Y, "Buy");
+		this.unlockCancelButton = this.createExitDialogButton(0, Level.UNLOCK_CANCEL_Y, "Cancel");
+		container.add([this.unlockBuyButton, this.unlockCancelButton]);
+
+		container.setScrollFactor(0);
+		container.setDepth(Level.EXIT_CONFIRM_DEPTH);
+		container.setVisible(false);
+		container.setAlpha(0);
+		this.unlockPanelContainer = container;
+		this.unlockPreviewImage = previewImage;
+		this.unlockNameText = nameText;
+		this.unlockCostText = costText;
+		this.unlockPanelRestY = centerY;
+	}
+
+	private bindUnlockPanelButtons() {
+
+		if (!this.unlockBuyButton || !this.unlockCancelButton) {
+			return;
+		}
+
+		for (const button of [this.unlockBuyButton, this.unlockCancelButton]) {
+			button.setScale(1);
+			button.setInteractive({ useHandCursor: true });
+			button.removeAllListeners();
+		}
+
+		this.unlockBuyButton.on(Phaser.Input.Events.POINTER_OVER, () => {
+			this.unlockBuyButton?.setScale(1.06);
+		});
+		this.unlockBuyButton.on(Phaser.Input.Events.POINTER_OUT, () => {
+			this.unlockBuyButton?.setScale(1);
+		});
+		this.unlockBuyButton.on(Phaser.Input.Events.POINTER_DOWN, () => {
+			this.unlockBuyButton?.setScale(0.94);
+			this.confirmUnlockPurchase();
+		});
+
+		this.unlockCancelButton.on(Phaser.Input.Events.POINTER_OVER, () => {
+			this.unlockCancelButton?.setScale(1.06);
+		});
+		this.unlockCancelButton.on(Phaser.Input.Events.POINTER_OUT, () => {
+			this.unlockCancelButton?.setScale(1);
+		});
+		this.unlockCancelButton.on(Phaser.Input.Events.POINTER_DOWN, () => {
+			this.unlockCancelButton?.setScale(0.94);
+			this.hideUnlockPanel();
+		});
+	}
+
+	private updateUnlockPanelContent(unlockId: UnlockId) {
+
+		const entry = getUnlockCatalogEntry(unlockId);
+		if (!this.unlockPreviewImage || !this.unlockNameText || !this.unlockCostText) {
+			return;
+		}
+
+		if (entry.previewFrame !== undefined) {
+			this.unlockPreviewImage.setTexture(entry.previewTextureKey, entry.previewFrame);
+		} else {
+			this.unlockPreviewImage.setTexture(entry.previewTextureKey);
+		}
+
+		this.unlockPreviewImage.setScale(Level.UNLOCK_PREVIEW_SCALE);
+		this.unlockNameText.setText(entry.displayName);
+		this.unlockCostText.setText(`${entry.coinCost} coins`);
+		this.unlockCostText.setColor("#A96625");
+	}
+
+	private showInsufficientUnlockFundsFeedback() {
+
+		this.sound.play("deny");
+
+		if (!this.unlockCostText) {
+			return;
+		}
+
+		this.tweens.add({
+			targets: this.unlockCostText,
+			scaleX: 1.12,
+			scaleY: 1.12,
+			duration: 90,
+			yoyo: true,
+			ease: "Quad.Out",
+			onStart: () => {
+				this.unlockCostText?.setColor("#D62839");
+			},
+			onComplete: () => {
+				this.unlockCostText?.setColor("#A96625");
+			},
+		});
+	}
+
+	private showUnlockPanel(unlockId: UnlockId) {
+
+		if (this.isUnlockPanelVisible || this.isExitConfirmVisible || this.panel.visible) {
+			return;
+		}
+
+		if (isProductUnlockId(unlockId) ? isProductAcquired(unlockId) : isWorkstationAcquired(unlockId)) {
+			return;
+		}
+
+		if (!this.unlockPanelContainer) {
+			this.createUnlockPanelUi();
+		}
+
+		this.currentUnlockId = unlockId;
+		this.updateUnlockPanelContent(unlockId);
+		this.pauseGameplay();
+		this.isUnlockPanelVisible = true;
+		this.bindUnlockPanelButtons();
+
+		const panelStartY = -this.unlockPanelContainer!.displayHeight - Level.INTRO_PANEL_START_OFFSET;
+		this.unlockPanelContainer!.y = panelStartY;
+		this.unlockPanelContainer!.setVisible(true);
+		this.unlockPanelContainer!.setAlpha(1);
+
+		this.blurOverlay.setVisible(true);
+		this.blurOverlay.setAlpha(0);
+		this.blurOverlay.setInteractive(
+			new Phaser.Geom.Rectangle(0, 0, this.scale.width, this.scale.height),
+			Phaser.Geom.Rectangle.Contains
+		);
+
+		this.tweens.add({
+			targets: this.blurOverlay,
+			alpha: 1,
+			duration: Level.INTRO_OVERLAY_FADE_IN_DURATION,
+			ease: "Quad.Out",
+		});
+
+		this.tweens.add({
+			targets: this.unlockPanelContainer,
+			y: this.unlockPanelRestY,
+			duration: Level.INTRO_PANEL_DROP_DURATION,
+			ease: "Bounce.Out",
+		});
+	}
+
+	private hideUnlockPanel() {
+
+		if (!this.isUnlockPanelVisible || !this.unlockPanelContainer) {
+			return;
+		}
+
+		this.isUnlockPanelVisible = false;
+		this.currentUnlockId = undefined;
+		this.unlockBuyButton?.disableInteractive();
+		this.unlockCancelButton?.disableInteractive();
+		this.unlockPanelContainer.setVisible(false);
+		this.unlockPanelContainer.setAlpha(0);
+		this.unlockPanelContainer.y = this.unlockPanelRestY;
+		this.unlockBuyButton?.setScale(1);
+		this.unlockCancelButton?.setScale(1);
+		this.resumeGameplay();
+		this.hideModalOverlayIfIdle();
+	}
+
+	private confirmUnlockPurchase() {
+
+		if (!this.isUnlockPanelVisible || !this.currentUnlockId) {
+			return;
+		}
+
+		const entry = getUnlockCatalogEntry(this.currentUnlockId);
+
+		if (this.coinCount < entry.coinCost) {
+			this.showInsufficientUnlockFundsFeedback();
+			return;
+		}
+
+		this.coinCount = Math.max(0, this.coinCount - entry.coinCost);
+		storeTotalCoins(this.coinCount);
+		this.updateCoinCounter();
+
+		if (isProductUnlockId(this.currentUnlockId)) {
+			storeProductAcquired(this.currentUnlockId);
+		} else {
+			storeWorkstationAcquired(this.currentUnlockId);
+		}
+
+		this.applyLevelProgression();
+		this.hideUnlockPanel();
 	}
 
 	private confirmExitToSceneSelector() {
@@ -975,6 +1476,10 @@ export default class Level extends Phaser.Scene {
 
 	public claimAvailableMilkSlot() {
 
+		if (!this.milkMachineEnabled) {
+			return null;
+		}
+
 		if (!this.milkRefill1Occupied) {
 			this.milkRefill1Occupied = true;
 			return {
@@ -1021,6 +1526,10 @@ export default class Level extends Phaser.Scene {
 	}
 
 	public claimAvailableToasterSlot() {
+
+		if (!this.toasterEnabled) {
+			return null;
+		}
 
 		if (!this.toasterSlotOccupied) {
 			this.toasterSlotOccupied = true;
@@ -1664,6 +2173,7 @@ export default class Level extends Phaser.Scene {
 
 		this.flushLoadedContent();
 		this.editorCreate();
+		this.applyLevelProgression();
 		this.panelRestY = this.panel.y;
 		this.applyLevelPlanToIntroPanel();
 		this.initializeCoinCounter();

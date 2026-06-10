@@ -166,6 +166,13 @@
             },
             {
                 "url": [
+                    "assets/audio/deny.mp3"
+                ],
+                "type": "audio",
+                "key": "deny"
+            },
+            {
+                "url": [
                     "assets/audio/eating1.mp3"
                 ],
                 "type": "audio",
@@ -243,6 +250,36 @@
                 "url": "assets/lamp.png",
                 "type": "image",
                 "key": "lamp"
+            },
+            {
+                "url": "assets/lock.png",
+                "type": "image",
+                "key": "lock"
+            },
+            {
+                "url": "assets/lockedFryer.png",
+                "type": "image",
+                "key": "lockedFryer"
+            },
+            {
+                "url": "assets/lockedHolder.png",
+                "type": "image",
+                "key": "lockedHolder"
+            },
+            {
+                "url": "assets/lockedMilkMachine.png",
+                "type": "image",
+                "key": "lockedMilkMachine"
+            },
+            {
+                "url": "assets/lockedToaster.png",
+                "type": "image",
+                "key": "lockedToaster"
+            },
+            {
+                "url": "assets/lockedWorkstation.png",
+                "type": "image",
+                "key": "lockedWorkplace"
             },
             {
                 "url": [
@@ -323,6 +360,11 @@
                 "key": "Product1Cooked"
             },
             {
+                "url": "assets/product1Locked.png",
+                "type": "image",
+                "key": "product1Locked"
+            },
+            {
                 "url": "assets/Product1Raw.png",
                 "type": "image",
                 "key": "Product1Raw"
@@ -348,9 +390,24 @@
                 "key": "Product2Cooked"
             },
             {
+                "url": "assets/product2Locked.png",
+                "type": "image",
+                "key": "product2Locked"
+            },
+            {
                 "url": "assets/Product2Raw.png",
                 "type": "image",
                 "key": "Product2Raw"
+            },
+            {
+                "url": "assets/product3Locked.png",
+                "type": "image",
+                "key": "product3Locked"
+            },
+            {
+                "url": "assets/product4Locked.png",
+                "type": "image",
+                "key": "product4Locked"
             },
             {
                 "url": "assets/RawProduct1.png",

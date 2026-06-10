@@ -1,3 +1,6 @@
 node_modules/
 dist/
+docs/index.html
+docs/*.bundle.js
+docs/asset-packs/
 .DS_Store

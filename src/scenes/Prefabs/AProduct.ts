@@ -180,6 +180,23 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		this.deliverToClient(client);
 	}
 
+	public reactivateFromProgression() {
+
+		this.setInteractive({
+			hitArea: new Phaser.Geom.Circle(
+				this.displayOriginX,
+				this.displayOriginY,
+				Math.max(this.width, this.height) * AProduct.HIT_AREA_SCALE * 0.5
+			),
+			hitAreaCallback: Phaser.Geom.Circle.Contains,
+			useHandCursor: true
+		});
+
+		if (this.scaleX < 0.01 && this.scaleY < 0.01) {
+			this.playSpawnTween();
+		}
+	}
+
 	public canReceiveDirectDelivery() {
 
 		return this.active

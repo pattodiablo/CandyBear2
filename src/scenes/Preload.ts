@@ -5,7 +5,7 @@
 
 /* START-USER-IMPORTS */
 import Phaser from "phaser";
-import assetPackUrl from "../../static/assets/asset-pack.json";
+import assetPackUrl from "../../docs/assets/asset-pack.json";
 import { hasOpenedGameBefore, markGameAsOpened } from "./levelProgress";
 /* END-USER-IMPORTS */
 
