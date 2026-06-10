@@ -13,7 +13,7 @@
 		  "~/*": ["./src/*"],
 		  "@esotericsoftware/spine-phaser": ["./src/vendor/spine-phaser.ts"]
 		},
-        "outDir": "./dist",
+        "outDir": "./docs",
 		"types": [
 			"phaser"
 		]
