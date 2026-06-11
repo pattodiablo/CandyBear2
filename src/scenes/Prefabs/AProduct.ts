@@ -342,7 +342,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 			x: targetFryer.target.x,
 			y: targetFryer.target.y - AProduct.FRYER_OFFSET_Y,
 			angle: this.baseAngle + AProduct.SPIN_ANGLE,
-			duration: 420,
+			duration: 220,
 			ease: "Cubic.InOut",
 			onComplete: () => {
 				this.isRaised = false;

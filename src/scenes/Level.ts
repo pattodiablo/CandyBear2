@@ -262,6 +262,7 @@ export default class Level extends Phaser.Scene {
 	private static readonly DELAYED_CLIENT_MIN_DELAY = 4000;
 	private static readonly DELAYED_CLIENT_MAX_DELAY = 5000;
 	private static readonly DELAYED_CLIENT_STAGGER = 350;
+	private static readonly LEVEL_PREP_DURATION_MS = 8000;
 	private static readonly DAY_INDICATOR_CENTER_OFFSET_X = 100;
 	private static readonly DAY_INDICATOR_Y = 40;
 	private static readonly REWARD_COIN_Y = 307;
@@ -315,6 +316,7 @@ export default class Level extends Phaser.Scene {
 	private scheduledWaveClients = 0;
 	private queuedClientEntries = 0;
 	private waveSpawnTimers: Phaser.Time.TimerEvent[] = [];
+	private levelPrepTimer?: Phaser.Time.TimerEvent;
 	private clientSpawnRetryTimer?: Phaser.Time.TimerEvent;
 	private exitConfirmContainer?: Phaser.GameObjects.Container;
 	private exitConfirmYesButton?: Phaser.GameObjects.Container;
@@ -351,6 +353,11 @@ export default class Level extends Phaser.Scene {
 	private static readonly PROGRESSION_LOCK_DEPTH_OFFSET = 8;
 	private static readonly PROGRESSION_LOCK_HOVER_DURATION = 200;
 	private static readonly PROGRESSION_LOCK_RESET_DURATION = 160;
+	private static readonly PROGRESSION_LOCK_AFFORDANCE_DURATION = 420;
+	private static readonly PROGRESSION_LOCK_AFFORDANCE_DELAY_MIN = 900;
+	private static readonly PROGRESSION_LOCK_AFFORDANCE_DELAY_MAX = 2400;
+	private static readonly PROGRESSION_LOCK_AFFORDANCE_LIFT_Y = -4;
+	private static readonly PROGRESSION_LOCK_AFFORDANCE_ANGLE = 7;
 	private progressionLockIcons: Phaser.GameObjects.Image[] = [];
 	private unbindDeveloperCheat?: () => void;
 
@@ -698,6 +705,59 @@ export default class Level extends Phaser.Scene {
 		this.progressionLockIcons = [];
 	}
 
+	private canAffordUnlock(unlockId: UnlockId) {
+
+		return this.coinCount >= getUnlockCatalogEntry(unlockId).coinCost;
+	}
+
+	private stopProgressionLockAffordance(lockIcon: Phaser.GameObjects.Image) {
+
+		const affordanceTween = lockIcon.getData("affordanceTween") as Phaser.Tweens.Tween | undefined;
+		affordanceTween?.stop();
+		lockIcon.setData("affordanceTween", undefined);
+	}
+
+	private syncProgressionLockAffordance(lockIcon: Phaser.GameObjects.Image) {
+
+		this.stopProgressionLockAffordance(lockIcon);
+
+		const unlockId = lockIcon.getData("unlockId") as UnlockId | undefined;
+		const baseX = lockIcon.getData("baseX") as number;
+		const baseY = lockIcon.getData("baseY") as number;
+
+		lockIcon.setPosition(baseX, baseY);
+		lockIcon.setAngle(0);
+
+		if (!unlockId || !this.canAffordUnlock(unlockId)) {
+			return;
+		}
+
+		const affordanceTween = this.tweens.add({
+			targets: lockIcon,
+			y: baseY + Level.PROGRESSION_LOCK_AFFORDANCE_LIFT_Y,
+			angle: Level.PROGRESSION_LOCK_AFFORDANCE_ANGLE,
+			duration: Level.PROGRESSION_LOCK_AFFORDANCE_DURATION,
+			ease: "Sine.InOut",
+			yoyo: true,
+			repeat: -1,
+			repeatDelay: Phaser.Math.Between(
+				Level.PROGRESSION_LOCK_AFFORDANCE_DELAY_MIN,
+				Level.PROGRESSION_LOCK_AFFORDANCE_DELAY_MAX
+			),
+			delay: Phaser.Math.Between(0, 700),
+		});
+		lockIcon.setData("affordanceTween", affordanceTween);
+	}
+
+	private updateProgressionLockAffordance() {
+
+		for (const lockIcon of this.progressionLockIcons) {
+			if (lockIcon.active) {
+				this.syncProgressionLockAffordance(lockIcon);
+			}
+		}
+	}
+
 	private createProgressionLockIcon(x: number, y: number, depth: number, unlockId: UnlockId) {
 
 		const lockIcon = this.add.image(x, y, Level.PROGRESSION_LOCK_TEXTURE_KEY);
@@ -709,6 +769,8 @@ export default class Level extends Phaser.Scene {
 		lockIcon.setDepth(depth);
 		lockIcon.setInteractive({ useHandCursor: true });
 		lockIcon.setData("unlockId", unlockId);
+		lockIcon.setData("baseX", baseX);
+		lockIcon.setData("baseY", baseY);
 
 		lockIcon.on(Phaser.Input.Events.POINTER_DOWN, () => {
 			if (this.isExitConfirmVisible || this.isUnlockPanelVisible || this.panel.visible) {
@@ -719,6 +781,8 @@ export default class Level extends Phaser.Scene {
 		});
 
 		lockIcon.on(Phaser.Input.Events.POINTER_OVER, () => {
+			this.stopProgressionLockAffordance(lockIcon);
+
 			const activeTween = lockIcon.getData("hoverTween") as Phaser.Tweens.Tween | undefined;
 			activeTween?.stop();
 
@@ -744,6 +808,9 @@ export default class Level extends Phaser.Scene {
 				angle: 0,
 				duration: Level.PROGRESSION_LOCK_RESET_DURATION,
 				ease: "Quad.Out",
+				onComplete: () => {
+					this.syncProgressionLockAffordance(lockIcon);
+				},
 			});
 			lockIcon.setData("hoverTween", hoverTween);
 		});
@@ -770,6 +837,7 @@ export default class Level extends Phaser.Scene {
 		this.clearProgressionLockIcons();
 		this.applyProductSlotProgression();
 		this.applyWorkstationProgression();
+		this.updateProgressionLockAffordance();
 	}
 
 	private applyWorkstationProgression() {
@@ -1391,7 +1459,7 @@ export default class Level extends Phaser.Scene {
 				this.blurOverlay.disableInteractive();
 				this.blurOverlay.setVisible(false);
 				this.panel.setVisible(false);
-				this.spawnInitialClients();
+				this.startLevelPreparation();
 			}
 		});
 	}
@@ -1430,6 +1498,7 @@ export default class Level extends Phaser.Scene {
 	private updateCoinCounter() {
 
 		this.coinCounterText?.setText(`${this.coinCount}`);
+		this.updateProgressionLockAffordance();
 	}
 
 	private setupDeveloperCheat() {
@@ -1967,6 +2036,15 @@ export default class Level extends Phaser.Scene {
 		return this.scheduledWaveClients + this.queuedClientEntries;
 	}
 
+	private startLevelPreparation() {
+
+		this.clearLevelPrepTimer();
+		this.levelPrepTimer = this.time.delayedCall(Level.LEVEL_PREP_DURATION_MS, () => {
+			this.levelPrepTimer = undefined;
+			this.spawnInitialClients();
+		});
+	}
+
 	private spawnInitialClients() {
 		this.currentWaveIndex = 0;
 		this.spawnCurrentWave();
@@ -2080,8 +2158,15 @@ export default class Level extends Phaser.Scene {
 			+ (index * Level.DELAYED_CLIENT_STAGGER);
 	}
 
+	private clearLevelPrepTimer() {
+
+		this.levelPrepTimer?.remove(false);
+		this.levelPrepTimer = undefined;
+	}
+
 	private clearWaveSpawnTimers() {
 
+		this.clearLevelPrepTimer();
 		this.waveSpawnTimers.forEach((timer) => {
 			timer.remove(false);
 		});
