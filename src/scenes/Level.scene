@@ -78,7 +78,7 @@
                 "key": "Holder"
             },
             "x": 80,
-            "y": 544
+            "y": 561
         },
         {
             "type": "Image",
@@ -89,7 +89,7 @@
                 "key": "Holder"
             },
             "x": 80,
-            "y": 650
+            "y": 667
         },
         {
             "type": "Image",
@@ -100,7 +100,7 @@
                 "key": "Holder"
             },
             "x": 210,
-            "y": 650
+            "y": 667
         },
         {
             "type": "Image",
@@ -111,7 +111,7 @@
                 "key": "Holder"
             },
             "x": 210,
-            "y": 544
+            "y": 561
         },
         {
             "type": "Image",
@@ -122,7 +122,7 @@
                 "key": "workplace"
             },
             "x": 1175,
-            "y": 644
+            "y": 660
         },
         {
             "type": "Image",
@@ -133,7 +133,7 @@
                 "key": "workplace"
             },
             "x": 1042,
-            "y": 644
+            "y": 660
         },
         {
             "type": "Image",
@@ -144,7 +144,7 @@
                 "key": "ChocolateDip"
             },
             "x": 1042,
-            "y": 543
+            "y": 559
         },
         {
             "type": "Image",
@@ -155,7 +155,7 @@
                 "key": "CandyDip"
             },
             "x": 1175,
-            "y": 543
+            "y": 559
         },
         {
             "type": "Image",
@@ -188,7 +188,7 @@
                 "key": "Charola"
             },
             "x": 927,
-            "y": 407,
+            "y": 399,
             "scaleX": 1.2
         },
         {
@@ -200,7 +200,7 @@
                 "key": "Charola"
             },
             "x": 315,
-            "y": 407,
+            "y": 399,
             "scaleX": 1.2
         },
         {
@@ -233,7 +233,7 @@
             "label": "rawProduct1",
             "scope": "CLASS",
             "x": 78,
-            "y": 547
+            "y": 564
         },
         {
             "prefabId": "60be42aa-8f5d-439a-b281-d01000ca8a78",
@@ -249,7 +249,7 @@
                 "key": "Product2Raw"
             },
             "x": 81,
-            "y": 653
+            "y": 670
         },
         {
             "prefabId": "10dc66d6-8928-4081-a55a-d56eacc644f9",
@@ -261,7 +261,7 @@
             "label": "milkGlass",
             "scope": "CLASS",
             "x": 210,
-            "y": 536
+            "y": 553
         },
         {
             "prefabId": "1a5a7c05-9433-4d24-b582-e6e50f7dea93",
@@ -273,7 +273,7 @@
             "label": "sandwichProduct",
             "scope": "CLASS",
             "x": 209,
-            "y": 651
+            "y": 668
         },
         {
             "type": "Image",
@@ -333,11 +333,10 @@
             "texture": {
                 "key": "cookieJar"
             },
-            "x": 93,
-            "y": 369,
+            "x": 144,
+            "y": 450,
             "scaleX": 0.7,
-            "scaleY": 0.7,
-            "visible": false
+            "scaleY": 0.7
         },
         {
             "type": "Image",
@@ -346,9 +345,8 @@
             "texture": {
                 "key": "glace2"
             },
-            "x": 1220,
-            "y": 377,
-            "visible": false
+            "x": 1145,
+            "y": 458
         },
         {
             "type": "Image",
@@ -357,9 +355,8 @@
             "texture": {
                 "key": "glace1"
             },
-            "x": 1137,
-            "y": 381,
-            "visible": false
+            "x": 1062,
+            "y": 462
         },
         {
             "prefabId": "9d591894-39c5-4c08-9f2f-96263de8448f",

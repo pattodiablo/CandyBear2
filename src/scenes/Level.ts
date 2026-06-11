@@ -87,28 +87,28 @@ export default class Level extends Phaser.Scene {
 		const fryer2 = this.add.image(390, 654, "Fryer");
 
 		// holder1
-		const holder1 = this.add.image(80, 544, "Holder");
+		const holder1 = this.add.image(80, 561, "Holder");
 
 		// holder2
-		const holder2 = this.add.image(80, 650, "Holder");
+		const holder2 = this.add.image(80, 667, "Holder");
 
 		// holder3
-		const holder3 = this.add.image(210, 650, "Holder");
+		const holder3 = this.add.image(210, 667, "Holder");
 
 		// holder4
-		const holder4 = this.add.image(210, 544, "Holder");
+		const holder4 = this.add.image(210, 561, "Holder");
 
 		// workplace1
-		const workplace1 = this.add.image(1175, 644, "workplace");
+		const workplace1 = this.add.image(1175, 660, "workplace");
 
 		// workplace2
-		const workplace2 = this.add.image(1042, 644, "workplace");
+		const workplace2 = this.add.image(1042, 660, "workplace");
 
 		// chocolateDip
-		const chocolateDip = this.add.image(1042, 543, "ChocolateDip");
+		const chocolateDip = this.add.image(1042, 559, "ChocolateDip");
 
 		// candyDip
-		const candyDip = this.add.image(1175, 543, "CandyDip");
+		const candyDip = this.add.image(1175, 559, "CandyDip");
 
 		// chocolateIcon
 		const chocolateIcon = this.add.image(1039, 539, "chocolateIcon");
@@ -119,11 +119,11 @@ export default class Level extends Phaser.Scene {
 		candyicon.visible = false;
 
 		// charola1
-		const charola1 = this.add.image(927, 407, "Charola");
+		const charola1 = this.add.image(927, 399, "Charola");
 		charola1.scaleX = 1.2;
 
 		// charola2
-		const charola2 = this.add.image(315, 407, "Charola");
+		const charola2 = this.add.image(315, 399, "Charola");
 		charola2.scaleX = 1.2;
 
 		// lamp
@@ -133,19 +133,19 @@ export default class Level extends Phaser.Scene {
 		this.add.image(1035, 57, "lamp");
 
 		// rawProduct1
-		const rawProduct1 = new AProduct(this, 78, 547);
+		const rawProduct1 = new AProduct(this, 78, 564);
 		this.add.existing(rawProduct1);
 
 		// rawProduct2
-		const rawProduct2 = new AProduct(this, 81, 653, "Product2Raw");
+		const rawProduct2 = new AProduct(this, 81, 670, "Product2Raw");
 		this.add.existing(rawProduct2);
 
 		// milkGlass
-		const milkGlass = new milkglass(this, 210, 536);
+		const milkGlass = new milkglass(this, 210, 553);
 		this.add.existing(milkGlass);
 
 		// sandwichProduct
-		const sandwichProduct = new sandwichPrefab(this, 209, 651);
+		const sandwichProduct = new sandwichPrefab(this, 209, 668);
 		this.add.existing(sandwichProduct);
 
 		// blurOverlay
@@ -166,18 +166,19 @@ export default class Level extends Phaser.Scene {
 		const menuBtn = this.add.image(1229, 47, "menuBtn");
 
 		// cookieJar
-		const cookieJar = this.add.image(93, 369, "cookieJar");
+		const cookieJar = this.add.image(144, 450, "cookieJar");
 		cookieJar.scaleX = 0.7;
 		cookieJar.scaleY = 0.7;
-		cookieJar.visible = false;
 
 		// glace2
-		const glace2 = this.add.image(1220, 377, "glace2");
-		glace2.visible = false;
+		this.add.image(1145, 458, "glace2");
 
 		// glace1
-		const glace1 = this.add.image(1137, 381, "glace1");
-		glace1.visible = false;
+		this.add.image(1062, 462, "glace1");
+
+		// likeHeart
+		const likeHeart = new LikeHeart(this, 470, 183);
+		this.add.existing(likeHeart);
 
 		// overTrayIcon
 		this.add.image(312, 391, "overTrayIcon");
