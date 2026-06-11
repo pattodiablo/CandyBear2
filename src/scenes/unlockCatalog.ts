@@ -11,52 +11,53 @@ export interface UnlockCatalogEntry {
 	coinCost: number;
 }
 
-// Levels 1-20 average ~207 clients; at ~3 coins each that is ~621 coins available.
-// Total unlock cost is intentionally below that budget so everything can be bought by level 20.
+// Levels 1-10 total 67 clients; at 3 coins each that is ~201 coins available.
+// Bundled unlock path (sandwich + milk glass include toaster/milkmachine) costs 150 coins,
+// leaving room for a few product-discard penalties before level 10.
 export const UNLOCK_CATALOG: Record<UnlockId, UnlockCatalogEntry> = {
 	holder2: {
 		id: "holder2",
 		displayName: "Berry Dip",
 		previewTextureKey: "Product2Raw",
-		coinCost: 35,
+		coinCost: 12,
 	},
 	fryer2: {
 		id: "fryer2",
 		displayName: "Second Fryer",
 		previewTextureKey: "Fryer",
-		coinCost: 45,
+		coinCost: 18,
 	},
 	toaster: {
 		id: "toaster",
 		displayName: "Toaster",
 		previewTextureKey: "toaster",
-		coinCost: 55,
+		coinCost: 22,
 	},
 	milkmachine: {
 		id: "milkmachine",
 		displayName: "Milk Machine",
 		previewTextureKey: "Milkmachine",
-		coinCost: 70,
+		coinCost: 28,
 	},
 	workplace2: {
 		id: "workplace2",
 		displayName: "Second Workplace",
 		previewTextureKey: "workplace",
-		coinCost: 85,
+		coinCost: 32,
 	},
 	holder3: {
 		id: "holder3",
 		displayName: "Sandwich",
 		previewTextureKey: "sandWichAnim",
 		previewFrame: "sandwich0001.png",
-		coinCost: 95,
+		coinCost: 40,
 	},
 	holder4: {
 		id: "holder4",
 		displayName: "Milk Glass",
 		previewTextureKey: "GlassAnim",
 		previewFrame: "Vaso0001.png",
-		coinCost: 105,
+		coinCost: 48,
 	},
 };
 
