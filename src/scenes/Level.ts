@@ -9,12 +9,14 @@ import AProduct from "./Prefabs/AProduct";
 import milkglass from "./Prefabs/milkglass";
 import sandwichPrefab from "./Prefabs/sandwichPrefab";
 import PanelPrefab from "./Prefabs/PanelPrefab";
+import LikeHeart from "./Prefabs/LikeHeart";
 /* START-USER-IMPORTS */
 import Phaser from "phaser";
 import AClient from "./Prefabs/AClient";	
 import YumPrefab from "./Prefabs/YumPrefab";
 import Coin from "./Prefabs/Coin";
 import ConfettiPrefab from "./Prefabs/ConfettiPrefab";
+import { recordLike, storeLevelLikes } from "./likeProgress";
 import { getStoredTotalCoins, storeCompletedLevel, storeLevelStars, storeTotalCoins } from "./levelProgress";
 import { SkinsAndAnimationBoundsProvider } from "@esotericsoftware/spine-phaser-v4";
 import type { MilkSlotId } from "./Prefabs/milkMachine";
@@ -177,6 +179,12 @@ export default class Level extends Phaser.Scene {
 		const glace1 = this.add.image(1137, 381, "glace1");
 		glace1.visible = false;
 
+		// overTrayIcon
+		this.add.image(312, 391, "overTrayIcon");
+
+		// overTrayIcon_1
+		this.add.image(928, 391, "overTrayIcon");
+
 		this.workstation = workstation;
 		this.milkmachine = milkmachine;
 		this.toaster = toaster;
@@ -263,8 +271,16 @@ export default class Level extends Phaser.Scene {
 	private static readonly DELAYED_CLIENT_MAX_DELAY = 5000;
 	private static readonly DELAYED_CLIENT_STAGGER = 350;
 	private static readonly LEVEL_PREP_DURATION_MS = 8000;
+	private static readonly HOLDER_PRODUCT_SPAWN_TOLERANCE = 48;
+	private static readonly HOLDER_PRODUCT_SPAWNS: Record<ProductSlotId, { x: number; y: number; textureKey?: string }> = {
+		holder1: { x: 78, y: 547 },
+		holder2: { x: 81, y: 653, textureKey: "Product2Raw" },
+		holder3: { x: 209, y: 651 },
+		holder4: { x: 210, y: 536 },
+	};
 	private static readonly DAY_INDICATOR_CENTER_OFFSET_X = 100;
 	private static readonly DAY_INDICATOR_Y = 40;
+	private static readonly LIKE_HEART_Y = 265;
 	private static readonly REWARD_COIN_Y = 307;
 	private static readonly REWARD_COIN_LAND_Y = 422;
 	private static readonly REWARD_COIN_RISE = 18;
@@ -312,6 +328,7 @@ export default class Level extends Phaser.Scene {
 	private hasCelebratedLevelCompletion = false;
 	private panelRestY = 0;
 	private successfulClientsServed = 0;
+	private quickServiceLikesThisLevel = 0;
 	private discardedProductLosses = 0;
 	private scheduledWaveClients = 0;
 	private queuedClientEntries = 0;
@@ -404,6 +421,7 @@ export default class Level extends Phaser.Scene {
 		this.selectedDipProduct = undefined;
 		this.selectedDeliveryProduct = undefined;
 		this.successfulClientsServed = 0;
+		this.quickServiceLikesThisLevel = 0;
 		this.discardedProductLosses = 0;
 		this.scheduledWaveClients = 0;
 		this.queuedClientEntries = 0;
@@ -482,6 +500,11 @@ export default class Level extends Phaser.Scene {
 		this.successfulClientsServed++;
 	}
 
+	public recordQuickServiceLike() {
+		this.quickServiceLikesThisLevel++;
+		recordLike();
+	}
+
 	public recordProductDiscardLoss() {
 		this.discardedProductLosses++;
 	}
@@ -500,6 +523,7 @@ export default class Level extends Phaser.Scene {
 			successfulClients: this.successfulClientsServed,
 			totalClients: this.getLevelClientCount(),
 			discardedProductLosses: this.discardedProductLosses,
+			quickServiceLikes: this.quickServiceLikesThisLevel,
 		};
 	}
 
@@ -904,10 +928,142 @@ export default class Level extends Phaser.Scene {
 		}
 	}
 
-	private activateProgressionProduct(
-		product: Phaser.GameObjects.Image | Phaser.GameObjects.Container
+	public registerHolderProductReplacement(
+		previousProduct: AProduct | sandwichPrefab | milkglass,
+		replacementProduct: AProduct | sandwichPrefab | milkglass
 	) {
 
+		if (this.rawProduct1 === previousProduct) {
+			this.rawProduct1 = replacementProduct as AProduct;
+			return;
+		}
+
+		if (this.rawProduct2 === previousProduct) {
+			this.rawProduct2 = replacementProduct as AProduct;
+			return;
+		}
+
+		if (this.sandwichProduct === previousProduct) {
+			this.sandwichProduct = replacementProduct as sandwichPrefab;
+			return;
+		}
+
+		if (this.milkGlass === previousProduct) {
+			this.milkGlass = replacementProduct as milkglass;
+		}
+	}
+
+	private isHolderSlotProductAtSpawn(
+		product: AProduct | sandwichPrefab | milkglass,
+		spawnX: number,
+		spawnY: number
+	) {
+
+		return product.active
+			&& product.scene === this
+			&& Phaser.Math.Distance.Between(product.x, product.y, spawnX, spawnY) <= Level.HOLDER_PRODUCT_SPAWN_TOLERANCE;
+	}
+
+	private findHolderSlotProductAtSpawn(slotId: ProductSlotId) {
+
+		const spawn = Level.HOLDER_PRODUCT_SPAWNS[slotId];
+
+		for (const child of this.children.list) {
+			if (slotId === "holder1" || slotId === "holder2") {
+				if (!(child instanceof AProduct)) {
+					continue;
+				}
+
+				if (spawn.textureKey && child.texture.key !== spawn.textureKey) {
+					continue;
+				}
+			} else if (slotId === "holder3") {
+				if (!(child instanceof sandwichPrefab)) {
+					continue;
+				}
+			} else if (!(child instanceof milkglass)) {
+				continue;
+			}
+
+			if (this.isHolderSlotProductAtSpawn(child, spawn.x, spawn.y)) {
+				return child;
+			}
+		}
+
+		return undefined;
+	}
+
+	private createHolderSlotProduct(slotId: ProductSlotId) {
+
+		const spawn = Level.HOLDER_PRODUCT_SPAWNS[slotId];
+
+		if (slotId === "holder1") {
+			return new AProduct(this, spawn.x, spawn.y);
+		}
+
+		if (slotId === "holder2") {
+			return new AProduct(this, spawn.x, spawn.y, spawn.textureKey);
+		}
+
+		if (slotId === "holder3") {
+			return new sandwichPrefab(this, spawn.x, spawn.y);
+		}
+
+		return new milkglass(this, spawn.x, spawn.y);
+	}
+
+	private setHolderSlotProduct(
+		slotId: ProductSlotId,
+		product: AProduct | sandwichPrefab | milkglass
+	) {
+
+		switch (slotId) {
+			case "holder1":
+				this.rawProduct1 = product as AProduct;
+				break;
+			case "holder2":
+				this.rawProduct2 = product as AProduct;
+				break;
+			case "holder3":
+				this.sandwichProduct = product as sandwichPrefab;
+				break;
+			case "holder4":
+				this.milkGlass = product as milkglass;
+				break;
+		}
+	}
+
+	private ensureHolderSlotProduct(slotId: ProductSlotId) {
+
+		const spawn = Level.HOLDER_PRODUCT_SPAWNS[slotId];
+		const trackedProduct = slotId === "holder1"
+			? this.rawProduct1
+			: slotId === "holder2"
+				? this.rawProduct2
+				: slotId === "holder3"
+					? this.sandwichProduct
+					: this.milkGlass;
+
+		if (this.isHolderSlotProductAtSpawn(trackedProduct, spawn.x, spawn.y)) {
+			return trackedProduct;
+		}
+
+		const existingAtSpawn = this.findHolderSlotProductAtSpawn(slotId);
+
+		if (existingAtSpawn) {
+			this.setHolderSlotProduct(slotId, existingAtSpawn);
+			return existingAtSpawn;
+		}
+
+		const replacementProduct = this.createHolderSlotProduct(slotId);
+		this.add.existing(replacementProduct);
+		this.setHolderSlotProduct(slotId, replacementProduct);
+		return replacementProduct;
+	}
+
+	private activateProgressionProduct(slotId: ProductSlotId) {
+
+		const product = this.ensureHolderSlotProduct(slotId);
 		product.setVisible(true);
 
 		if (product instanceof AProduct || product instanceof milkglass || product instanceof sandwichPrefab) {
@@ -931,15 +1087,14 @@ export default class Level extends Phaser.Scene {
 		const productSlots: Array<{
 			slotId: ProductSlotId;
 			holder: Phaser.GameObjects.Image;
-			product: Phaser.GameObjects.Image | Phaser.GameObjects.Container;
 		}> = [
-			{ slotId: "holder1", holder: this.holder1, product: this.rawProduct1 },
-			{ slotId: "holder2", holder: this.holder2, product: this.rawProduct2 },
-			{ slotId: "holder3", holder: this.holder3, product: this.sandwichProduct },
-			{ slotId: "holder4", holder: this.holder4, product: this.milkGlass },
+			{ slotId: "holder1", holder: this.holder1 },
+			{ slotId: "holder2", holder: this.holder2 },
+			{ slotId: "holder3", holder: this.holder3 },
+			{ slotId: "holder4", holder: this.holder4 },
 		];
 
-		for (const { slotId, holder, product } of productSlots) {
+		for (const { slotId, holder } of productSlots) {
 			const isAcquired = isProductAcquired(slotId);
 
 			holder.setTexture(
@@ -947,9 +1102,9 @@ export default class Level extends Phaser.Scene {
 			);
 
 			if (isAcquired) {
-				this.activateProgressionProduct(product);
+				this.activateProgressionProduct(slotId);
 			} else {
-				this.deactivateProgressionProduct(product);
+				this.deactivateProgressionProduct(this.ensureHolderSlotProduct(slotId));
 			}
 
 			if (!isAcquired && slotId !== "holder1") {
@@ -1812,6 +1967,16 @@ export default class Level extends Phaser.Scene {
 		return matchingProducts[0];
 	}
 
+	public showLikeHeartAt(x: number, onPopInComplete?: () => void) {
+
+		this.recordQuickServiceLike();
+		this.sound.play("likeSound");
+		const likeHeart = new LikeHeart(this, x, Level.LIKE_HEART_Y, "likeHeart", undefined, onPopInComplete);
+		this.add.existing(likeHeart);
+		likeHeart.setDepth(this.workstation.depth - 1);
+		return likeHeart;
+	}
+
 	public showYumAt(x: number) {
 
 		const yum = new YumPrefab(this, x, 307);
@@ -1954,6 +2119,7 @@ export default class Level extends Phaser.Scene {
 			this.currentLevelPlan.levelNumber,
 			PanelPrefab.calculateEarnedStars(this.getStarPerformance())
 		);
+		storeLevelLikes(this.currentLevelPlan.levelNumber, this.quickServiceLikesThisLevel);
 		if (finalYum) {
 			finalYum.once(Phaser.GameObjects.Events.DESTROY, () => {
 				this.time.delayedCall(Level.LEVEL_COMPLETE_CONFETTI_DELAY, () => {

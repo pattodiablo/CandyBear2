@@ -360,6 +360,37 @@
             "x": 1137,
             "y": 381,
             "visible": false
+        },
+        {
+            "prefabId": "9d591894-39c5-4c08-9f2f-96263de8448f",
+            "id": "c0c7d6ce-6f1a-4f4a-a9ff-d82ce7d36796",
+            "unlock": [
+                "x",
+                "y"
+            ],
+            "label": "likeHeart",
+            "x": 470,
+            "y": 183
+        },
+        {
+            "type": "Image",
+            "id": "846ff36c-a4d6-474f-b6cd-6bdf5289effa",
+            "label": "overTrayIcon",
+            "texture": {
+                "key": "overTrayIcon"
+            },
+            "x": 312,
+            "y": 391
+        },
+        {
+            "type": "Image",
+            "id": "5ce776ad-5032-4e06-9c88-32b3eb1d3d01",
+            "label": "overTrayIcon_1",
+            "texture": {
+                "key": "overTrayIcon"
+            },
+            "x": 928,
+            "y": 391
         }
     ],
     "plainObjects": [],

@@ -11,21 +11,20 @@ export interface UnlockCatalogEntry {
 	coinCost: number;
 }
 
-// Levels 1-10 total 67 clients; at 3 coins each that is ~201 coins available.
-// Bundled unlock path (sandwich + milk glass include toaster/milkmachine) costs 150 coins,
-// leaving room for a few product-discard penalties before level 10.
+// Product 1 (holder1) stays unlocked by default.
+// For now: Berry Dip 2, Second Fryer 3, Milk 3, Sandwich 4.
 export const UNLOCK_CATALOG: Record<UnlockId, UnlockCatalogEntry> = {
 	holder2: {
 		id: "holder2",
 		displayName: "Berry Dip",
 		previewTextureKey: "Product2Raw",
-		coinCost: 12,
+		coinCost: 2,
 	},
 	fryer2: {
 		id: "fryer2",
 		displayName: "Second Fryer",
 		previewTextureKey: "Fryer",
-		coinCost: 18,
+		coinCost: 3,
 	},
 	toaster: {
 		id: "toaster",
@@ -50,14 +49,14 @@ export const UNLOCK_CATALOG: Record<UnlockId, UnlockCatalogEntry> = {
 		displayName: "Sandwich",
 		previewTextureKey: "sandWichAnim",
 		previewFrame: "sandwich0001.png",
-		coinCost: 40,
+		coinCost: 4,
 	},
 	holder4: {
 		id: "holder4",
 		displayName: "Milk Glass",
 		previewTextureKey: "GlassAnim",
 		previewFrame: "Vaso0001.png",
-		coinCost: 48,
+		coinCost: 3,
 	},
 };
 

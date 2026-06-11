@@ -63,6 +63,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 	private requestWaitTimer?: Phaser.Time.TimerEvent;
 	private requestUrgencyTimer?: Phaser.Time.TimerEvent;
 	private requestExpiresAt = 0;
+	private requestIssuedAt = 0;
 	private requestedProduct?: {key:string,frame?:string|number};
 
 	private static readonly TARGET_Y = 370;
@@ -72,6 +73,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 	private static readonly QUESTION_EARLY_MAX = 900;
 	private static readonly QUESTION_LATE_MAX = 2200;
 	private static readonly REQUEST_WAIT_DURATION = 20000;
+	private static readonly QUICK_SERVICE_WINDOW_MS = 4000;
 	private static readonly QUESTION_FLOAT_START_REMAINING = 5000;
 	private static readonly URGENCY_UPDATE_INTERVAL = 100;
 	private static readonly QUESTION_BASE_DURATION = 500;
@@ -172,6 +174,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 		this.questionFloatTween = undefined;
 		this.clientQuestion.y = -145;
 
+		this.requestIssuedAt = this.scene.time.now;
 		this.startRequestWaitTimer();
 	}
 
@@ -263,7 +266,18 @@ export default class AClient extends Phaser.GameObjects.Container {
 		return Math.max(0, this.requestExpiresAt - this.scene.time.now);
 	}
 
+	private wasServedQuickly() {
+
+		if (this.requestIssuedAt <= 0) {
+			return false;
+		}
+
+		return (this.scene.time.now - this.requestIssuedAt) <= AClient.QUICK_SERVICE_WINDOW_MS;
+	}
+
 	public consumeRequestAndExit(showYum = false) {
+
+		const wasQuickService = showYum && this.wasServedQuickly();
 
 		this.questionRevealTimer?.remove(false);
 		this.questionRevealTimer = undefined;
@@ -281,12 +295,24 @@ export default class AClient extends Phaser.GameObjects.Container {
 			ease: "Sine.In",
 			onComplete: () => {
 				const levelScene = this.scene as Level;
-				let yumPrefab;
-				if (showYum) {
-					levelScene.recordSuccessfulDelivery();
-					this.scene.sound.play(`eating${Phaser.Math.Between(1, 3)}`);
-					yumPrefab = levelScene.showYumAt(exitX);
+
+				if (!showYum) {
+					levelScene.respawnClient(this);
+					return;
 				}
+
+				levelScene.recordSuccessfulDelivery();
+				this.scene.sound.play(`eating${Phaser.Math.Between(1, 3)}`);
+
+				if (wasQuickService) {
+					levelScene.showLikeHeartAt(exitX, () => {
+						const yumPrefab = levelScene.showYumAt(exitX);
+						levelScene.respawnClient(this, yumPrefab);
+					});
+					return;
+				}
+
+				const yumPrefab = levelScene.showYumAt(exitX);
 				levelScene.respawnClient(this, yumPrefab);
 			}
 		});
@@ -302,6 +328,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 		this.clientQuestion.setScale(1);
 		this.productSample.setVisible(false);
 		this.requestedProduct = undefined;
+		this.requestIssuedAt = 0;
 	}
 
 	private handleDestroyed() {

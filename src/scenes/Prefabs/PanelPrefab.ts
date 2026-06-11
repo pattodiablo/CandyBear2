@@ -440,6 +440,7 @@ export interface LevelStarPerformance {
 	successfulClients: number;
 	totalClients: number;
 	discardedProductLosses: number;
+	quickServiceLikes: number;
 }
 
 // You can write more code here

@@ -177,6 +177,7 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 		this.currentSlotId = targetSlot.id;
 		const replacementSandwich = new sandwichPrefab(this.scene, this.baseX, this.baseY, this.texture.key, this.frame.name);
 		this.scene.add.existing(replacementSandwich);
+		levelScene.registerHolderProductReplacement(this, replacementSandwich);
 		this.playSwooshSound();
 
 		this.scene.tweens.add({
@@ -434,6 +435,10 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 	}
 
 	public reactivateFromProgression() {
+
+		if (!this.active || !this.scene) {
+			return;
+		}
 
 		this.setInteractive({
 			hitArea: new Phaser.Geom.Circle(

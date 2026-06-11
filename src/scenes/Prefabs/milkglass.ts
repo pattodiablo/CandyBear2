@@ -163,6 +163,7 @@ export default class milkglass extends Phaser.GameObjects.Image {
 		this.currentSlotId = targetSlot.id;
 		const replacementGlass = new milkglass(this.scene, this.baseX, this.baseY, this.texture.key, this.frame.name);
 		this.scene.add.existing(replacementGlass);
+		levelScene.registerHolderProductReplacement(this, replacementGlass);
 		this.playSwooshSound();
 
 		this.scene.tweens.add({
@@ -342,6 +343,10 @@ export default class milkglass extends Phaser.GameObjects.Image {
 	}
 
 	public reactivateFromProgression() {
+
+		if (!this.active || !this.scene) {
+			return;
+		}
 
 		this.setInteractive({
 			hitArea: new Phaser.Geom.Circle(

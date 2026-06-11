@@ -13,8 +13,8 @@ export const UNLOCKED_HOLDER_TEXTURE_KEY = "Holder";
 const LOCKED_TEXTURE_BY_SLOT: Record<ProductSlotId, string> = {
 	holder1: "product1Locked",
 	holder2: "product2Locked",
-	holder3: "product3Locked",
-	holder4: "product4Locked",
+	holder3: "product4Locked",
+	holder4: "product3Locked",
 };
 
 const DEFAULT_ACQUIRED_PRODUCTS: ProductSlotId[] = ["holder1"];

@@ -257,6 +257,18 @@
                 "key": "lamp"
             },
             {
+                "url": "assets/likeHeart.png",
+                "type": "image",
+                "key": "likeHeart"
+            },
+            {
+                "url": [
+                    "assets/audio/likeSound.mp3"
+                ],
+                "type": "audio",
+                "key": "likeSound"
+            },
+            {
                 "url": "assets/lock.png",
                 "type": "image",
                 "key": "lock"
@@ -317,6 +329,11 @@
                 "url": "assets/NextPage.png",
                 "type": "image",
                 "key": "NextPage"
+            },
+            {
+                "url": "assets/overTrayIcon.png",
+                "type": "image",
+                "key": "overTrayIcon"
             },
             {
                 "url": [

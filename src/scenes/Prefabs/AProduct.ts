@@ -182,6 +182,10 @@ export default class AProduct extends Phaser.GameObjects.Image {
 
 	public reactivateFromProgression() {
 
+		if (!this.active || !this.scene) {
+			return;
+		}
+
 		this.setInteractive({
 			hitArea: new Phaser.Geom.Circle(
 				this.displayOriginX,
@@ -247,14 +251,18 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		levelScene.releaseWorkplace(this.currentWorkplaceId);
 		this.currentWorkplaceId = undefined;
 		this.playSwooshSound();
+		this.resetScaleToBase();
 
 		this.scene.tweens.add({
 			targets: this,
 			x: targetX,
 			y: targetY,
+			scaleX: this.baseScaleX,
+			scaleY: this.baseScaleY,
 			duration: 320,
 			ease: "Cubic.InOut",
 			onComplete: () => {
+				this.resetScaleToBase();
 				this.isLaunching = false;
 				this.isReadyForDelivery = true;
 				levelScene.reserveTraySlot(trayId, this);
@@ -336,6 +344,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		replacementProduct.CandyDip = { ...this.CandyDip };
 		replacementProduct.fryDuration = this.fryDuration;
 		this.scene.add.existing(replacementProduct);
+		levelScene.registerHolderProductReplacement(this, replacementProduct);
 		this.playSwooshSound();
 		this.scene.tweens.add({
 			targets: this,
@@ -751,14 +760,18 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		this.traySlotX = targetX;
 		this.traySlotY = targetY;
 		this.playSwooshSound();
+		this.scene.tweens.killTweensOf(this);
 
 		this.scene.tweens.add({
 			targets: this,
 			x: targetX,
 			y: targetY,
+			scaleX: this.baseScaleX,
+			scaleY: this.baseScaleY,
 			duration: 320,
 			ease: "Cubic.InOut",
 			onComplete: () => {
+				this.resetScaleToBase();
 				this.isLaunching = false;
 				this.isAtWorkplace = false;
 				this.isReadyForDelivery = true;
@@ -778,6 +791,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		this.traySlotY = y;
 		this.isAtWorkplace = false;
 		this.setPosition(x, y);
+		this.resetScaleToBase();
 	}
 
 	public cancelDipSelection() {
@@ -951,10 +965,15 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		});
 	}
 
+	private resetScaleToBase() {
+
+		this.setScale(this.baseScaleX, this.baseScaleY);
+	}
+
 	private playPopTween(onComplete?: () => void) {
 
 		this.scene.tweens.killTweensOf(this);
-		this.setScale(this.baseScaleX, this.baseScaleY);
+		this.resetScaleToBase();
 
 		this.scene.tweens.add({
 			targets: this,
