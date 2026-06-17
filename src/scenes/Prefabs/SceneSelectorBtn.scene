@@ -1,0 +1,80 @@
+{
+    "id": "ff18d946-988b-45fb-8e0d-51213a5abc94",
+    "sceneType": "PREFAB",
+    "settings": {
+        "exportClass": true,
+        "autoImport": true,
+        "generateAwakeHandler": true,
+        "preloadMethodName": "",
+        "preloadPackFiles": [],
+        "createMethodName": "",
+        "compilerOutputLanguage": "TYPE_SCRIPT",
+        "borderWidth": 1280,
+        "borderHeight": 720
+    },
+    "displayList": [
+        {
+            "type": "Container",
+            "id": "4f06c267-49a1-47b9-8bf4-4ef7a797dee9",
+            "label": "container_1",
+            "list": [
+                {
+                    "type": "Image",
+                    "id": "8db68827-cc46-4447-ab0e-cd89cbbf4e25",
+                    "label": "onBtn",
+                    "texture": {
+                        "key": "onBtn"
+                    }
+                },
+                {
+                    "type": "Text",
+                    "id": "51dd7ae5-e004-4384-990a-5a337c82cab5",
+                    "label": "FinalText",
+                    "scope": "PUBLIC",
+                    "x": -2,
+                    "y": -5,
+                    "originX": 0.5,
+                    "originY": 0.5,
+                    "fontFamily": "Klop",
+                    "fontSize": "36px",
+                    "color": "#F8ECDA"
+                }
+            ]
+        }
+    ],
+    "plainObjects": [],
+    "meta": {
+        "app": "Phaser Editor - Scene Editor",
+        "url": "https://phaser.io/editor",
+        "contentType": "phasereditor2d.core.scene.SceneContentType",
+        "version": 5
+    },
+    "prefabProperties": [
+        {
+            "name": "btnText",
+            "label": "btnText",
+            "tooltip": "",
+            "defValue": "Levels",
+            "customDefinition": false,
+            "editorOnly": false,
+            "deprecated": false,
+            "type": {
+                "id": "string",
+                "isArray": false
+            }
+        },
+        {
+            "name": "initialState",
+            "label": "initialState",
+            "tooltip": "",
+            "defValue": true,
+            "customDefinition": false,
+            "editorOnly": false,
+            "deprecated": false,
+            "type": {
+                "id": "boolean",
+                "isArray": false
+            }
+        }
+    ]
+}

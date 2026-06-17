@@ -25,19 +25,19 @@
                     "texture": {
                         "key": "dayHolder"
                     },
-                    "scaleX": 0.7,
-                    "scaleY": 0.7
+                    "scaleX": 0.63,
+                    "scaleY": 0.63
                 },
                 {
                     "type": "Text",
                     "id": "a3d166a6-4368-4808-9a95-b6e24512968a",
                     "label": "DayText",
-                    "y": -59,
+                    "y": -53,
                     "originX": 0.5,
                     "originY": 0.5,
                     "text": "DAY",
                     "fontFamily": "Klop",
-                    "fontSize": "40px",
+                    "fontSize": "36px",
                     "color": "#DF3D7A"
                 },
                 {
@@ -45,12 +45,12 @@
                     "id": "a9d436ca-7249-4a47-8844-96a90f54ab53",
                     "label": "DayNumber",
                     "scope": "CLASS",
-                    "y": -23,
+                    "y": -20,
                     "originX": 0.5,
                     "originY": 0.5,
                     "text": "1",
                     "fontFamily": "Klop",
-                    "fontSize": "40px",
+                    "fontSize": "36px",
                     "color": "#A96625"
                 },
                 {
@@ -61,10 +61,10 @@
                     "texture": {
                         "key": "smallStarHolder"
                     },
-                    "x": -41,
-                    "y": 25,
-                    "scaleX": 0.7,
-                    "scaleY": 0.7
+                    "x": -37,
+                    "y": 22,
+                    "scaleX": 0.63,
+                    "scaleY": 0.63
                 },
                 {
                     "type": "Image",
@@ -74,9 +74,9 @@
                     "texture": {
                         "key": "smallStarHolder"
                     },
-                    "y": 25,
-                    "scaleX": 0.7,
-                    "scaleY": 0.7
+                    "y": 22,
+                    "scaleX": 0.63,
+                    "scaleY": 0.63
                 },
                 {
                     "type": "Image",
@@ -86,10 +86,10 @@
                     "texture": {
                         "key": "smallStarHolder"
                     },
-                    "x": 41,
-                    "y": 25,
-                    "scaleX": 0.7,
-                    "scaleY": 0.7
+                    "x": 37,
+                    "y": 22,
+                    "scaleX": 0.63,
+                    "scaleY": 0.63
                 }
             ]
         }

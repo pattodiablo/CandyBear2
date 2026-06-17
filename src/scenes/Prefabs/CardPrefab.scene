@@ -1,0 +1,91 @@
+{
+    "id": "7a181515-e323-4e9f-9749-75c88f1f9c12",
+    "sceneType": "PREFAB",
+    "settings": {
+        "exportClass": true,
+        "autoImport": true,
+        "preloadMethodName": "",
+        "preloadPackFiles": [],
+        "createMethodName": "",
+        "compilerOutputLanguage": "TYPE_SCRIPT",
+        "generateAwakeHandler": true,
+        "borderWidth": 1280,
+        "borderHeight": 720
+    },
+    "displayList": [
+        {
+            "type": "Container",
+            "id": "3ef27ead-dd6b-44bc-bad0-bd3a5bcb0c68",
+            "label": "container_1",
+            "y": -18,
+            "list": [
+                {
+                    "type": "Container",
+                    "id": "3e300003-a735-4d54-b21f-505743a4d88b",
+                    "label": "Anverso",
+                    "y": -19,
+                    "list": [
+                        {
+                            "type": "Image",
+                            "id": "043aad67-a5dc-4a08-bd98-c8e5b78de4a6",
+                            "label": "anversoCard",
+                            "texture": {
+                                "key": "AnversoCard"
+                            },
+                            "y": 37
+                        },
+                        {
+                            "type": "Text",
+                            "id": "4cd28286-6a82-4acd-aa00-9ae0ac36366e",
+                            "label": "CoinCost",
+                            "scope": "CLASS",
+                            "x": 1,
+                            "originX": 0.5,
+                            "originY": 0.5,
+                            "text": "0000",
+                            "fontFamily": "Klop",
+                            "fontSize": "36px",
+                            "color": "#F8ECDA"
+                        },
+                        {
+                            "type": "Text",
+                            "id": "a14944fd-6dd5-42fc-9ce7-b0797746d4e0",
+                            "label": "LikesCost",
+                            "scope": "CLASS",
+                            "x": 1,
+                            "y": 86,
+                            "originX": 0.5,
+                            "originY": 0.5,
+                            "text": "0000",
+                            "fontFamily": "Klop",
+                            "fontSize": "36px",
+                            "color": "#F8ECDA"
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "plainObjects": [],
+    "meta": {
+        "app": "Phaser Editor - Scene Editor",
+        "url": "https://phaser.io/editor",
+        "contentType": "phasereditor2d.core.scene.SceneContentType",
+        "version": 5
+    },
+    "prefabProperties": [
+        {
+            "name": "Reverso",
+            "label": "Reverso",
+            "tooltip": "",
+            "defValue": "",
+            "customDefinition": false,
+            "editorOnly": false,
+            "deprecated": false,
+            "type": {
+                "id": "texture-config",
+                "isArray": false
+            }
+        }
+    ]
+}

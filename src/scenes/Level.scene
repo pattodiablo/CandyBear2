@@ -59,6 +59,18 @@
             "y": 523
         },
         {
+            "prefabId": "e8bc0ee3-eb6a-4bd2-9b04-5066f86ddb4b",
+            "id": "b0105290-b9a4-42bf-9667-a39f9533906d",
+            "unlock": [
+                "x",
+                "y"
+            ],
+            "label": "cookieJar",
+            "scope": "CLASS",
+            "x": 144,
+            "y": 459
+        },
+        {
             "type": "Image",
             "id": "790b2c24-41fe-4bbc-82cc-b60cebcccfc8",
             "label": "fryer2",
@@ -328,25 +340,13 @@
         },
         {
             "type": "Image",
-            "id": "b0105290-b9a4-42bf-9667-a39f9533906d",
-            "label": "cookieJar",
-            "texture": {
-                "key": "cookieJar"
-            },
-            "x": 144,
-            "y": 450,
-            "scaleX": 0.7,
-            "scaleY": 0.7
-        },
-        {
-            "type": "Image",
             "id": "5630fced-f814-4260-9bac-5cf43286c85c",
             "label": "glace2",
             "texture": {
                 "key": "glace2"
             },
             "x": 1145,
-            "y": 458
+            "y": 462
         },
         {
             "type": "Image",
@@ -356,18 +356,7 @@
                 "key": "glace1"
             },
             "x": 1062,
-            "y": 462
-        },
-        {
-            "prefabId": "9d591894-39c5-4c08-9f2f-96263de8448f",
-            "id": "c0c7d6ce-6f1a-4f4a-a9ff-d82ce7d36796",
-            "unlock": [
-                "x",
-                "y"
-            ],
-            "label": "likeHeart",
-            "x": 470,
-            "y": 183
+            "y": 466
         },
         {
             "type": "Image",

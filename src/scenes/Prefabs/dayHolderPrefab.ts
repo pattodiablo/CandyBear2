@@ -14,40 +14,40 @@ export default class dayHolderPrefab extends Phaser.GameObjects.Container {
 
 		// dayHolder
 		const dayHolder = scene.add.image(0, 0, "dayHolder");
-		dayHolder.scaleX = 0.7;
-		dayHolder.scaleY = 0.7;
+		dayHolder.scaleX = 0.63;
+		dayHolder.scaleY = 0.63;
 		this.add(dayHolder);
 
 		// DayText
-		const dayText = scene.add.text(0, -59, "", {});
+		const dayText = scene.add.text(0, -53, "", {});
 		dayText.setOrigin(0.5, 0.5);
 		dayText.text = "DAY";
-		dayText.setStyle({ "color": "#DF3D7A", "fontFamily": "Klop", "fontSize": "40px" });
+		dayText.setStyle({ "color": "#DF3D7A", "fontFamily": "Klop", "fontSize": "36px" });
 		this.add(dayText);
 
 		// DayNumber
-		const dayNumber = scene.add.text(0, -23, "", {});
+		const dayNumber = scene.add.text(0, -20, "", {});
 		dayNumber.setOrigin(0.5, 0.5);
 		dayNumber.text = "1";
-		dayNumber.setStyle({ "color": "#A96625", "fontFamily": "Klop", "fontSize": "40px" });
+		dayNumber.setStyle({ "color": "#A96625", "fontFamily": "Klop", "fontSize": "36px" });
 		this.add(dayNumber);
 
 		// smallStarHolder1
-		const smallStarHolder1 = scene.add.image(-41, 25, "smallStarHolder");
-		smallStarHolder1.scaleX = 0.7;
-		smallStarHolder1.scaleY = 0.7;
+		const smallStarHolder1 = scene.add.image(-37, 22, "smallStarHolder");
+		smallStarHolder1.scaleX = 0.63;
+		smallStarHolder1.scaleY = 0.63;
 		this.add(smallStarHolder1);
 
 		// smallStarHolder2
-		const smallStarHolder2 = scene.add.image(0, 25, "smallStarHolder");
-		smallStarHolder2.scaleX = 0.7;
-		smallStarHolder2.scaleY = 0.7;
+		const smallStarHolder2 = scene.add.image(0, 22, "smallStarHolder");
+		smallStarHolder2.scaleX = 0.63;
+		smallStarHolder2.scaleY = 0.63;
 		this.add(smallStarHolder2);
 
 		// smallStarHolder3
-		const smallStarHolder3 = scene.add.image(41, 25, "smallStarHolder");
-		smallStarHolder3.scaleX = 0.7;
-		smallStarHolder3.scaleY = 0.7;
+		const smallStarHolder3 = scene.add.image(37, 22, "smallStarHolder");
+		smallStarHolder3.scaleX = 0.63;
+		smallStarHolder3.scaleY = 0.63;
 		this.add(smallStarHolder3);
 
 		this.dayHolder = dayHolder;

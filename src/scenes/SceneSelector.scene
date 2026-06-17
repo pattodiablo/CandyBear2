@@ -20,8 +20,8 @@
             "texture": {
                 "key": "NextPage"
             },
-            "x": 1196,
-            "y": 628
+            "x": 1221,
+            "y": 376
         },
         {
             "type": "Image",
@@ -31,8 +31,8 @@
             "texture": {
                 "key": "PrevPage"
             },
-            "x": 83,
-            "y": 628
+            "x": 55,
+            "y": 376
         },
         {
             "type": "Text",
@@ -40,13 +40,41 @@
             "label": "PageNumber",
             "scope": "CLASS",
             "x": 640,
-            "y": 82,
+            "y": 660,
             "originX": 0.5,
             "originY": 0.5,
             "text": "1/4",
             "fontFamily": "Klop",
-            "fontSize": "40px",
+            "fontSize": "36px",
             "color": "#A96625"
+        },
+        {
+            "prefabId": "ff18d946-988b-45fb-8e0d-51213a5abc94",
+            "id": "8623f465-8543-485d-a5eb-0260d6b62323",
+            "unlock": [
+                "x",
+                "y"
+            ],
+            "label": "LevelsBtnPrefab",
+            "scope": "CLASS",
+            "x": 460,
+            "y": 91
+        },
+        {
+            "prefabId": "ff18d946-988b-45fb-8e0d-51213a5abc94",
+            "id": "a001dcf2-14c8-4411-b21e-a377d059316a",
+            "unlock": [
+                "x",
+                "y",
+                "btnText",
+                "initialState"
+            ],
+            "label": "MomentsBtnPrefab",
+            "scope": "CLASS",
+            "btnText": "Moments",
+            "initialState": false,
+            "x": 809,
+            "y": 91
         }
     ],
     "plainObjects": [],

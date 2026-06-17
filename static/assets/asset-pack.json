@@ -7,6 +7,11 @@
                 "key": "animations"
             },
             {
+                "url": "assets/AnversoCard.png",
+                "type": "image",
+                "key": "AnversoCard"
+            },
+            {
                 "url": [
                     "assets/audio/backgroundMusic.mp3"
                 ],
@@ -331,6 +336,16 @@
                 "key": "NextPage"
             },
             {
+                "url": "assets/offBtn.png",
+                "type": "image",
+                "key": "offBtn"
+            },
+            {
+                "url": "assets/onBtn.png",
+                "type": "image",
+                "key": "onBtn"
+            },
+            {
                 "url": "assets/overTrayIcon.png",
                 "type": "image",
                 "key": "overTrayIcon"
@@ -455,6 +470,11 @@
                 "url": "assets/readyBtn.png",
                 "type": "image",
                 "key": "readyBtn"
+            },
+            {
+                "url": "assets/reversoCard.png",
+                "type": "image",
+                "key": "ReversoCard1"
             },
             {
                 "atlasURL": "assets/GlassAnim/sandWichAnim.json",

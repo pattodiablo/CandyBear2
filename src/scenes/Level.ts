@@ -5,11 +5,11 @@
 
 import milkMachine from "./Prefabs/milkMachine";
 import ToasterPrefab from "./Prefabs/ToasterPrefab";
+import CookieJar from "./Prefabs/cookieJar";
 import AProduct from "./Prefabs/AProduct";
 import milkglass from "./Prefabs/milkglass";
 import sandwichPrefab from "./Prefabs/sandwichPrefab";
 import PanelPrefab from "./Prefabs/PanelPrefab";
-import LikeHeart from "./Prefabs/LikeHeart";
 /* START-USER-IMPORTS */
 import Phaser from "phaser";
 import AClient from "./Prefabs/AClient";	
@@ -22,6 +22,7 @@ import { SkinsAndAnimationBoundsProvider } from "@esotericsoftware/spine-phaser-
 import type { MilkSlotId } from "./Prefabs/milkMachine";
 import type { ToasterSlotId } from "./Prefabs/ToasterPrefab";
 import type { LevelStarPerformance } from "./Prefabs/PanelPrefab";
+import LikeHeart from "./Prefabs/LikeHeart";
 import {
 	isProductAcquired,
 	storeProductAcquired,
@@ -82,6 +83,10 @@ export default class Level extends Phaser.Scene {
 
 		// fryer1
 		const fryer1 = this.add.image(390, 523, "Fryer");
+
+		// cookieJar
+		const cookieJar = new CookieJar(this, 144, 459);
+		this.add.existing(cookieJar);
 
 		// fryer2
 		const fryer2 = this.add.image(390, 654, "Fryer");
@@ -165,20 +170,11 @@ export default class Level extends Phaser.Scene {
 		// menuBtn
 		const menuBtn = this.add.image(1229, 47, "menuBtn");
 
-		// cookieJar
-		const cookieJar = this.add.image(144, 450, "cookieJar");
-		cookieJar.scaleX = 0.7;
-		cookieJar.scaleY = 0.7;
-
 		// glace2
-		this.add.image(1145, 458, "glace2");
+		this.add.image(1145, 462, "glace2");
 
 		// glace1
-		this.add.image(1062, 462, "glace1");
-
-		// likeHeart
-		const likeHeart = new LikeHeart(this, 470, 183);
-		this.add.existing(likeHeart);
+		this.add.image(1062, 466, "glace1");
 
 		// overTrayIcon
 		this.add.image(312, 391, "overTrayIcon");
@@ -190,6 +186,7 @@ export default class Level extends Phaser.Scene {
 		this.milkmachine = milkmachine;
 		this.toaster = toaster;
 		this.fryer1 = fryer1;
+		this.cookieJar = cookieJar;
 		this.fryer2 = fryer2;
 		this.holder1 = holder1;
 		this.holder2 = holder2;
@@ -216,6 +213,7 @@ export default class Level extends Phaser.Scene {
 	public milkmachine!: milkMachine;
 	public toaster!: ToasterPrefab;
 	public fryer1!: Phaser.GameObjects.Image;
+	private cookieJar!: CookieJar;
 	public fryer2!: Phaser.GameObjects.Image;
 	private holder1!: Phaser.GameObjects.Image;
 	private holder2!: Phaser.GameObjects.Image;
@@ -282,6 +280,9 @@ export default class Level extends Phaser.Scene {
 	private static readonly DAY_INDICATOR_CENTER_OFFSET_X = 100;
 	private static readonly DAY_INDICATOR_Y = 40;
 	private static readonly LIKE_HEART_Y = 265;
+	private static readonly LIKES_COUNTER_Y = 82;
+	private static readonly LIKE_HEART_ICON_X = 55;
+	private static readonly LIKE_HEART_ICON_SCALE = 0.42;
 	private static readonly REWARD_COIN_Y = 307;
 	private static readonly REWARD_COIN_LAND_Y = 422;
 	private static readonly REWARD_COIN_RISE = 18;
@@ -321,6 +322,8 @@ export default class Level extends Phaser.Scene {
 	private dayIndicatorNumber?: Phaser.GameObjects.Text;
 	private clientsLeftLabel?: Phaser.GameObjects.Text;
 	private clientsLeftNumber?: Phaser.GameObjects.Text;
+	private likeHeartIcon?: Phaser.GameObjects.Image;
+	private likesCounterText?: Phaser.GameObjects.Text;
 	private clientsRemainingInLevel = 0;
 	private backgroundMusic?: Phaser.Sound.BaseSound;
 	private selectedLevelNumber = 1;
@@ -423,6 +426,7 @@ export default class Level extends Phaser.Scene {
 		this.selectedDeliveryProduct = undefined;
 		this.successfulClientsServed = 0;
 		this.quickServiceLikesThisLevel = 0;
+		this.updateLikesCounter();
 		this.discardedProductLosses = 0;
 		this.scheduledWaveClients = 0;
 		this.queuedClientEntries = 0;
@@ -440,6 +444,8 @@ export default class Level extends Phaser.Scene {
 		this.coinCounterText = undefined;
 		this.dayIndicatorLabel = undefined;
 		this.dayIndicatorNumber = undefined;
+		this.likeHeartIcon = undefined;
+		this.likesCounterText = undefined;
 		this.clientsLeftLabel = undefined;
 		this.clientsLeftNumber = undefined;
 		this.exitConfirmContainer = undefined;
@@ -504,6 +510,7 @@ export default class Level extends Phaser.Scene {
 	public recordQuickServiceLike() {
 		this.quickServiceLikesThisLevel++;
 		recordLike();
+		this.updateLikesCounter();
 	}
 
 	public recordProductDiscardLoss() {
@@ -651,6 +658,24 @@ export default class Level extends Phaser.Scene {
 		this.coinCounterText.setScrollFactor(0);
 		this.coinCounterText.setDepth(this.workstation.depth + 10);
 		this.updateCoinCounter();
+	}
+
+	private initializeLikesCounter() {
+		const likeY = Level.LIKES_COUNTER_Y;
+
+		// Heart icon below the coins (static, not the animated flying one)
+		const heart = this.add.image(Level.LIKE_HEART_ICON_X, likeY + 10, "likeHeart");
+		heart.setScale(Level.LIKE_HEART_ICON_SCALE);
+		heart.setScrollFactor(0);
+		heart.setDepth(this.workstation.depth + 10);
+		this.likeHeartIcon = heart;
+
+		this.likesCounterText = this.add.text(90, likeY, "0", this.getHudTextStyle("#2D120B"));
+		this.likesCounterText.setOrigin(0, 0.5);
+		this.likesCounterText.setScrollFactor(0);
+		this.likesCounterText.setDepth(this.workstation.depth + 10);
+
+		this.updateLikesCounter();
 	}
 
 	private initializeDayIndicator() {
@@ -1657,6 +1682,10 @@ export default class Level extends Phaser.Scene {
 		this.updateProgressionLockAffordance();
 	}
 
+	private updateLikesCounter() {
+		this.likesCounterText?.setText(`${this.quickServiceLikesThisLevel}`);
+	}
+
 	private setupDeveloperCheat() {
 
 		this.unbindDeveloperCheat?.();
@@ -1972,10 +2001,10 @@ export default class Level extends Phaser.Scene {
 
 		this.recordQuickServiceLike();
 		this.sound.play("likeSound");
-		const likeHeart = new LikeHeart(this, x, Level.LIKE_HEART_Y, "likeHeart", undefined, onPopInComplete);
-		this.add.existing(likeHeart);
-		likeHeart.setDepth(this.workstation.depth - 1);
-		return likeHeart;
+		const heart = new LikeHeart(this, x, Level.LIKE_HEART_Y, "likeHeart", undefined, onPopInComplete);
+		this.add.existing(heart);
+		heart.setDepth(this.workstation.depth - 1);
+		return heart;
 	}
 
 	public showYumAt(x: number) {
@@ -2472,6 +2501,7 @@ export default class Level extends Phaser.Scene {
 		this.panelRestY = this.panel.y;
 		this.applyLevelPlanToIntroPanel();
 		this.initializeCoinCounter();
+		this.initializeLikesCounter();
 		this.initializeDayIndicator();
 		this.initializeClientsLeftIndicator();
 		this.setupDipInputs();
