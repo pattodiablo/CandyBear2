@@ -558,6 +558,13 @@
                 "key": "SandwichProduct"
             },
             {
+                "url": [
+                    "assets/audio/ScenSelectionBgmusic.mp3"
+                ],
+                "type": "audio",
+                "key": "ScenSelectionBgmusic"
+            },
+            {
                 "url": "assets/smallHeart.png",
                 "type": "image",
                 "key": "smallHeart"

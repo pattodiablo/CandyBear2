@@ -93,6 +93,7 @@ export default class SceneSelectorBtn extends Phaser.GameObjects.Container {
 		this.buttonImage.on(Phaser.Input.Events.POINTER_OVER, this.handlePointerOver, this);
 		this.buttonImage.on(Phaser.Input.Events.POINTER_OUT, this.handlePointerOut, this);
 		this.buttonImage.on(Phaser.Input.Events.POINTER_DOWN, () => {
+			this.scene.sound.play("pop3");
 			this.emit("selected");
 		});
 	}

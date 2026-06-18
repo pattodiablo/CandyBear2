@@ -120,6 +120,7 @@ export default class SceneSelector extends Phaser.Scene {
 	private coinCounterText?: Phaser.GameObjects.Text;
 	private likesCounterText?: Phaser.GameObjects.Text;
 	private hudHighlightTween?: Phaser.Tweens.Tween;
+	private backgroundMusic?: Phaser.Sound.BaseSound;
 
 	init() {
 
@@ -140,9 +141,16 @@ export default class SceneSelector extends Phaser.Scene {
 		this.initializeTabButtons();
 		this.initializePagination();
 		this.refreshPage();
+		this.startBackgroundMusic();
 	}
 
 	private flushLoadedContent() {
+
+		if (this.backgroundMusic) {
+			this.backgroundMusic.stop();
+			this.backgroundMusic.destroy();
+			this.backgroundMusic = undefined;
+		}
 
 		this.focusedCard = undefined;
 		this.focusedCardRestState = undefined;
@@ -332,6 +340,9 @@ export default class SceneSelector extends Phaser.Scene {
 
 		card.pauseFloatAnimation();
 
+		const swooshSoundKey = Phaser.Math.Between(0, 1) === 0 ? "swoosh" : "swoosh2";
+		this.sound.play(swooshSoundKey);
+
 		this.focusedCard = card;
 		this.focusedCardRestState = {
 			x: card.x,
@@ -446,7 +457,18 @@ export default class SceneSelector extends Phaser.Scene {
 	}
 
 	private startLevel(levelNumber: number) {
+		this.backgroundMusic?.stop();
 		this.scene.start("Level", { levelNumber });
+	}
+
+	private startBackgroundMusic() {
+
+		if (this.backgroundMusic?.isPlaying) {
+			return;
+		}
+
+		this.backgroundMusic = this.sound.add("ScenSelectionBgmusic", { loop: true, volume: 0.5 });
+		this.backgroundMusic.play();
 	}
 
 	private initializePagination() {
