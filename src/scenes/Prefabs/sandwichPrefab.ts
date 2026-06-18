@@ -6,6 +6,7 @@
 /* START-USER-IMPORTS */
 import Phaser from "phaser";
 import type Level from "../Level";
+import { getProductCoinReward } from "../productProgress";
 import type { ToasterSlotId } from "./ToasterPrefab";
 /* END-USER-IMPORTS */
 
@@ -382,7 +383,7 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 				}
 
 				if (client.matchesProduct(this)) {
-					levelScene.showCoinsAt(client.x);
+					levelScene.showCoinsAt(client.x, getProductCoinReward("holder3"));
 					client.consumeRequestAndExit(true);
 					this.destroy();
 					return;

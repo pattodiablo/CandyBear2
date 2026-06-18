@@ -19,6 +19,13 @@ const LOCKED_TEXTURE_BY_SLOT: Record<ProductSlotId, string> = {
 
 const DEFAULT_ACQUIRED_PRODUCTS: ProductSlotId[] = ["holder1"];
 
+const PRODUCT_COIN_REWARD_BY_SLOT: Record<ProductSlotId, number> = {
+	holder1: 2,
+	holder2: 3,
+	holder3: 4,
+	holder4: 3,
+};
+
 function normalizeAcquiredProducts(value: unknown): ProductSlotId[] {
 	if (!Array.isArray(value)) {
 		return [...DEFAULT_ACQUIRED_PRODUCTS];
@@ -50,6 +57,10 @@ function readAcquiredProductsRecord(): ProductSlotId[] {
 
 export function getLockedTextureKey(slotId: ProductSlotId) {
 	return LOCKED_TEXTURE_BY_SLOT[slotId];
+}
+
+export function getProductCoinReward(slotId: ProductSlotId) {
+	return PRODUCT_COIN_REWARD_BY_SLOT[slotId];
 }
 
 export function getAcquiredProductSlots() {

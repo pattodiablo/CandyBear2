@@ -72,6 +72,12 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		totalCoins.setStyle({ "color": "#FFE769", "fontFamily": "Klop", "fontSize": "100px", "stroke": "#FEB134", "strokeThickness": 15 });
 		finalLabels.add(totalCoins);
 
+		// levelsBtn
+		const levelsBtn = scene.add.image(46, 233, "LevelsBtn");
+		levelsBtn.scaleX = 0.5675480499648243;
+		levelsBtn.scaleY = 0.5675480499648243;
+		this.add(levelsBtn);
+
 		this.panel = panel;
 		this.readyBtn = readyBtn;
 		this.nextdayBtn = nextdayBtn;
@@ -81,6 +87,7 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		this.earnedToday = earnedToday;
 		this.totalCoins = totalCoins;
 		this.finalLabels = finalLabels;
+		this.levelsBtn = levelsBtn;
 
 		/* START-USER-CTR-CODE */
 		this.starHolder = starHolder;
@@ -104,6 +111,10 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		this.nextDayButtonBaseScaleX = nextdayBtn.scaleX;
 		this.nextDayButtonBaseScaleY = nextdayBtn.scaleY;
 		this.nextDayButtonBaseY = nextdayBtn.y;
+		this.levelsButtonBaseScaleX = levelsBtn.scaleX;
+		this.levelsButtonBaseScaleY = levelsBtn.scaleY;
+		this.levelsButtonBaseY = levelsBtn.y;
+		this.disableLevelsButton();
 
 		this.dayLabelText = scene.add.text(44, -70, "Day 1", {
 			color: "#DF3D7A",
@@ -127,6 +138,7 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 	private earnedToday: Phaser.GameObjects.Text;
 	private totalCoins: Phaser.GameObjects.Text;
 	private finalLabels: Phaser.GameObjects.Container;
+	private levelsBtn: Phaser.GameObjects.Image;
 
 	/* START-USER-CODE */
 	private static readonly READY_BUTTON_HOVER_SCALE = 0.74;
@@ -150,10 +162,14 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 	private nextDayButtonBaseScaleX!: number;
 	private nextDayButtonBaseScaleY!: number;
 	private nextDayButtonBaseY!: number;
+	private levelsButtonBaseScaleX!: number;
+	private levelsButtonBaseScaleY!: number;
+	private levelsButtonBaseY!: number;
 	private isReadyButtonPressed = false;
 	private isNextDayButtonPressed = false;
+	private isLevelsButtonPressed = false;
 
-	public enableReadyButton(onClick: () => void) {
+	public enableReadyButton(onClick: () => void, onLevelsClick?: () => void) {
 		this.finalLabels.setVisible(false);
 		this.readyBtn.setVisible(true);
 
@@ -194,6 +210,10 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 				}
 			);
 		});
+
+		if (onLevelsClick) {
+			this.enableLevelsButton(onLevelsClick);
+		}
 	}
 
 	public disableReadyButton() {
@@ -254,6 +274,56 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		this.animateNextDayButton(this.nextDayButtonBaseScaleX, this.nextDayButtonBaseScaleY, this.nextDayButtonBaseY);
 	}
 
+	public enableLevelsButton(onClick: () => void) {
+		this.levelsBtn.setVisible(true);
+		this.levelsBtn.setInteractive({ useHandCursor: true });
+		this.levelsBtn.removeAllListeners();
+		this.isLevelsButtonPressed = false;
+		this.animateLevelsButton(this.levelsButtonBaseScaleX, this.levelsButtonBaseScaleY, this.levelsButtonBaseY);
+
+		this.levelsBtn.on(Phaser.Input.Events.POINTER_OVER, () => {
+			if (this.isLevelsButtonPressed) {
+				return;
+			}
+
+			this.animateLevelsButton(
+				PanelPrefab.READY_BUTTON_HOVER_SCALE,
+				PanelPrefab.READY_BUTTON_HOVER_SCALE,
+				this.levelsButtonBaseY - 2
+			);
+		});
+
+		this.levelsBtn.on(Phaser.Input.Events.POINTER_OUT, () => {
+			if (this.isLevelsButtonPressed) {
+				return;
+			}
+
+			this.animateLevelsButton(this.levelsButtonBaseScaleX, this.levelsButtonBaseScaleY, this.levelsButtonBaseY);
+		});
+
+		this.levelsBtn.once(Phaser.Input.Events.POINTER_DOWN, () => {
+			this.isLevelsButtonPressed = true;
+			this.animateLevelsButton(
+				PanelPrefab.READY_BUTTON_PRESSED_SCALE,
+				PanelPrefab.READY_BUTTON_PRESSED_SCALE,
+				this.levelsButtonBaseY + PanelPrefab.READY_BUTTON_PRESS_OFFSET_Y,
+				() => {
+					this.levelsBtn.disableInteractive();
+					onClick();
+				}
+			);
+		});
+	}
+
+	public disableLevelsButton() {
+
+		this.levelsBtn.setVisible(false);
+		this.levelsBtn.disableInteractive();
+		this.levelsBtn.removeAllListeners();
+		this.isLevelsButtonPressed = false;
+		this.animateLevelsButton(this.levelsButtonBaseScaleX, this.levelsButtonBaseScaleY, this.levelsButtonBaseY);
+	}
+
 	public static calculateEarnedStars(performance: LevelStarPerformance) {
 
 		const { successfulClients, totalClients, discardedProductLosses } = performance;
@@ -284,6 +354,7 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		this.clearStarRevealTimers();
 		this.disableReadyButton();
 		this.disableNextDayButton();
+		this.disableLevelsButton();
 		this.readyBtn.setVisible(false);
 		this.earnedToday.setVisible(true);
 		this.totalCoins.setVisible(true);
@@ -292,7 +363,11 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		this.resetStarsToDeactivated();
 	}
 
-	public showFinalState(performance: LevelStarPerformance, onNextDayClick?: () => void) {
+	public showFinalState(
+		performance: LevelStarPerformance,
+		onNextDayClick?: () => void,
+		onLevelsClick?: () => void
+	) {
 
 		this.prepareFinalState();
 		const earnedStars = PanelPrefab.calculateEarnedStars(performance);
@@ -300,6 +375,10 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		this.revealEarnedStars(earnedStars, () => {
 			if (onNextDayClick) {
 				this.enableNextDayButton(onNextDayClick);
+			}
+
+			if (onLevelsClick) {
+				this.enableLevelsButton(onLevelsClick);
 			}
 		});
 	}
@@ -313,6 +392,7 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		this.readyBtn.setVisible(true);
 		this.disableReadyButton();
 		this.disableNextDayButton();
+		this.disableLevelsButton();
 		this.resetStarsToDeactivated();
 	}
 
@@ -420,6 +500,20 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		this.scene.tweens.killTweensOf(this.nextdayBtn);
 		this.scene.tweens.add({
 			targets: this.nextdayBtn,
+			scaleX,
+			scaleY,
+			y,
+			duration: PanelPrefab.READY_BUTTON_TWEEN_DURATION,
+			ease: "Quad.Out",
+			onComplete,
+		});
+	}
+
+	private animateLevelsButton(scaleX: number, scaleY: number, y: number, onComplete?: () => void) {
+
+		this.scene.tweens.killTweensOf(this.levelsBtn);
+		this.scene.tweens.add({
+			targets: this.levelsBtn,
 			scaleX,
 			scaleY,
 			y,

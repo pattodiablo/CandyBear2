@@ -262,6 +262,11 @@
                 "key": "lamp"
             },
             {
+                "url": "assets/LevelsBtn.png",
+                "type": "image",
+                "key": "LevelsBtn"
+            },
+            {
                 "url": "assets/likeHeart.png",
                 "type": "image",
                 "key": "likeHeart"

@@ -6,6 +6,7 @@
 /* START-USER-IMPORTS */
 import Phaser from "phaser";
 import type Level from "../Level";
+import { getProductCoinReward, type ProductSlotId } from "../productProgress";
 /* END-USER-IMPORTS */
 
 export default class AProduct extends Phaser.GameObjects.Image {
@@ -89,6 +90,10 @@ export default class AProduct extends Phaser.GameObjects.Image {
 	private currentTrayId?: "charola1" | "charola2";
 	private traySlotX?: number;
 	private traySlotY?: number;
+
+	private getProductSlotId(): ProductSlotId {
+		return this.Raw.key.startsWith("Product2") ? "holder2" : "holder1";
+	}
 
 	private syncAppearanceSetWithInitialTexture(textureKey: string) {
 
@@ -692,7 +697,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 				}
 
 				if (client.matchesProduct(this)) {
-					levelScene.showCoinsAt(client.x);
+					levelScene.showCoinsAt(client.x, getProductCoinReward(this.getProductSlotId()));
 					client.consumeRequestAndExit(true);
 					this.destroy();
 					return;

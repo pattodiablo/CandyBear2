@@ -144,6 +144,19 @@
                             "strokeThickness": 15
                         }
                     ]
+                },
+                {
+                    "type": "Image",
+                    "id": "489340a8-90b3-42e6-bfb7-f6b6cd5a17ee",
+                    "label": "levelsBtn",
+                    "scope": "CLASS",
+                    "texture": {
+                        "key": "LevelsBtn"
+                    },
+                    "x": 46,
+                    "y": 233,
+                    "scaleX": 0.5675480499648243,
+                    "scaleY": 0.5675480499648243
                 }
             ]
         }

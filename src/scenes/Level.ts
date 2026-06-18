@@ -1668,10 +1668,15 @@ export default class Level extends Phaser.Scene {
 			duration: Level.INTRO_PANEL_DROP_DURATION,
 			ease: "Bounce.Out",
 			onComplete: () => {
-				this.panel.enableReadyButton(() => {
-					this.startBackgroundMusic();
-					this.dismissSceneIntro(panelStartY);
-				});
+				this.panel.enableReadyButton(
+					() => {
+						this.startBackgroundMusic();
+						this.dismissSceneIntro(panelStartY);
+					},
+					() => {
+						this.confirmExitToSceneSelector();
+					}
+				);
 			}
 		});
 	}
@@ -1726,7 +1731,14 @@ export default class Level extends Phaser.Scene {
 			return [-13, 13];
 		}
 
-		return Level.COIN_OFFSETS;
+		if (count === 3) {
+			return Level.COIN_OFFSETS;
+		}
+
+		const spacing = 26;
+		const start = -((count - 1) * spacing) / 2;
+
+		return Array.from({ length: count }, (_, index) => start + index * spacing);
 	}
 
 	public claimAvailableFryer() {
@@ -2015,11 +2027,11 @@ export default class Level extends Phaser.Scene {
 		return yum;
 	}
 
-	public showCoinsAt(x: number) {
+	public showCoinsAt(x: number, amount: number) {
 
 		const coinDropSoundKey = Phaser.Math.Between(0, 1) === 0 ? "coinDrop" : "coinDrop2";
 		this.sound.play(coinDropSoundKey);
-		const coinOffsets = this.getCoinOffsets(Level.COIN_OFFSETS.length);
+		const coinOffsets = this.getCoinOffsets(amount);
 
 		coinOffsets.forEach((offsetX, index) => {
 			const coin = new Coin(this, x + offsetX, Level.REWARD_COIN_Y);
@@ -2203,11 +2215,14 @@ export default class Level extends Phaser.Scene {
 					this.getStarPerformance(),
 					() => {
 						if (this.currentLevelPlan.levelNumber >= Level.CAMPAIGN_LEVEL_COUNT) {
-							this.scene.start("SceneSelector");
+							this.confirmExitToSceneSelector();
 							return;
 						}
 
 						this.scene.start("Level", { levelNumber: nextLevelNumber });
+					},
+					() => {
+						this.confirmExitToSceneSelector();
 					}
 				);
 			}

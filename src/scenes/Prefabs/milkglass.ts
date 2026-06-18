@@ -6,6 +6,7 @@
 /* START-USER-IMPORTS */
 import Phaser from "phaser";
 import type Level from "../Level";
+import { getProductCoinReward } from "../productProgress";
 import type { MilkSlotId } from "./milkMachine";
 /* END-USER-IMPORTS */
 
@@ -293,7 +294,7 @@ export default class milkglass extends Phaser.GameObjects.Image {
 				}
 
 				if (client.matchesProduct(this)) {
-					levelScene.showCoinsAt(client.x);
+					levelScene.showCoinsAt(client.x, getProductCoinReward("holder4"));
 					client.consumeRequestAndExit(true);
 					this.destroy();
 					return;
