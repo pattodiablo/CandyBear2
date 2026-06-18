@@ -472,9 +472,79 @@
                 "key": "readyBtn"
             },
             {
-                "url": "assets/reversoCard.png",
+                "url": "assets/reversoCard1.png",
                 "type": "image",
-                "key": "ReversoCard1"
+                "key": "reversoCard1"
+            },
+            {
+                "url": "assets/reversoCard10.png",
+                "type": "image",
+                "key": "reversoCard10"
+            },
+            {
+                "url": "assets/reversoCard11.png",
+                "type": "image",
+                "key": "reversoCard11"
+            },
+            {
+                "url": "assets/reversoCard12.png",
+                "type": "image",
+                "key": "reversoCard12"
+            },
+            {
+                "url": "assets/reversoCard13.png",
+                "type": "image",
+                "key": "reversoCard13"
+            },
+            {
+                "url": "assets/reversoCard14.png",
+                "type": "image",
+                "key": "reversoCard14"
+            },
+            {
+                "url": "assets/reversoCard15.png",
+                "type": "image",
+                "key": "reversoCard15"
+            },
+            {
+                "url": "assets/reversoCard2.png",
+                "type": "image",
+                "key": "reversoCard2"
+            },
+            {
+                "url": "assets/reversoCard3.png",
+                "type": "image",
+                "key": "reversoCard3"
+            },
+            {
+                "url": "assets/reversoCard4.png",
+                "type": "image",
+                "key": "reversoCard4"
+            },
+            {
+                "url": "assets/reversoCard5.png",
+                "type": "image",
+                "key": "reversoCard5"
+            },
+            {
+                "url": "assets/reversoCard6.png",
+                "type": "image",
+                "key": "reversoCard6"
+            },
+            {
+                "url": "assets/reversoCard7.png",
+                "type": "image",
+                "key": "reversoCard7"
+            },
+            {
+                "url": "assets/reversoCard8.png",
+                "type": "image",
+                "key": "reversoCard8"
+            },
+            {
+                "url": "assets/reversoCard9.png",
+                "type": "image",
+                "key": "reversoCard9"
             },
             {
                 "atlasURL": "assets/GlassAnim/sandWichAnim.json",

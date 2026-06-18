@@ -5,9 +5,13 @@
 
 import SceneSelectorBtn from "./Prefabs/SceneSelectorBtn";
 /* START-USER-IMPORTS */
+import Phaser from "phaser";
 import CardPrefab from "./Prefabs/CardPrefab";
 import dayHolderPrefab from "./Prefabs/dayHolderPrefab";
-import { getHighestUnlockedLevel, getLevelStars } from "./levelProgress";
+import { getMomentCardCatalogEntry } from "./momentCardCatalog";
+import { getTotalLikes, spendTotalLikes } from "./likeProgress";
+import { getHighestUnlockedLevel, getLevelStars, getStoredTotalCoins, spendTotalCoins } from "./levelProgress";
+import { isMomentCardBought } from "./momentProgress";
 /* END-USER-IMPORTS */
 
 export default class SceneSelector extends Phaser.Scene {
@@ -42,6 +46,12 @@ export default class SceneSelector extends Phaser.Scene {
 		const momentsBtnPrefab = new SceneSelectorBtn(this, 809, 91);
 		this.add.existing(momentsBtnPrefab);
 
+		// bigCoin
+		const bigCoin = this.add.image(1231, 49, "bigCoin");
+
+		// likeHeart
+		const likeHeart = this.add.image(1235, 118, "likeHeart");
+
 		// momentsBtnPrefab (prefab fields)
 		momentsBtnPrefab.btnText = "Moments";
 		momentsBtnPrefab.initialState = false;
@@ -51,6 +61,8 @@ export default class SceneSelector extends Phaser.Scene {
 		this.pageNumber = pageNumber;
 		this.levelsBtnPrefab = levelsBtnPrefab;
 		this.momentsBtnPrefab = momentsBtnPrefab;
+		this.bigCoin = bigCoin;
+		this.likeHeart = likeHeart;
 
 		this.events.emit("scene-awake");
 	}
@@ -60,6 +72,8 @@ export default class SceneSelector extends Phaser.Scene {
 	private pageNumber!: Phaser.GameObjects.Text;
 	private levelsBtnPrefab!: SceneSelectorBtn;
 	private momentsBtnPrefab!: SceneSelectorBtn;
+	private bigCoin!: Phaser.GameObjects.Image;
+	private likeHeart!: Phaser.GameObjects.Image;
 
 	/* START-USER-CODE */
 	private static readonly TOTAL_DAY_HOLDERS = 40;
@@ -69,15 +83,43 @@ export default class SceneSelector extends Phaser.Scene {
 	private static readonly ITEMS_PER_ROW = 5;
 	private static readonly SCENE_CENTER_X = 640;
 	private static readonly GRID_COLUMN_GAP = 215;
+	private static readonly MOMENTS_GRID_COLUMN_GAP = 186;
 	private static readonly GRID_ROW_GAP = 205;
 	private static readonly GRID_START_Y = 270;
-	private static readonly DEFAULT_REVERSO_TEXTURE_KEY = "ReversoCard1";
+
+	private static readonly CARD_PREVIEW_SCALE = 1.08;
+	private static readonly CARD_PREVIEW_CENTER_X = 640;
+	private static readonly CARD_PREVIEW_CENTER_Y = 372;
+	private static readonly CARD_PREVIEW_DURATION = 280;
+	private static readonly CARD_PREVIEW_OVERLAY_ALPHA = 0.65;
+	private static readonly CARD_PREVIEW_DEPTH = 1000;
+	private static readonly HUD_DEPTH = 1100;
+	private static readonly HUD_COUNTER_GAP = 10;
+	private static readonly HUD_HIGHLIGHT_COLOR = "#D62839";
+	private static readonly HUD_DEFAULT_COLOR = "#2D120B";
+	private static readonly CAMERA_SHAKE_DURATION = 220;
+	private static readonly CAMERA_SHAKE_INTENSITY = 0.008;
 	private dayHolders: dayHolderPrefab[] = [];
 	private momentCards: CardPrefab[] = [];
 	private activeTab: "levels" | "moments" = "levels";
 	private levelsPageIndex = 0;
 	private momentsPageIndex = 0;
 	private highestUnlockedLevel = 1;
+	private cardPreviewOverlay?: Phaser.GameObjects.Image;
+	private focusedCard?: CardPrefab;
+	private focusedCardRestState?: {
+		x: number;
+		y: number;
+		scaleX: number;
+		scaleY: number;
+		angle: number;
+		depth: number;
+	};
+	private cardPreviewTween?: Phaser.Tweens.Tween;
+	private cardPreviewOverlayTween?: Phaser.Tweens.Tween;
+	private coinCounterText?: Phaser.GameObjects.Text;
+	private likesCounterText?: Phaser.GameObjects.Text;
+	private hudHighlightTween?: Phaser.Tweens.Tween;
 
 	init() {
 
@@ -90,9 +132,11 @@ export default class SceneSelector extends Phaser.Scene {
 
 		this.flushLoadedContent();
 		this.editorCreate();
+		this.initializePlayerStats();
 		this.highestUnlockedLevel = getHighestUnlockedLevel(SceneSelector.TOTAL_DAY_HOLDERS);
 		this.createDayHolders();
 		this.createMomentCards();
+		this.initializeCardPreview();
 		this.initializeTabButtons();
 		this.initializePagination();
 		this.refreshPage();
@@ -100,6 +144,11 @@ export default class SceneSelector extends Phaser.Scene {
 
 	private flushLoadedContent() {
 
+		this.focusedCard = undefined;
+		this.focusedCardRestState = undefined;
+		this.cardPreviewOverlay = undefined;
+		this.cardPreviewTween = undefined;
+		this.cardPreviewOverlayTween = undefined;
 		this.dayHolders.length = 0;
 		this.momentCards.length = 0;
 		this.children.removeAll(true);
@@ -129,13 +178,249 @@ export default class SceneSelector extends Phaser.Scene {
 		for (let index = 0; index < SceneSelector.TOTAL_MOMENT_CARDS; index++) {
 			const { x, y } = this.getGridPosition(index, SceneSelector.MOMENTS_ITEMS_PER_PAGE, false);
 			const momentCard = new CardPrefab(this, x, y);
+			const cardNumber = index + 1;
 
-			momentCard.Reverso = { key: SceneSelector.DEFAULT_REVERSO_TEXTURE_KEY };
+			const cardEntry = getMomentCardCatalogEntry(cardNumber);
+
+			momentCard.cardNumber = cardNumber;
+			momentCard.Reverso = { key: cardEntry.reversoTextureKey };
+			momentCard.buyed = isMomentCardBought(cardNumber);
+			momentCard.setCosts(cardEntry.coinCost, cardEntry.likeCost);
 			momentCard.initializeCard();
 			momentCard.setVisible(false);
+			momentCard.on("purchase-request", () => {
+				this.tryPurchaseCard(momentCard);
+			});
+			momentCard.on("preview-open", () => {
+				this.openCardPreview(momentCard);
+			});
 			this.add.existing(momentCard);
 			this.momentCards.push(momentCard);
 		}
+	}
+
+	private initializePlayerStats() {
+		this.coinCounterText = this.add.text(0, this.bigCoin.y, "0", this.getHudTextStyle("#2D120B"));
+		this.coinCounterText.setOrigin(1, 0.5);
+		this.coinCounterText.setDepth(SceneSelector.HUD_DEPTH);
+		this.layoutCounterLeftOfIcon(this.coinCounterText, this.bigCoin);
+
+		this.likesCounterText = this.add.text(0, this.likeHeart.y, "0", this.getHudTextStyle("#2D120B"));
+		this.likesCounterText.setOrigin(1, 0.5);
+		this.likesCounterText.setDepth(SceneSelector.HUD_DEPTH);
+		this.layoutCounterLeftOfIcon(this.likesCounterText, this.likeHeart);
+
+		this.bigCoin.setDepth(SceneSelector.HUD_DEPTH);
+		this.likeHeart.setDepth(SceneSelector.HUD_DEPTH);
+		this.updatePlayerStats();
+	}
+
+	private getHudTextStyle(color: string) {
+		return {
+			color,
+			fontFamily: "Klop",
+			fontSize: "40px",
+			fontStyle: "bold",
+			stroke: "#fff8f3",
+			strokeThickness: 6
+		};
+	}
+
+	private layoutCounterLeftOfIcon(counterText: Phaser.GameObjects.Text, icon: Phaser.GameObjects.Image) {
+		counterText.x = icon.x - (icon.displayWidth * 0.5) - SceneSelector.HUD_COUNTER_GAP;
+		counterText.y = icon.y;
+	}
+
+	private updatePlayerStats() {
+		this.coinCounterText?.setText(String(getStoredTotalCoins()));
+		this.likesCounterText?.setText(String(getTotalLikes()));
+	}
+
+	private tryPurchaseCard(card: CardPrefab) {
+		if (card.buyed) {
+			return;
+		}
+
+		const cardEntry = getMomentCardCatalogEntry(card.cardNumber);
+		const hasEnoughCoins = getStoredTotalCoins() >= cardEntry.coinCost;
+		const hasEnoughLikes = getTotalLikes() >= cardEntry.likeCost;
+
+		if (!hasEnoughCoins || !hasEnoughLikes) {
+			this.cameras.main.shake(SceneSelector.CAMERA_SHAKE_DURATION, SceneSelector.CAMERA_SHAKE_INTENSITY);
+
+			if (!hasEnoughCoins) {
+				this.highlightHudResource("coins");
+			}
+
+			if (!hasEnoughLikes) {
+				this.highlightHudResource("likes");
+			}
+
+			return;
+		}
+
+		if (!spendTotalCoins(cardEntry.coinCost) || !spendTotalLikes(cardEntry.likeCost)) {
+			this.cameras.main.shake(SceneSelector.CAMERA_SHAKE_DURATION, SceneSelector.CAMERA_SHAKE_INTENSITY);
+			this.highlightHudResource("coins");
+			this.highlightHudResource("likes");
+			return;
+		}
+
+		this.sound.play("likeSound");
+		this.updatePlayerStats();
+		card.beginPurchaseFlip();
+	}
+
+	private highlightHudResource(resource: "coins" | "likes") {
+		const counterText = resource === "coins" ? this.coinCounterText : this.likesCounterText;
+		const icon = resource === "coins" ? this.bigCoin : this.likeHeart;
+		const targets: Phaser.GameObjects.GameObject[] = [];
+
+		if (icon) {
+			targets.push(icon);
+		}
+
+		if (counterText) {
+			targets.push(counterText);
+		}
+
+		if (targets.length === 0) {
+			return;
+		}
+
+		this.hudHighlightTween?.stop();
+		counterText?.setColor(SceneSelector.HUD_HIGHLIGHT_COLOR);
+
+		this.hudHighlightTween = this.tweens.add({
+			targets,
+			scaleX: "*=1.14",
+			scaleY: "*=1.14",
+			duration: 110,
+			yoyo: true,
+			repeat: 2,
+			onComplete: () => {
+				counterText?.setColor(SceneSelector.HUD_DEFAULT_COLOR);
+				icon?.setScale(1);
+			}
+		});
+	}
+
+	private initializeCardPreview() {
+		this.cardPreviewOverlay = this.add.image(0, 0, "blurOverlay");
+		this.cardPreviewOverlay.setOrigin(0, 0);
+		this.cardPreviewOverlay.setScale(7, 4);
+		this.cardPreviewOverlay.setAlpha(0);
+		this.cardPreviewOverlay.setVisible(false);
+		this.cardPreviewOverlay.setDepth(SceneSelector.CARD_PREVIEW_DEPTH - 1);
+		this.cardPreviewOverlay.setInteractive(
+			new Phaser.Geom.Rectangle(0, 0, this.scale.width, this.scale.height),
+			Phaser.Geom.Rectangle.Contains
+		);
+		this.cardPreviewOverlay.on(Phaser.Input.Events.POINTER_DOWN, () => {
+			this.closeCardPreview();
+		});
+	}
+
+	private openCardPreview(card: CardPrefab) {
+		if (!card.buyed || this.focusedCard === card) {
+			return;
+		}
+
+		if (this.focusedCard) {
+			this.closeCardPreview(false);
+		}
+
+		card.pauseFloatAnimation();
+
+		this.focusedCard = card;
+		this.focusedCardRestState = {
+			x: card.x,
+			y: card.y,
+			scaleX: card.scaleX,
+			scaleY: card.scaleY,
+			angle: card.angle,
+			depth: card.depth
+		};
+
+		this.cardPreviewOverlay?.setVisible(true);
+		this.cardPreviewOverlay?.setAlpha(0);
+		this.cardPreviewOverlayTween?.stop();
+		this.cardPreviewOverlayTween = this.tweens.add({
+			targets: this.cardPreviewOverlay,
+			alpha: SceneSelector.CARD_PREVIEW_OVERLAY_ALPHA,
+			duration: SceneSelector.CARD_PREVIEW_DURATION,
+			ease: "Quad.Out"
+		});
+
+		card.setDepth(SceneSelector.CARD_PREVIEW_DEPTH);
+		this.cardPreviewTween?.stop();
+		this.cardPreviewTween = this.tweens.add({
+			targets: card,
+			x: SceneSelector.CARD_PREVIEW_CENTER_X,
+			y: SceneSelector.CARD_PREVIEW_CENTER_Y,
+			scaleX: SceneSelector.CARD_PREVIEW_SCALE,
+			scaleY: SceneSelector.CARD_PREVIEW_SCALE,
+			duration: SceneSelector.CARD_PREVIEW_DURATION,
+			ease: "Back.Out"
+		});
+	}
+
+	private closeCardPreview(animated = true) {
+		if (!this.focusedCard || !this.focusedCardRestState) {
+			return;
+		}
+
+		const card = this.focusedCard;
+		const restState = this.focusedCardRestState;
+
+		this.cardPreviewTween?.stop();
+		this.cardPreviewOverlayTween?.stop();
+
+		const finishClose = () => {
+			this.cardPreviewOverlay?.setVisible(false);
+			this.cardPreviewOverlay?.setAlpha(0);
+			this.focusedCard = undefined;
+			this.focusedCardRestState = undefined;
+		};
+
+		const resumeCardFloat = () => {
+			card.setAngle(restState.angle);
+			card.syncFloatBasePosition();
+			card.resumeFloatAnimation();
+		};
+
+		if (!animated) {
+			card.setPosition(restState.x, restState.y);
+			card.setScale(restState.scaleX, restState.scaleY);
+			card.setAngle(restState.angle);
+			card.setDepth(restState.depth);
+			resumeCardFloat();
+			finishClose();
+			return;
+		}
+
+		this.tweens.add({
+			targets: card,
+			x: restState.x,
+			y: restState.y,
+			scaleX: restState.scaleX,
+			scaleY: restState.scaleY,
+			angle: restState.angle,
+			duration: SceneSelector.CARD_PREVIEW_DURATION,
+			ease: "Back.In",
+			onComplete: () => {
+				card.setDepth(restState.depth);
+				resumeCardFloat();
+			}
+		});
+
+		this.tweens.add({
+			targets: this.cardPreviewOverlay,
+			alpha: 0,
+			duration: SceneSelector.CARD_PREVIEW_DURATION,
+			ease: "Quad.In",
+			onComplete: finishClose
+		});
 	}
 
 	private initializeTabButtons() {
@@ -152,6 +437,7 @@ export default class SceneSelector extends Phaser.Scene {
 			return;
 		}
 
+		this.closeCardPreview(false);
 		this.activeTab = tab;
 		this.levelsBtnPrefab.setTabActive(tab === "levels");
 		this.momentsBtnPrefab.setTabActive(tab === "moments");
@@ -175,6 +461,7 @@ export default class SceneSelector extends Phaser.Scene {
 			return;
 		}
 
+		this.closeCardPreview(false);
 		this.setCurrentPageIndex(this.getCurrentPageIndex() + 1);
 		this.refreshPage();
 	}
@@ -184,6 +471,7 @@ export default class SceneSelector extends Phaser.Scene {
 			return;
 		}
 
+		this.closeCardPreview(false);
 		this.setCurrentPageIndex(this.getCurrentPageIndex() - 1);
 		this.refreshPage();
 	}
@@ -195,6 +483,10 @@ export default class SceneSelector extends Phaser.Scene {
 		const endIndex = startIndex + itemsPerPage;
 		const showLevels = this.activeTab === "levels";
 		const showMoments = this.activeTab === "moments";
+
+		if (this.focusedCard && !this.focusedCard.visible) {
+			this.closeCardPreview(false);
+		}
 
 		for (let index = 0; index < this.dayHolders.length; index++) {
 			const isOnCurrentPage = index >= startIndex && index < endIndex;
@@ -252,7 +544,10 @@ export default class SceneSelector extends Phaser.Scene {
 		const pageSlot = index % itemsPerPage;
 		const column = pageSlot % SceneSelector.ITEMS_PER_ROW;
 		const row = useTwoRows ? Math.floor(pageSlot / SceneSelector.ITEMS_PER_ROW) : 0;
-		const x = this.getGridStartX() + (column * SceneSelector.GRID_COLUMN_GAP);
+		const columnGap = useTwoRows
+			? SceneSelector.GRID_COLUMN_GAP
+			: SceneSelector.MOMENTS_GRID_COLUMN_GAP;
+		const x = this.getGridStartX(columnGap) + (column * columnGap);
 		const y = useTwoRows
 			? SceneSelector.GRID_START_Y + (row * SceneSelector.GRID_ROW_GAP)
 			: SceneSelector.GRID_START_Y + (SceneSelector.GRID_ROW_GAP * 0.5);
@@ -260,8 +555,8 @@ export default class SceneSelector extends Phaser.Scene {
 		return { x, y };
 	}
 
-	private getGridStartX() {
-		const gridWidth = (SceneSelector.ITEMS_PER_ROW - 1) * SceneSelector.GRID_COLUMN_GAP;
+	private getGridStartX(columnGap = SceneSelector.GRID_COLUMN_GAP) {
+		const gridWidth = (SceneSelector.ITEMS_PER_ROW - 1) * columnGap;
 		return SceneSelector.SCENE_CENTER_X - (gridWidth / 2);
 	}
 

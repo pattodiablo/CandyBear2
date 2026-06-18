@@ -1,4 +1,5 @@
 import { LEVEL_LIKES_STORAGE_KEY, TOTAL_LIKES_STORAGE_KEY } from "./likeProgress";
+import { BOUGHT_MOMENT_CARDS_STORAGE_KEY } from "./momentProgress";
 import { ACQUIRED_PRODUCTS_STORAGE_KEY } from "./productProgress";
 import { ACQUIRED_WORKSTATIONS_STORAGE_KEY } from "./workstationProgress";
 
@@ -16,6 +17,7 @@ export const GAME_STORAGE_KEYS = [
 	FIRST_SESSION_STORAGE_KEY,
 	ACQUIRED_PRODUCTS_STORAGE_KEY,
 	ACQUIRED_WORKSTATIONS_STORAGE_KEY,
+	BOUGHT_MOMENT_CARDS_STORAGE_KEY,
 ] as const;
 
 export function clearAllStoredProgress() {
@@ -65,6 +67,22 @@ export function storeTotalCoins(totalCoins: number) {
 
 	const normalizedTotalCoins = Math.max(0, Math.floor(totalCoins));
 	window.localStorage.setItem(TOTAL_COINS_STORAGE_KEY, String(normalizedTotalCoins));
+}
+
+export function spendTotalCoins(amount: number) {
+	if (typeof window === "undefined") {
+		return false;
+	}
+
+	const normalizedAmount = Math.max(0, Math.floor(amount));
+	const currentTotalCoins = getStoredTotalCoins();
+
+	if (currentTotalCoins < normalizedAmount) {
+		return false;
+	}
+
+	storeTotalCoins(currentTotalCoins - normalizedAmount);
+	return true;
 }
 
 export function hasOpenedGameBefore() {

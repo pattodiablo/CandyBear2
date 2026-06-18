@@ -4,11 +4,11 @@
     "settings": {
         "exportClass": true,
         "autoImport": true,
+        "generateAwakeHandler": true,
         "preloadMethodName": "",
         "preloadPackFiles": [],
         "createMethodName": "",
         "compilerOutputLanguage": "TYPE_SCRIPT",
-        "generateAwakeHandler": true,
         "borderWidth": 1280,
         "borderHeight": 720
     },
@@ -39,12 +39,13 @@
                             "id": "4cd28286-6a82-4acd-aa00-9ae0ac36366e",
                             "label": "CoinCost",
                             "scope": "CLASS",
-                            "x": 1,
+                            "x": 20,
+                            "y": -4,
                             "originX": 0.5,
                             "originY": 0.5,
                             "text": "0000",
                             "fontFamily": "Klop",
-                            "fontSize": "36px",
+                            "fontSize": "54px",
                             "color": "#F8ECDA"
                         },
                         {
@@ -52,13 +53,13 @@
                             "id": "a14944fd-6dd5-42fc-9ce7-b0797746d4e0",
                             "label": "LikesCost",
                             "scope": "CLASS",
-                            "x": 1,
-                            "y": 86,
+                            "x": 20,
+                            "y": 79,
                             "originX": 0.5,
                             "originY": 0.5,
                             "text": "0000",
                             "fontFamily": "Klop",
-                            "fontSize": "36px",
+                            "fontSize": "54px",
                             "color": "#F8ECDA"
                         }
                     ]
@@ -78,12 +79,38 @@
             "name": "Reverso",
             "label": "Reverso",
             "tooltip": "",
-            "defValue": "",
+            "defValue": "{\"key\":\"reversoCard1\"}",
             "customDefinition": false,
             "editorOnly": false,
             "deprecated": false,
             "type": {
                 "id": "texture-config",
+                "isArray": false
+            }
+        },
+        {
+            "name": "buyed",
+            "label": "buyed",
+            "tooltip": "",
+            "defValue": false,
+            "customDefinition": false,
+            "editorOnly": false,
+            "deprecated": false,
+            "type": {
+                "id": "boolean",
+                "isArray": false
+            }
+        },
+        {
+            "name": "cardNumber",
+            "label": "cardNumber",
+            "tooltip": "",
+            "defValue": 0,
+            "customDefinition": false,
+            "editorOnly": false,
+            "deprecated": false,
+            "type": {
+                "id": "number",
                 "isArray": false
             }
         }

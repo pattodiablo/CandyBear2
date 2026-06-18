@@ -61,6 +61,22 @@ export function recordLike() {
 	window.localStorage.setItem(TOTAL_LIKES_STORAGE_KEY, String(nextTotalLikes));
 }
 
+export function spendTotalLikes(amount: number) {
+	if (typeof window === "undefined") {
+		return false;
+	}
+
+	const normalizedAmount = Math.max(0, Math.floor(amount));
+	const currentTotalLikes = getTotalLikes();
+
+	if (currentTotalLikes < normalizedAmount) {
+		return false;
+	}
+
+	window.localStorage.setItem(TOTAL_LIKES_STORAGE_KEY, String(currentTotalLikes - normalizedAmount));
+	return true;
+}
+
 export function clearStoredLikes() {
 	if (typeof window === "undefined") {
 		return;

@@ -75,6 +75,28 @@
             "initialState": false,
             "x": 809,
             "y": 91
+        },
+        {
+            "type": "Image",
+            "id": "3cb7407c-6f2b-4a07-92d5-c65ab0e70eeb",
+            "label": "bigCoin",
+            "scope": "CLASS",
+            "texture": {
+                "key": "bigCoin"
+            },
+            "x": 1231,
+            "y": 49
+        },
+        {
+            "type": "Image",
+            "id": "c77cfc26-4221-4d7b-af84-fb648e60fdf0",
+            "label": "likeHeart",
+            "scope": "CLASS",
+            "texture": {
+                "key": "likeHeart"
+            },
+            "x": 1235,
+            "y": 118
         }
     ],
     "plainObjects": [],
