@@ -245,6 +245,11 @@
                 "key": "GlassAnim"
             },
             {
+                "url": "assets/GreenGlass.png",
+                "type": "image",
+                "key": "GreenGlass"
+            },
+            {
                 "url": "assets/Holder.png",
                 "type": "image",
                 "key": "Holder"
@@ -475,6 +480,11 @@
                 "url": "assets/readyBtn.png",
                 "type": "image",
                 "key": "readyBtn"
+            },
+            {
+                "url": "assets/RedGlass.png",
+                "type": "image",
+                "key": "RedGlass"
             },
             {
                 "url": "assets/reversoCard1.png",

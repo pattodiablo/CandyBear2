@@ -65,10 +65,10 @@
                 "x",
                 "y"
             ],
-            "label": "cookieJar",
+            "label": "cookieJarPrefab",
             "scope": "CLASS",
             "x": 144,
-            "y": 459
+            "y": 451
         },
         {
             "type": "Image",
@@ -339,24 +339,32 @@
             "y": 47
         },
         {
-            "type": "Image",
+            "prefabId": "f86a2b74-10a3-4e39-804b-19177b1da66f",
             "id": "5630fced-f814-4260-9bac-5cf43286c85c",
+            "unlock": [
+                "x",
+                "y"
+            ],
             "label": "glace2",
-            "texture": {
-                "key": "glace2"
-            },
             "x": 1145,
-            "y": 462
+            "y": 454
         },
         {
-            "type": "Image",
+            "prefabId": "f86a2b74-10a3-4e39-804b-19177b1da66f",
             "id": "d8ed592e-126b-4e27-8c83-7679c9659371",
+            "unlock": [
+                "x",
+                "y",
+                "texture",
+                "FlavorType"
+            ],
             "label": "glace1",
             "texture": {
                 "key": "glace1"
             },
+            "FlavorType": "Red",
             "x": 1062,
-            "y": 466
+            "y": 458
         },
         {
             "type": "Image",

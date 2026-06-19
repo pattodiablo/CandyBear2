@@ -1,0 +1,46 @@
+{
+    "id": "f86a2b74-10a3-4e39-804b-19177b1da66f",
+    "sceneType": "PREFAB",
+    "settings": {
+        "exportClass": true,
+        "autoImport": true,
+        "preloadMethodName": "",
+        "preloadPackFiles": [],
+        "createMethodName": "",
+        "compilerOutputLanguage": "TYPE_SCRIPT",
+        "borderWidth": 1280,
+        "borderHeight": 720
+    },
+    "displayList": [
+        {
+            "type": "Image",
+            "id": "b9df3b37-43c9-422a-b7bd-5ce956f332cd",
+            "label": "glace2",
+            "texture": {
+                "key": "glace2"
+            }
+        }
+    ],
+    "plainObjects": [],
+    "meta": {
+        "app": "Phaser Editor - Scene Editor",
+        "url": "https://phaser.io/editor",
+        "contentType": "phasereditor2d.core.scene.SceneContentType",
+        "version": 5
+    },
+    "prefabProperties": [
+        {
+            "name": "FlavorType",
+            "label": "FlavorType",
+            "tooltip": "",
+            "defValue": "Green",
+            "customDefinition": false,
+            "editorOnly": false,
+            "deprecated": false,
+            "type": {
+                "id": "string",
+                "isArray": false
+            }
+        }
+    ]
+}

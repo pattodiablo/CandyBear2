@@ -36,6 +36,16 @@ const CLIENT_REQUEST_DEFINITIONS: ClientRequestDefinition[] = [
 		productSlot: "holder4",
 		workstation: "milkmachine",
 	},
+	{
+		appearance: { key: "GreenGlass" },
+		productSlot: "holder4",
+		workstation: "milkmachine",
+	},
+	{
+		appearance: { key: "RedGlass" },
+		productSlot: "holder4",
+		workstation: "milkmachine",
+	},
 ];
 
 const DEFAULT_CLIENT_REQUESTS: ClientRequestAppearance[] = [

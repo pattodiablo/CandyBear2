@@ -53,6 +53,8 @@ export default class AClient extends Phaser.GameObjects.Container {
 	public Product2_Chocolate: {key:string,frame?:string|number} = {"key":"Product2Chocolate"};
 	public Product2_Candy: {key:string,frame?:string|number} = {"key":"Product2Candy"};
 	public MilkGlass_Filled: {key:string,frame?:string|number} = {"key":"GlassAnim","frame":"Vaso0089.png"};
+	public MilkGlass_Green: {key:string,frame?:string|number} = {"key":"GreenGlass"};
+	public MilkGlass_Red: {key:string,frame?:string|number} = {"key":"RedGlass"};
 	public Sandwich_Filled: {key:string,frame?:string|number} = {"key":"sandWichAnim","frame":"sandwich0005.png"};
 	public ClientBack: {key:string,frame?:string|number} = {"key":"ClientBack"};
 

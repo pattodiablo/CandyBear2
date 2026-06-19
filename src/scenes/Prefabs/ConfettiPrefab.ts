@@ -46,6 +46,15 @@ export default class ConfettiPrefab extends Phaser.GameObjects.Image {
 	private static readonly DESTROY_BUFFER_MS = 450;
 	private static readonly DISPLAY_DEPTH = 1002;
 	private static readonly CHEERS_VOLUME = 0.65;
+	private static readonly SMALL_BURST_EMITTER_COUNT = 3;
+	private static readonly SMALL_BURST_PARTICLES_PER_EMITTER = 4;
+	private static readonly SMALL_BURST_LIFESPAN = 900;
+	private static readonly SMALL_BURST_GRAVITY_Y = 320;
+	private static readonly SMALL_BURST_SPEED_MIN = 60;
+	private static readonly SMALL_BURST_SPEED_MAX = 150;
+	private static readonly SMALL_BURST_SCALE_MIN = 0.3;
+	private static readonly SMALL_BURST_SCALE_MAX = 0.55;
+	private static readonly SMALL_BURST_DESTROY_BUFFER_MS = 200;
 	private readonly emitters: Phaser.GameObjects.Particles.ParticleEmitter[] = [];
 
 	public burst() {
@@ -57,6 +66,19 @@ export default class ConfettiPrefab extends Phaser.GameObjects.Image {
 		scene.add.existing(confetti);
 		confetti.setDepth(ConfettiPrefab.DISPLAY_DEPTH);
 		confetti.burst();
+		return confetti;
+	}
+
+	public static launchSmallBurstAt(
+		scene: Phaser.Scene,
+		x: number,
+		y: number,
+		depth = ConfettiPrefab.DISPLAY_DEPTH
+	) {
+		const confetti = new ConfettiPrefab(scene, x, y);
+		scene.add.existing(confetti);
+		confetti.setDepth(depth);
+		confetti.playSmallBurst();
 		return confetti;
 	}
 
@@ -99,6 +121,43 @@ export default class ConfettiPrefab extends Phaser.GameObjects.Image {
 
 		this.scene.time.delayedCall(
 			ConfettiPrefab.PARTICLE_LIFESPAN + ConfettiPrefab.DESTROY_BUFFER_MS,
+			() => this.destroy()
+		);
+	}
+
+	private playSmallBurst() {
+		const textureKeys = Phaser.Utils.Array.Shuffle([...ConfettiPrefab.PARTICLE_TEXTURE_KEYS])
+			.slice(0, ConfettiPrefab.SMALL_BURST_EMITTER_COUNT);
+
+		textureKeys.forEach((textureKey) => {
+			const emitter = this.scene.add.particles(this.x, this.y, textureKey, {
+				lifespan: ConfettiPrefab.SMALL_BURST_LIFESPAN,
+				gravityY: ConfettiPrefab.SMALL_BURST_GRAVITY_Y,
+				speed: {
+					min: ConfettiPrefab.SMALL_BURST_SPEED_MIN,
+					max: ConfettiPrefab.SMALL_BURST_SPEED_MAX,
+				},
+				angle: { min: 0, max: 360 },
+				rotate: { min: 0, max: 360 },
+				scale: {
+					start: Phaser.Math.FloatBetween(
+						ConfettiPrefab.SMALL_BURST_SCALE_MIN,
+						ConfettiPrefab.SMALL_BURST_SCALE_MAX
+					),
+					end: 0.1,
+				},
+				alpha: { start: 1, end: 0 },
+				emitting: false,
+				blendMode: Phaser.BlendModes.NORMAL,
+			});
+
+			emitter.setDepth(this.depth);
+			emitter.explode(ConfettiPrefab.SMALL_BURST_PARTICLES_PER_EMITTER);
+			this.emitters.push(emitter);
+		});
+
+		this.scene.time.delayedCall(
+			ConfettiPrefab.SMALL_BURST_LIFESPAN + ConfettiPrefab.SMALL_BURST_DESTROY_BUFFER_MS,
 			() => this.destroy()
 		);
 	}

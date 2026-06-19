@@ -7,6 +7,9 @@
 import Phaser from "phaser";
 import type Level from "../Level";
 import { getProductCoinReward } from "../productProgress";
+import ConfettiPrefab from "./ConfettiPrefab";
+import type { FlavorType } from "./FlavorBottle";
+import { getFlavorGlassTextureKey } from "./FlavorBottle";
 import type { MilkSlotId } from "./milkMachine";
 /* END-USER-IMPORTS */
 
@@ -60,6 +63,7 @@ export default class milkglass extends Phaser.GameObjects.Image {
 	private danceTween?: Phaser.Tweens.Tween;
 	private selectionTimeout?: Phaser.Time.TimerEvent;
 	private currentSlotId?: MilkSlotId;
+	private flavorType?: FlavorType;
 
 	private handlePointerOver() {
 		if (this.isLaunching || this.isRaised || this.isSelectingDelivery) {
@@ -70,11 +74,23 @@ export default class milkglass extends Phaser.GameObjects.Image {
 	}
 
 	private handlePointerDown() {
-		if (this.isLaunching || this.isRaised || this.isSelectingDelivery) {
+		if (this.isLaunching || this.isSelectingDelivery) {
 			return;
 		}
 
 		const levelScene = this.scene as Level;
+
+		if (levelScene.isFlavorBottleSelecting()) {
+			if (this.canReceiveFlavor()) {
+				levelScene.resolveFlavorSelection(this);
+			}
+
+			return;
+		}
+
+		if (this.isRaised) {
+			return;
+		}
 
 		if (this.isAtMachine && this.isReadyForDelivery) {
 			const directDeliveryTarget = levelScene.getDirectDeliveryTarget(this);
@@ -195,7 +211,7 @@ export default class milkglass extends Phaser.GameObjects.Image {
 			}
 
 			levelScene.milkmachine.clearSlot(slotId);
-			this.setTexture("GlassAnim", milkglass.FILLED_FRAME);
+			this.applyFilledAppearance();
 			this.setVisible(true);
 			this.setInteractive({
 				hitArea: new Phaser.Geom.Circle(
@@ -211,6 +227,26 @@ export default class milkglass extends Phaser.GameObjects.Image {
 			this.isLaunching = false;
 			this.isRaised = false;
 		});
+	}
+
+	public hasFlavor() {
+		return this.flavorType !== undefined;
+	}
+
+	public canReceiveFlavor() {
+		return this.active
+			&& this.isAtMachine
+			&& this.isReadyForDelivery
+			&& !this.isLaunching
+			&& !this.isSelectingDelivery
+			&& !this.hasFlavor();
+	}
+
+	public applyFlavor(flavorType: FlavorType) {
+		this.flavorType = flavorType;
+		this.setTexture(getFlavorGlassTextureKey(flavorType));
+
+		ConfettiPrefab.launchSmallBurstAt(this.scene, this.x, this.y, this.depth + 1);
 	}
 
 	public canReceiveDirectDelivery() {
@@ -366,6 +402,14 @@ export default class milkglass extends Phaser.GameObjects.Image {
 
 	public matchesAppearance(appearance: { key: string; frame?: string | number }) {
 
+		if (this.hasFlavor()) {
+			return appearance.key === getFlavorGlassTextureKey(this.flavorType!);
+		}
+
+		if (appearance.key === "GreenGlass" || appearance.key === "RedGlass") {
+			return false;
+		}
+
 		if (this.texture.key !== appearance.key) {
 			return false;
 		}
@@ -375,6 +419,10 @@ export default class milkglass extends Phaser.GameObjects.Image {
 		}
 
 		return this.frame.name === appearance.frame;
+	}
+
+	private applyFilledAppearance() {
+		this.setTexture("GlassAnim", milkglass.FILLED_FRAME);
 	}
 
 	private startSelectionTimeout(onTimeout: () => void) {

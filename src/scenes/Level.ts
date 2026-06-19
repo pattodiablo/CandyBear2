@@ -5,11 +5,12 @@
 
 import milkMachine from "./Prefabs/milkMachine";
 import ToasterPrefab from "./Prefabs/ToasterPrefab";
-import CookieJar from "./Prefabs/cookieJar";
+import cookieJar from "./Prefabs/cookieJar";
 import AProduct from "./Prefabs/AProduct";
 import milkglass from "./Prefabs/milkglass";
 import sandwichPrefab from "./Prefabs/sandwichPrefab";
 import PanelPrefab from "./Prefabs/PanelPrefab";
+import FlavorBottle from "./Prefabs/FlavorBottle";
 /* START-USER-IMPORTS */
 import Phaser from "phaser";
 import AClient from "./Prefabs/AClient";	
@@ -84,9 +85,9 @@ export default class Level extends Phaser.Scene {
 		// fryer1
 		const fryer1 = this.add.image(390, 523, "Fryer");
 
-		// cookieJar
-		const cookieJar = new CookieJar(this, 144, 459);
-		this.add.existing(cookieJar);
+		// cookieJarPrefab
+		const cookieJarPrefab = new cookieJar(this, 144, 451);
+		this.add.existing(cookieJarPrefab);
 
 		// fryer2
 		const fryer2 = this.add.image(390, 654, "Fryer");
@@ -171,10 +172,13 @@ export default class Level extends Phaser.Scene {
 		const menuBtn = this.add.image(1229, 47, "menuBtn");
 
 		// glace2
-		this.add.image(1145, 462, "glace2");
+		const glace2 = new FlavorBottle(this, 1145, 454);
+		this.add.existing(glace2);
 
 		// glace1
-		this.add.image(1062, 466, "glace1");
+		const glace1 = new FlavorBottle(this, 1062, 458, "glace1");
+		glace1.FlavorType = "Red";
+		this.add.existing(glace1);
 
 		// overTrayIcon
 		this.add.image(312, 391, "overTrayIcon");
@@ -186,7 +190,7 @@ export default class Level extends Phaser.Scene {
 		this.milkmachine = milkmachine;
 		this.toaster = toaster;
 		this.fryer1 = fryer1;
-		this.cookieJar = cookieJar;
+		this.cookieJarPrefab = cookieJarPrefab;
 		this.fryer2 = fryer2;
 		this.holder1 = holder1;
 		this.holder2 = holder2;
@@ -213,7 +217,7 @@ export default class Level extends Phaser.Scene {
 	public milkmachine!: milkMachine;
 	public toaster!: ToasterPrefab;
 	public fryer1!: Phaser.GameObjects.Image;
-	private cookieJar!: CookieJar;
+	private cookieJarPrefab!: cookieJar;
 	public fryer2!: Phaser.GameObjects.Image;
 	private holder1!: Phaser.GameObjects.Image;
 	private holder2!: Phaser.GameObjects.Image;
@@ -314,6 +318,7 @@ export default class Level extends Phaser.Scene {
 	private charola1Products: AProduct[] = [];
 	private charola2Products: AProduct[] = [];
 	private selectedDipProduct?: AProduct;
+	private selectedFlavorBottle?: FlavorBottle;
 	private selectedDeliveryProduct?: AProduct | milkglass | sandwichPrefab;
 	private coinCount = 0;
 	private earnedCoinsToday = 0;
@@ -423,6 +428,7 @@ export default class Level extends Phaser.Scene {
 		this.milkRefill2Occupied = false;
 		this.toasterSlotOccupied = false;
 		this.selectedDipProduct = undefined;
+		this.selectedFlavorBottle = undefined;
 		this.selectedDeliveryProduct = undefined;
 		this.successfulClientsServed = 0;
 		this.quickServiceLikesThisLevel = 0;
@@ -495,6 +501,7 @@ export default class Level extends Phaser.Scene {
 		this.milkRefill2Occupied = false;
 		this.toasterSlotOccupied = false;
 		this.selectedDipProduct = undefined;
+		this.selectedFlavorBottle = undefined;
 		this.selectedDeliveryProduct = undefined;
 		this.isExitConfirmVisible = false;
 		this.isUnlockPanelVisible = false;
@@ -1912,6 +1919,52 @@ export default class Level extends Phaser.Scene {
 		}
 
 		this.selectedDipProduct = product;
+	}
+
+	public beginFlavorSelection(bottle: FlavorBottle) {
+
+		if (this.selectedFlavorBottle && this.selectedFlavorBottle !== bottle) {
+			this.selectedFlavorBottle.cancelFlavorSelection();
+		}
+
+		this.selectedFlavorBottle = bottle;
+	}
+
+	public clearFlavorSelection(bottle?: FlavorBottle) {
+
+		if (!bottle || this.selectedFlavorBottle === bottle) {
+			this.selectedFlavorBottle = undefined;
+		}
+	}
+
+	public isFlavorBottleSelecting() {
+		return this.selectedFlavorBottle !== undefined;
+	}
+
+	public resolveFlavorSelection(glass?: milkglass) {
+
+		if (!this.selectedFlavorBottle) {
+			return;
+		}
+
+		if (!glass) {
+			return;
+		}
+
+		this.selectedFlavorBottle.applyToGlass(glass);
+	}
+
+	public getDirectFlavorGlass(bottle: FlavorBottle) {
+
+		const flavorCandidates = this.children.list
+			.filter((child): child is milkglass => child instanceof milkglass)
+			.filter((glass) => glass.canReceiveFlavor());
+
+		if (flavorCandidates.length !== 1) {
+			return undefined;
+		}
+
+		return flavorCandidates[0];
 	}
 
 	public clearDipSelection(product?: AProduct) {

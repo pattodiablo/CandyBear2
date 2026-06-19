@@ -7,6 +7,7 @@
 import Phaser from "phaser";
 import type Level from "../Level";
 import { getProductCoinReward, type ProductSlotId } from "../productProgress";
+import ConfettiPrefab from "./ConfettiPrefab";
 /* END-USER-IMPORTS */
 
 export default class AProduct extends Phaser.GameObjects.Image {
@@ -617,6 +618,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 			ease: "Cubic.In",
 			onComplete: () => {
 				this.applyAppearance(appearance);
+				ConfettiPrefab.launchSmallBurstAt(this.scene, this.x, this.y, this.depth + 1);
 				this.scene.tweens.add({
 					targets: this,
 					scaleX: this.baseScaleX * 1.15,
