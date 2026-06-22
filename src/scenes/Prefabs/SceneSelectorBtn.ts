@@ -47,7 +47,9 @@ export default class SceneSelectorBtn extends Phaser.GameObjects.Container {
 	private readonly baseScaleY: number;
 	private isActive = true;
 	private isHovering = false;
+	private isAttentionActive = false;
 	private hoverTween?: Phaser.Tweens.Tween;
+	private attentionTween?: Phaser.Tweens.Tween;
 
 	private awake() {
 		this.isActive = this.initialState;
@@ -59,6 +61,25 @@ export default class SceneSelectorBtn extends Phaser.GameObjects.Container {
 	public setTabActive(active: boolean) {
 		this.isActive = active;
 		this.applyVisualState();
+
+		if (active) {
+			this.setAttentionActive(false);
+		}
+	}
+
+	public setAttentionActive(active: boolean) {
+		if (this.isAttentionActive === active) {
+			return;
+		}
+
+		this.isAttentionActive = active;
+
+		if (active && !this.isActive) {
+			this.startAttentionBlink();
+			return;
+		}
+
+		this.stopAttentionBlink();
 	}
 
 	public isTabActive() {
@@ -120,6 +141,28 @@ export default class SceneSelectorBtn extends Phaser.GameObjects.Container {
 			duration: SceneSelectorBtn.HOVER_DURATION,
 			ease: "Back.Out"
 		});
+	}
+
+	private startAttentionBlink() {
+		this.stopAttentionBlink();
+		this.buttonImage.setAlpha(1);
+		this.finalText.setAlpha(1);
+
+		this.attentionTween = this.scene.tweens.add({
+			targets: [this.buttonImage, this.finalText],
+			alpha: { from: 1, to: 0.35 },
+			duration: 420,
+			yoyo: true,
+			repeat: -1,
+			ease: "Sine.InOut",
+		});
+	}
+
+	private stopAttentionBlink() {
+		this.attentionTween?.stop();
+		this.attentionTween = undefined;
+		this.buttonImage.setAlpha(1);
+		this.finalText.setAlpha(1);
 	}
 
 	/* END-USER-CODE */

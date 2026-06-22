@@ -75,10 +75,12 @@ export default class AClient extends Phaser.GameObjects.Container {
 	private static readonly QUESTION_EARLY_MAX = 900;
 	private static readonly QUESTION_LATE_MAX = 2200;
 	private static readonly REQUEST_WAIT_DURATION = 20000;
+	static readonly COOKIE_WAIT_BONUS_MS = 6000;
 	private static readonly QUICK_SERVICE_WINDOW_MS = 4000;
 	private static readonly QUESTION_FLOAT_START_REMAINING = 5000;
 	private static readonly URGENCY_UPDATE_INTERVAL = 100;
 	private static readonly QUESTION_BASE_DURATION = 500;
+	private static readonly QUESTION_BASE_Y = -145;
 	private static readonly QUESTION_MAX_SPEED_SCALE = 4;
 
 	private initializeInteraction() {
@@ -172,9 +174,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 			ease: "Back.Out"
 		});
 
-		this.questionFloatTween?.stop();
-		this.questionFloatTween = undefined;
-		this.clientQuestion.y = -145;
+		this.resetQuestionUrgencyAnimation();
 
 		this.requestIssuedAt = this.scene.time.now;
 		this.startRequestWaitTimer();
@@ -184,25 +184,54 @@ export default class AClient extends Phaser.GameObjects.Container {
 
 		this.stopRequestWaitTimer();
 		this.requestExpiresAt = this.scene.time.now + AClient.REQUEST_WAIT_DURATION;
+		this.scheduleRequestWaitTimers();
+	}
+
+	private scheduleRequestWaitTimers() {
+		const remaining = Math.max(0, this.requestExpiresAt - this.scene.time.now);
+
+		this.stopRequestWaitTimersOnly();
+
+		if (remaining <= 0) {
+			this.handleRequestTimeout();
+			return;
+		}
+
 		this.requestUrgencyTimer = this.scene.time.addEvent({
 			delay: AClient.URGENCY_UPDATE_INTERVAL,
 			loop: true,
 			callback: this.updateQuestionUrgency,
 			callbackScope: this
 		});
-		this.requestWaitTimer = this.scene.time.delayedCall(AClient.REQUEST_WAIT_DURATION, () => {
+		this.requestWaitTimer = this.scene.time.delayedCall(remaining, () => {
 			this.handleRequestTimeout();
 		});
 		this.updateQuestionUrgency();
 	}
 
-	private stopRequestWaitTimer() {
+	private stopRequestWaitTimersOnly() {
 
 		this.requestWaitTimer?.remove(false);
 		this.requestWaitTimer = undefined;
 		this.requestUrgencyTimer?.remove(false);
 		this.requestUrgencyTimer = undefined;
+	}
+
+	private stopRequestWaitTimer() {
+
+		this.stopRequestWaitTimersOnly();
 		this.requestExpiresAt = 0;
+	}
+
+	public extendRequestWaitTime(extraMs: number) {
+
+		if (!this.requestedProduct || this.requestExpiresAt <= 0) {
+			return false;
+		}
+
+		this.requestExpiresAt += extraMs;
+		this.scheduleRequestWaitTimers();
+		return true;
 	}
 
 	private updateQuestionUrgency() {
@@ -214,13 +243,15 @@ export default class AClient extends Phaser.GameObjects.Container {
 		const remaining = Math.max(0, this.requestExpiresAt - this.scene.time.now);
 
 		if (remaining > AClient.QUESTION_FLOAT_START_REMAINING) {
+			this.resetQuestionUrgencyAnimation();
 			return;
 		}
 
 		if (!this.questionFloatTween) {
+			this.clientQuestion.y = AClient.QUESTION_BASE_Y;
 			this.questionFloatTween = this.scene.tweens.add({
 				targets: this.clientQuestion,
-				y: this.clientQuestion.y - AClient.QUESTION_FLOAT_DISTANCE,
+				y: AClient.QUESTION_BASE_Y - AClient.QUESTION_FLOAT_DISTANCE,
 				duration: AClient.QUESTION_BASE_DURATION,
 				yoyo: true,
 				repeat: -1,
@@ -231,6 +262,13 @@ export default class AClient extends Phaser.GameObjects.Container {
 		const progress = 1 - remaining / AClient.QUESTION_FLOAT_START_REMAINING;
 		const speedScale = Phaser.Math.Linear(1, AClient.QUESTION_MAX_SPEED_SCALE, progress);
 		this.questionFloatTween.setTimeScale(speedScale);
+	}
+
+	private resetQuestionUrgencyAnimation() {
+
+		this.questionFloatTween?.stop();
+		this.questionFloatTween = undefined;
+		this.clientQuestion.y = AClient.QUESTION_BASE_Y;
 	}
 
 	private handleRequestTimeout() {
@@ -323,10 +361,8 @@ export default class AClient extends Phaser.GameObjects.Container {
 	private clearRequestState() {
 
 		this.stopRequestWaitTimer();
-		this.questionFloatTween?.stop();
-		this.questionFloatTween = undefined;
+		this.resetQuestionUrgencyAnimation();
 		this.clientQuestion.setAlpha(0);
-		this.clientQuestion.y = -145;
 		this.clientQuestion.setScale(1);
 		this.productSample.setVisible(false);
 		this.requestedProduct = undefined;
@@ -338,8 +374,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 		this.questionRevealTimer?.remove(false);
 		this.questionRevealTimer = undefined;
 		this.stopRequestWaitTimer();
-		this.questionFloatTween?.stop();
-		this.questionFloatTween = undefined;
+		this.resetQuestionUrgencyAnimation();
 	}
 
 	private applyProductSample(appearance: { key: string; frame?: string | number }) {

@@ -59,18 +59,6 @@
             "y": 523
         },
         {
-            "prefabId": "e8bc0ee3-eb6a-4bd2-9b04-5066f86ddb4b",
-            "id": "b0105290-b9a4-42bf-9667-a39f9533906d",
-            "unlock": [
-                "x",
-                "y"
-            ],
-            "label": "cookieJarPrefab",
-            "scope": "CLASS",
-            "x": 144,
-            "y": 451
-        },
-        {
             "type": "Image",
             "id": "790b2c24-41fe-4bbc-82cc-b60cebcccfc8",
             "label": "fryer2",
@@ -177,8 +165,7 @@
                 "key": "chocolateIcon"
             },
             "x": 1039,
-            "y": 539,
-            "visible": false
+            "y": 557
         },
         {
             "type": "Image",
@@ -188,8 +175,18 @@
                 "key": "candyicon"
             },
             "x": 1174,
-            "y": 539,
-            "visible": false
+            "y": 557
+        },
+        {
+            "prefabId": "b0d15b23-4665-49f4-96f8-b2e2e8911f58",
+            "id": "95cb15be-730b-4a7c-8197-7e3dfc28e356",
+            "unlock": [
+                "x",
+                "y"
+            ],
+            "label": "cookieJar",
+            "x": 75,
+            "y": 455
         },
         {
             "type": "Image",
@@ -359,10 +356,10 @@
                 "FlavorType"
             ],
             "label": "glace1",
+            "FlavorType": "Red",
             "texture": {
                 "key": "glace1"
             },
-            "FlavorType": "Red",
             "x": 1062,
             "y": 458
         },

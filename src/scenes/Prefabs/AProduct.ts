@@ -96,6 +96,10 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		return this.Raw.key.startsWith("Product2") ? "holder2" : "holder1";
 	}
 
+	public getCurrentWorkplaceId() {
+		return this.currentWorkplaceId;
+	}
+
 	private syncAppearanceSetWithInitialTexture(textureKey: string) {
 
 		const rawTextureMatch = textureKey.match(/^Product(\d+)Raw$/);

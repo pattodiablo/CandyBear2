@@ -160,6 +160,11 @@
                 "key": "confetti9"
             },
             {
+                "url": "assets/cookie.png",
+                "type": "image",
+                "key": "cookie"
+            },
+            {
                 "url": "assets/cookieJar.png",
                 "type": "image",
                 "key": "cookieJar"
@@ -201,6 +206,11 @@
                 ],
                 "type": "audio",
                 "key": "eating3"
+            },
+            {
+                "url": "assets/emptyCookieJar.png",
+                "type": "image",
+                "key": "emptyCookieJar"
             },
             {
                 "url": [

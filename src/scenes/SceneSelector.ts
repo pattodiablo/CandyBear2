@@ -8,7 +8,7 @@ import SceneSelectorBtn from "./Prefabs/SceneSelectorBtn";
 import Phaser from "phaser";
 import CardPrefab from "./Prefabs/CardPrefab";
 import dayHolderPrefab from "./Prefabs/dayHolderPrefab";
-import { getMomentCardCatalogEntry } from "./momentCardCatalog";
+import { getAllMomentCardCatalogEntries, getMomentCardCatalogEntry } from "./momentCardCatalog";
 import { getTotalLikes, spendTotalLikes } from "./likeProgress";
 import { getHighestUnlockedLevel, getLevelStars, getStoredTotalCoins, spendTotalCoins } from "./levelProgress";
 import { isMomentCardBought } from "./momentProgress";
@@ -87,7 +87,7 @@ export default class SceneSelector extends Phaser.Scene {
 	private static readonly GRID_ROW_GAP = 205;
 	private static readonly GRID_START_Y = 270;
 
-	private static readonly CARD_PREVIEW_SCALE = 1.08;
+	private static readonly CARD_PREVIEW_SCALE = 1.6;
 	private static readonly CARD_PREVIEW_CENTER_X = 640;
 	private static readonly CARD_PREVIEW_CENTER_Y = 372;
 	private static readonly CARD_PREVIEW_DURATION = 280;
@@ -141,6 +141,7 @@ export default class SceneSelector extends Phaser.Scene {
 		this.initializeTabButtons();
 		this.initializePagination();
 		this.refreshPage();
+		this.updateMomentsButtonAttention();
 		this.startBackgroundMusic();
 	}
 
@@ -242,6 +243,23 @@ export default class SceneSelector extends Phaser.Scene {
 	private updatePlayerStats() {
 		this.coinCounterText?.setText(String(getStoredTotalCoins()));
 		this.likesCounterText?.setText(String(getTotalLikes()));
+		this.updateMomentsButtonAttention();
+	}
+
+	private canAffordAnyMomentCard() {
+		const totalCoins = getStoredTotalCoins();
+		const totalLikes = getTotalLikes();
+
+		return getAllMomentCardCatalogEntries().some((entry) => (
+			!isMomentCardBought(entry.cardNumber)
+			&& totalCoins >= entry.coinCost
+			&& totalLikes >= entry.likeCost
+		));
+	}
+
+	private updateMomentsButtonAttention() {
+		const shouldBlink = this.activeTab === "levels" && this.canAffordAnyMomentCard();
+		this.momentsBtnPrefab.setAttentionActive(shouldBlink);
 	}
 
 	private tryPurchaseCard(card: CardPrefab) {
@@ -454,6 +472,7 @@ export default class SceneSelector extends Phaser.Scene {
 		this.momentsBtnPrefab.setTabActive(tab === "moments");
 		this.clampCurrentPageIndex();
 		this.refreshPage();
+		this.updateMomentsButtonAttention();
 	}
 
 	private startLevel(levelNumber: number) {

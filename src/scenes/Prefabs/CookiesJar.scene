@@ -1,5 +1,5 @@
 {
-    "id": "e8bc0ee3-eb6a-4bd2-9b04-5066f86ddb4b",
+    "id": "b0d15b23-4665-49f4-96f8-b2e2e8911f58",
     "settings": {
         "createMethodName": "",
         "preloadMethodName": "",
@@ -23,15 +23,13 @@
                 "y"
             ],
             "type": "Image",
-            "id": "fdefecee-33cc-44dc-9100-97eba605532f",
+            "id": "54a76b73-f3c1-42a5-8dd1-718ef72e34ba",
             "label": "cookieJar",
             "texture": {
                 "key": "cookieJar"
             },
             "x": 0,
-            "y": 0,
-            "scaleX": 0.7,
-            "scaleY": 0.7
+            "y": 0
         }
     ],
     "meta": {

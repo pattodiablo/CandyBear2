@@ -100,7 +100,7 @@ export default class milkglass extends Phaser.GameObjects.Image {
 				return;
 			}
 
-			this.startDeliverySelection();
+			this.discardUnrequestedGlass();
 			return;
 		}
 
@@ -435,6 +435,25 @@ export default class milkglass extends Phaser.GameObjects.Image {
 
 		this.selectionTimeout?.remove(false);
 		this.selectionTimeout = undefined;
+	}
+
+	private discardUnrequestedGlass() {
+
+		const levelScene = this.scene as Level;
+		const slotId = this.currentSlotId;
+
+		this.clearActiveState();
+		this.clearSelectionTimeout();
+		levelScene.clearDeliverySelection(this);
+
+		if (slotId) {
+			levelScene.releaseMilkSlot(slotId);
+			this.currentSlotId = undefined;
+		}
+
+		this.disableInteractive();
+		levelScene.showProductDiscardLossAt(this.x, this.y, getProductCoinReward("holder4"));
+		this.fallOffscreen();
 	}
 
 	private fallOffscreen() {

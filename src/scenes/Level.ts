@@ -5,7 +5,8 @@
 
 import milkMachine from "./Prefabs/milkMachine";
 import ToasterPrefab from "./Prefabs/ToasterPrefab";
-import cookieJar from "./Prefabs/cookieJar";
+import Cookie from "./Prefabs/Cookie";
+import CookiesJar from "./Prefabs/CookiesJar";
 import AProduct from "./Prefabs/AProduct";
 import milkglass from "./Prefabs/milkglass";
 import sandwichPrefab from "./Prefabs/sandwichPrefab";
@@ -17,7 +18,7 @@ import AClient from "./Prefabs/AClient";
 import YumPrefab from "./Prefabs/YumPrefab";
 import Coin from "./Prefabs/Coin";
 import ConfettiPrefab from "./Prefabs/ConfettiPrefab";
-import { recordLike, storeLevelLikes } from "./likeProgress";
+import { getTotalLikes, recordLike, storeLevelLikes } from "./likeProgress";
 import { getStoredTotalCoins, storeCompletedLevel, storeLevelStars, storeTotalCoins } from "./levelProgress";
 import { SkinsAndAnimationBoundsProvider } from "@esotericsoftware/spine-phaser-v4";
 import type { MilkSlotId } from "./Prefabs/milkMachine";
@@ -85,10 +86,6 @@ export default class Level extends Phaser.Scene {
 		// fryer1
 		const fryer1 = this.add.image(390, 523, "Fryer");
 
-		// cookieJarPrefab
-		const cookieJarPrefab = new cookieJar(this, 144, 451);
-		this.add.existing(cookieJarPrefab);
-
 		// fryer2
 		const fryer2 = this.add.image(390, 654, "Fryer");
 
@@ -117,12 +114,15 @@ export default class Level extends Phaser.Scene {
 		const candyDip = this.add.image(1175, 559, "CandyDip");
 
 		// chocolateIcon
-		const chocolateIcon = this.add.image(1039, 539, "chocolateIcon");
-		chocolateIcon.visible = false;
+		this.add.image(1039, 557, "chocolateIcon");
 
 		// candyicon
-		const candyicon = this.add.image(1174, 539, "candyicon");
-		candyicon.visible = false;
+		this.add.image(1174, 557, "candyicon");
+
+		// cookieJar
+		const cookieJar = new CookiesJar(this, 75, 455);
+		this.add.existing(cookieJar);
+		this.cookiesJar = cookieJar;
 
 		// charola1
 		const charola1 = this.add.image(927, 399, "Charola");
@@ -177,7 +177,6 @@ export default class Level extends Phaser.Scene {
 
 		// glace1
 		const glace1 = new FlavorBottle(this, 1062, 458, "glace1");
-		glace1.FlavorType = "Red";
 		this.add.existing(glace1);
 
 		// overTrayIcon
@@ -186,11 +185,13 @@ export default class Level extends Phaser.Scene {
 		// overTrayIcon_1
 		this.add.image(928, 391, "overTrayIcon");
 
+		// glace1 (prefab fields)
+		glace1.FlavorType = "Red";
+
 		this.workstation = workstation;
 		this.milkmachine = milkmachine;
 		this.toaster = toaster;
 		this.fryer1 = fryer1;
-		this.cookieJarPrefab = cookieJarPrefab;
 		this.fryer2 = fryer2;
 		this.holder1 = holder1;
 		this.holder2 = holder2;
@@ -217,7 +218,6 @@ export default class Level extends Phaser.Scene {
 	public milkmachine!: milkMachine;
 	public toaster!: ToasterPrefab;
 	public fryer1!: Phaser.GameObjects.Image;
-	private cookieJarPrefab!: cookieJar;
 	public fryer2!: Phaser.GameObjects.Image;
 	private holder1!: Phaser.GameObjects.Image;
 	private holder2!: Phaser.GameObjects.Image;
@@ -236,6 +236,7 @@ export default class Level extends Phaser.Scene {
 	private blurOverlay!: Phaser.GameObjects.Image;
 	private panel!: PanelPrefab;
 	private menuBtn!: Phaser.GameObjects.Image;
+	private cookiesJar!: CookiesJar;
 
 	/* START-USER-CODE */
 	public static readonly CAMPAIGN_LEVEL_COUNT = 40;
@@ -320,6 +321,19 @@ export default class Level extends Phaser.Scene {
 	private selectedDipProduct?: AProduct;
 	private selectedFlavorBottle?: FlavorBottle;
 	private selectedDeliveryProduct?: AProduct | milkglass | sandwichPrefab;
+	private activeWorkplaceId?: "workplace1" | "workplace2";
+	private isCookieLaunching = false;
+	private cookiesUsedThisDay = 0;
+	private isCookieJarDepleted = false;
+	private cookieJarRefillTimer?: Phaser.Time.TimerEvent;
+	private static readonly COOKIES_PER_DAY = 5;
+	private static readonly COOKIE_JAR_TEXTURE = "cookieJar";
+	private static readonly EMPTY_COOKIE_JAR_TEXTURE = "emptyCookieJar";
+	private static readonly COOKIE_JAR_REFILL_BASE_MS = 50000;
+	private static readonly COOKIE_JAR_REFILL_MIN_MS = 10000;
+	private static readonly COOKIE_JAR_REFILL_MS_PER_LIKE = 350;
+	private static readonly WORKPLACE_ACTIVE_TINT = 0xfff4df;
+	private static readonly WORKPLACE_ACTIVE_SCALE = 1.03;
 	private coinCount = 0;
 	private earnedCoinsToday = 0;
 	private coinCounterText?: Phaser.GameObjects.Text;
@@ -430,6 +444,9 @@ export default class Level extends Phaser.Scene {
 		this.selectedDipProduct = undefined;
 		this.selectedFlavorBottle = undefined;
 		this.selectedDeliveryProduct = undefined;
+		this.setWorkplaceHighlighted(undefined);
+		this.isCookieLaunching = false;
+		this.resetCookieJarState();
 		this.successfulClientsServed = 0;
 		this.quickServiceLikesThisLevel = 0;
 		this.updateLikesCounter();
@@ -503,6 +520,9 @@ export default class Level extends Phaser.Scene {
 		this.selectedDipProduct = undefined;
 		this.selectedFlavorBottle = undefined;
 		this.selectedDeliveryProduct = undefined;
+		this.setWorkplaceHighlighted(undefined);
+		this.isCookieLaunching = false;
+		this.resetCookieJarState();
 		this.isExitConfirmVisible = false;
 		this.isUnlockPanelVisible = false;
 		this.currentUnlockId = undefined;
@@ -1919,6 +1939,7 @@ export default class Level extends Phaser.Scene {
 		}
 
 		this.selectedDipProduct = product;
+		this.syncWorkplaceHighlight();
 	}
 
 	public beginFlavorSelection(bottle: FlavorBottle) {
@@ -1971,6 +1992,7 @@ export default class Level extends Phaser.Scene {
 
 		if (!product || this.selectedDipProduct === product) {
 			this.selectedDipProduct = undefined;
+			this.syncWorkplaceHighlight();
 		}
 	}
 
@@ -2007,13 +2029,50 @@ export default class Level extends Phaser.Scene {
 		}
 
 		this.selectedDeliveryProduct = product;
+		this.syncWorkplaceHighlight();
 	}
 
 	public clearDeliverySelection(product?: AProduct | milkglass | sandwichPrefab) {
 
 		if (!product || this.selectedDeliveryProduct === product) {
 			this.selectedDeliveryProduct = undefined;
+			this.syncWorkplaceHighlight();
 		}
+	}
+
+	private syncWorkplaceHighlight() {
+		const dipWorkplaceId = this.selectedDipProduct?.getCurrentWorkplaceId();
+		const deliveryWorkplaceId = this.selectedDeliveryProduct instanceof AProduct
+			? this.selectedDeliveryProduct.getCurrentWorkplaceId()
+			: undefined;
+
+		this.setWorkplaceHighlighted(dipWorkplaceId ?? deliveryWorkplaceId);
+	}
+
+	private setWorkplaceHighlighted(workplaceId?: "workplace1" | "workplace2") {
+		if (this.activeWorkplaceId === workplaceId) {
+			return;
+		}
+
+		if (this.activeWorkplaceId) {
+			const previousWorkplace = this.getWorkplaceImage(this.activeWorkplaceId);
+			previousWorkplace.clearTint();
+			previousWorkplace.setScale(1);
+		}
+
+		this.activeWorkplaceId = workplaceId;
+
+		if (!workplaceId) {
+			return;
+		}
+
+		const workplace = this.getWorkplaceImage(workplaceId);
+		workplace.setTint(Level.WORKPLACE_ACTIVE_TINT);
+		workplace.setScale(Level.WORKPLACE_ACTIVE_SCALE);
+	}
+
+	private getWorkplaceImage(workplaceId: "workplace1" | "workplace2") {
+		return workplaceId === "workplace1" ? this.workplace1 : this.workplace2;
 	}
 
 	public hasSelectedDelivery() {
@@ -2030,6 +2089,120 @@ export default class Level extends Phaser.Scene {
 
 		const directDeliveryProduct = this.getDirectDeliveryProduct(target);
 		directDeliveryProduct?.directDeliverToClient(target);
+	}
+
+	public canUseCookieJar() {
+
+		return !this.isGameplayPaused
+			&& !this.isExitConfirmVisible
+			&& !this.isUnlockPanelVisible
+			&& !this.panel.visible
+			&& !this.isCookieLaunching
+			&& !this.isCookieJarDepleted
+			&& this.cookiesUsedThisDay < Level.COOKIES_PER_DAY
+			&& this.getMostDesperateClient() !== undefined;
+	}
+
+	private getCookieJarRefillDurationMs() {
+
+		const totalLikeReduction = getTotalLikes() * Level.COOKIE_JAR_REFILL_MS_PER_LIKE;
+		const todayLikeReduction = this.quickServiceLikesThisLevel * Level.COOKIE_JAR_REFILL_MS_PER_LIKE;
+		return Math.max(
+			Level.COOKIE_JAR_REFILL_MIN_MS,
+			Level.COOKIE_JAR_REFILL_BASE_MS - totalLikeReduction - todayLikeReduction
+		);
+	}
+
+	private clearCookieJarRefillTimer() {
+
+		if (this.cookieJarRefillTimer) {
+			this.cookieJarRefillTimer.remove(false);
+			this.cookieJarRefillTimer = undefined;
+		}
+	}
+
+	private resetCookieJarState() {
+
+		this.cookiesUsedThisDay = 0;
+		this.isCookieJarDepleted = false;
+		this.clearCookieJarRefillTimer();
+
+		if (this.cookiesJar?.active) {
+			this.cookiesJar.setTexture(Level.COOKIE_JAR_TEXTURE);
+		}
+	}
+
+	private depleteCookieJar() {
+
+		this.isCookieJarDepleted = true;
+		this.cookiesJar.setTexture(Level.EMPTY_COOKIE_JAR_TEXTURE);
+		this.clearCookieJarRefillTimer();
+		this.cookieJarRefillTimer = this.time.delayedCall(
+			this.getCookieJarRefillDurationMs(),
+			this.refillCookieJar,
+			[],
+			this
+		);
+	}
+
+	private refillCookieJar() {
+
+		this.cookieJarRefillTimer = undefined;
+
+		if (!this.sys.isActive() || this.hasCelebratedLevelCompletion) {
+			return;
+		}
+
+		this.isCookieJarDepleted = false;
+		this.cookiesUsedThisDay = 0;
+		this.cookiesJar.setTexture(Level.COOKIE_JAR_TEXTURE);
+	}
+
+	public getMostDesperateClient() {
+
+		const waitingClients = this.activeClients.filter((client) => (
+			client.active && client.canReceiveDelivery()
+		));
+
+		if (waitingClients.length === 0) {
+			return undefined;
+		}
+
+		waitingClients.sort((left, right) => (
+			left.getRemainingRequestTime() - right.getRemainingRequestTime()
+		));
+
+		return waitingClients[0];
+	}
+
+	public tryLaunchCookieReward(spawnX: number, spawnY: number) {
+
+		if (!this.canUseCookieJar()) {
+			return false;
+		}
+
+		const client = this.getMostDesperateClient();
+
+		if (!client) {
+			return false;
+		}
+
+		this.isCookieLaunching = true;
+
+		const cookie = new Cookie(this, spawnX, spawnY);
+		this.add.existing(cookie);
+		cookie.setDepth(this.workstation.depth + 1);
+		cookie.launchToClient(client, AClient.COOKIE_WAIT_BONUS_MS, () => {
+			this.isCookieLaunching = false;
+		});
+
+		this.cookiesUsedThisDay++;
+
+		if (this.cookiesUsedThisDay >= Level.COOKIES_PER_DAY) {
+			this.depleteCookieJar();
+		}
+
+		return true;
 	}
 
 	public getDirectDeliveryTarget(product: AProduct | milkglass | sandwichPrefab) {

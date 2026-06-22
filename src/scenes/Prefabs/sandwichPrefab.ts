@@ -98,7 +98,7 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 				return;
 			}
 
-			this.startDeliverySelection();
+			this.discardUnrequestedSandwich();
 			return;
 		}
 
@@ -483,6 +483,26 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 
 		this.selectionTimeout?.remove(false);
 		this.selectionTimeout = undefined;
+	}
+
+	private discardUnrequestedSandwich() {
+
+		const levelScene = this.scene as Level;
+		const slotId = this.currentSlotId;
+
+		this.clearActiveState();
+		this.clearBurnState();
+		this.clearSelectionTimeout();
+		levelScene.clearDeliverySelection(this);
+
+		if (slotId) {
+			levelScene.releaseToasterSlot(slotId);
+			this.currentSlotId = undefined;
+		}
+
+		this.disableInteractive();
+		levelScene.showProductDiscardLossAt(this.x, this.y, getProductCoinReward("holder3"));
+		this.fallOffscreen();
 	}
 
 	private fallOffscreen() {
