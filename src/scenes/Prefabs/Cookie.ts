@@ -6,6 +6,7 @@
 /* START-USER-IMPORTS */
 import Phaser from "phaser";
 import type AClient from "./AClient";
+import SmallHeartBurst from "./SmallHeartBurst";
 /* END-USER-IMPORTS */
 
 export default class Cookie extends Phaser.GameObjects.Image {
@@ -52,6 +53,12 @@ export default class Cookie extends Phaser.GameObjects.Image {
 
 						if (client.active && client.extendRequestWaitTime(bonusWaitMs)) {
 							this.scene.sound.play(`eating${Phaser.Math.Between(1, 3)}`);
+							SmallHeartBurst.launchAt(
+								this.scene,
+								client.x,
+								client.y + Cookie.TARGET_Y_OFFSET,
+								client.depth + 2
+							);
 						}
 
 						this.scene.tweens.add({
