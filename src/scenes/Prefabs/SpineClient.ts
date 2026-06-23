@@ -8,6 +8,7 @@ import { SpinePlugin } from "@esotericsoftware/spine-phaser";
 import { SpineGameObjectBoundsProvider } from "@esotericsoftware/spine-phaser";
 import { SkinsAndAnimationBoundsProvider } from "@esotericsoftware/spine-phaser";
 /* START-USER-IMPORTS */
+import Phaser from "phaser";
 /* END-USER-IMPORTS */
 
 export default class SpineClient extends SpineGameObject {
@@ -26,14 +27,28 @@ export default class SpineClient extends SpineGameObject {
 
 	/* START-USER-CODE */
 
+	private static readonly APPEARANCE_VARIANTS = [
+		{ body: "body", head: "head" },
+		{ body: "bodySkin1", head: "headSkin1" },
+		{ body: "bodySkin2", head: "headSkin2" },
+	] as const;
+
+	private appearanceVariantIndex = 0;
+
 	private randomizeAppearance() {
 
-		const useSkin1Variant = Math.random() < 0.5;
-		const bodyAttachment = useSkin1Variant ? "bodySkin1" : "body";
-		const headAttachment = useSkin1Variant ? "headSkin1" : "head";
+		this.appearanceVariantIndex = Phaser.Math.Between(
+			0,
+			SpineClient.APPEARANCE_VARIANTS.length - 1
+		);
+		const variant = SpineClient.APPEARANCE_VARIANTS[this.appearanceVariantIndex];
 
-		this.skeleton.setAttachment("body", bodyAttachment);
-		this.skeleton.setAttachment("head", headAttachment);
+		this.skeleton.setAttachment("body", variant.body);
+		this.skeleton.setAttachment("head", variant.head);
+	}
+
+	public getAppearanceVariantIndex() {
+		return this.appearanceVariantIndex;
 	}
 
 	public playAnimation(animationName: string, loop = true) {
