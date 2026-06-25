@@ -308,6 +308,27 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 			&& !this.isSelectingDelivery;
 	}
 
+	public isIdleOnHolder() {
+
+		return this.active
+			&& this.visible
+			&& this.scaleX > 0.01
+			&& !this.isLaunching
+			&& !this.isRaised
+			&& !this.isAtToaster
+			&& !this.isSelectingDelivery;
+	}
+
+	public isAwaitingToasterPickup() {
+
+		return this.active && this.isAtToaster && (this.isReadyForDelivery || this.isBurned);
+	}
+
+	public isChoosingDelivery() {
+
+		return this.isSelectingDelivery;
+	}
+
 	public directDeliverToClient(client: { x: number; y: number; matchesProduct(product: sandwichPrefab): boolean; canReceiveDelivery(): boolean; receiveProductDelivery(product: sandwichPrefab): boolean; consumeRequestAndExit(showYum?: boolean): void; }) {
 
 		if (!this.canReceiveDirectDelivery()) {

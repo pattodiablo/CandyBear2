@@ -427,6 +427,16 @@ export default class AClient extends Phaser.GameObjects.Container {
 		return this.hasActiveRequest();
 	}
 
+	public getPendingRequestAppearances() {
+
+		return [...this.pendingProducts];
+	}
+
+	public getDisplayedRequestAppearance() {
+
+		return this.pendingProducts[this.displayedProductIndex];
+	}
+
 	public getRemainingRequestTime() {
 
 		if (!this.hasActiveRequest() || this.requestExpiresAt <= 0) {

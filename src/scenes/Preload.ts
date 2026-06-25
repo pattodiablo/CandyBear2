@@ -21,50 +21,95 @@ export default class Preload extends Phaser.Scene {
 
 	editorCreate(): void {
 
-		// guapen
-		const guapen = this.add.image(505.0120544433594, 360, "guapen");
-		guapen.scaleX = 0.32715486817515643;
-		guapen.scaleY = 0.32715486817515643;
-
-		// progressBar
-		const progressBar = this.add.rectangle(553.0120849609375, 361, 256, 20);
-		progressBar.setOrigin(0, 0);
-		progressBar.isFilled = true;
-		progressBar.fillColor = 14737632;
-
-		// progressBarBg
-		const progressBarBg = this.add.rectangle(553.0120849609375, 361, 256, 20);
-		progressBarBg.setOrigin(0, 0);
-		progressBarBg.fillColor = 14737632;
-		progressBarBg.isStroked = true;
-
-		// loadingText
-		const loadingText = this.add.text(552.0120849609375, 329, "", {});
-		loadingText.text = "Loading...";
-		loadingText.setStyle({ "color": "#e0e0e0", "fontFamily": "arial", "fontSize": "20px" });
-
-		this.progressBar = progressBar;
+		// gameLogo
+		this.add.image(647, 352, "GameLogo");
 
 		this.events.emit("scene-awake");
 	}
 
-	private progressBar!: Phaser.GameObjects.Rectangle;
-
 	/* START-USER-CODE */
 
-	// Write your code here
+	private static readonly BAR_WIDTH = 500;
+	private static readonly BAR_HEIGHT = 30;
+	private static readonly BAR_RADIUS = 15;
+	private static readonly BAR_X = (1280 - Preload.BAR_WIDTH) * 0.5;
+	private static readonly BAR_Y = 652;
+	private static readonly TRACK_FILL_COLOR = 0xfff0e0;
+	private static readonly TRACK_STROKE_COLOR = 0xa96625;
+	private static readonly FILL_COLOR = 0xff5f7e;
+	private static readonly FILL_HIGHLIGHT_COLOR = 0x72d7c7;
+
+	private progressBarTrack!: Phaser.GameObjects.Graphics;
+	private progressBarFill!: Phaser.GameObjects.Graphics;
+
+	private createProgressBar() {
+		this.progressBarTrack = this.add.graphics();
+		this.progressBarFill = this.add.graphics();
+		this.drawProgressBar(0);
+	}
+
+	private drawProgressBar(progress: number) {
+		const clampedProgress = Phaser.Math.Clamp(progress, 0, 1);
+		const fillWidth = Math.max(
+			clampedProgress > 0 ? Preload.BAR_HEIGHT : 0,
+			Preload.BAR_WIDTH * clampedProgress
+		);
+
+		this.progressBarTrack.clear();
+		this.progressBarTrack.fillStyle(Preload.TRACK_FILL_COLOR, 1);
+		this.progressBarTrack.lineStyle(4, Preload.TRACK_STROKE_COLOR, 1);
+		this.progressBarTrack.fillRoundedRect(
+			Preload.BAR_X,
+			Preload.BAR_Y,
+			Preload.BAR_WIDTH,
+			Preload.BAR_HEIGHT,
+			Preload.BAR_RADIUS
+		);
+		this.progressBarTrack.strokeRoundedRect(
+			Preload.BAR_X,
+			Preload.BAR_Y,
+			Preload.BAR_WIDTH,
+			Preload.BAR_HEIGHT,
+			Preload.BAR_RADIUS
+		);
+
+		this.progressBarFill.clear();
+
+		if (fillWidth <= 0) {
+			return;
+		}
+
+		this.progressBarFill.fillStyle(Preload.FILL_COLOR, 1);
+		this.progressBarFill.fillRoundedRect(
+			Preload.BAR_X,
+			Preload.BAR_Y,
+			fillWidth,
+			Preload.BAR_HEIGHT,
+			Preload.BAR_RADIUS
+		);
+
+		const highlightWidth = Math.min(18, Math.max(0, fillWidth - Preload.BAR_RADIUS));
+		if (highlightWidth > 0) {
+			this.progressBarFill.fillStyle(Preload.FILL_HIGHLIGHT_COLOR, 0.85);
+			this.progressBarFill.fillRoundedRect(
+				Preload.BAR_X + fillWidth - highlightWidth,
+				Preload.BAR_Y + 6,
+				highlightWidth,
+				Preload.BAR_HEIGHT - 12,
+				(Math.min(Preload.BAR_HEIGHT - 12, highlightWidth)) * 0.5
+			);
+		}
+	}
 
 	preload() {
 
 		this.editorCreate();
+		this.createProgressBar();
 
 		this.load.pack("asset-pack", assetPackUrl as unknown as string);
 
-		const width = this.progressBar.width;
-
 		this.load.on("progress", (value: number) => {
-
-			this.progressBar.width = width * value;
+			this.drawProgressBar(value);
 		});
 	}
 

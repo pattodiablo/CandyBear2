@@ -258,6 +258,22 @@ export default class milkglass extends Phaser.GameObjects.Image {
 			&& !this.isSelectingDelivery;
 	}
 
+	public isIdleOnHolder() {
+
+		return this.active
+			&& this.visible
+			&& this.scaleX > 0.01
+			&& !this.isLaunching
+			&& !this.isRaised
+			&& !this.isAtMachine
+			&& !this.isSelectingDelivery;
+	}
+
+	public isChoosingDelivery() {
+
+		return this.isSelectingDelivery;
+	}
+
 	public directDeliverToClient(client: { x: number; y: number; matchesProduct(product: milkglass): boolean; canReceiveDelivery(): boolean; receiveProductDelivery(product: milkglass): boolean; consumeRequestAndExit(showYum?: boolean): void; }) {
 
 		if (!this.canReceiveDirectDelivery()) {

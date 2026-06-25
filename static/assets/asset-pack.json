@@ -629,6 +629,11 @@
                 "key": "toaster"
             },
             {
+                "url": "assets/TutiorialHand.png",
+                "type": "image",
+                "key": "TutiorialHand"
+            },
+            {
                 "url": "assets/workplace.png",
                 "type": "image",
                 "key": "workplace"

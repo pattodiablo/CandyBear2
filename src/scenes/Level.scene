@@ -185,6 +185,7 @@
                 "y"
             ],
             "label": "cookieJar",
+            "scope": "PUBLIC",
             "x": 75,
             "y": 455
         },
@@ -382,6 +383,18 @@
             },
             "x": 928,
             "y": 391
+        },
+        {
+            "prefabId": "11797a9c-9d69-4b7a-a2d1-023aa6922c6a",
+            "id": "70ec376b-f7d5-448e-9ae2-441de3af9f5a",
+            "unlock": [
+                "x",
+                "y"
+            ],
+            "label": "tutiorialHand",
+            "scope": "PUBLIC",
+            "x": 377,
+            "y": 292
         }
     ],
     "plainObjects": [],

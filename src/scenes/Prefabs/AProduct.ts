@@ -222,6 +222,82 @@ export default class AProduct extends Phaser.GameObjects.Image {
 			&& !this.isSelectingDelivery;
 	}
 
+	public isIdleOnHolder() {
+
+		return this.active
+			&& this.visible
+			&& this.scaleX > 0.01
+			&& !this.isLaunching
+			&& !this.isRaised
+			&& !this.isCooking
+			&& !this.isCooked
+			&& !this.isBurned
+			&& !this.isAtWorkplace
+			&& !this.currentTrayId
+			&& !this.isSelectingDip
+			&& !this.isSelectingDelivery
+			&& !this.isReadyForDelivery;
+	}
+
+	public isRaisedOnHolder() {
+
+		return this.active && this.isRaised && !this.isCooking && !this.isCooked && !this.isBurned;
+	}
+
+	public isInProductionPipeline() {
+
+		return this.active
+			&& this.visible
+			&& this.scaleX > 0.01
+			&& (
+				this.isRaised
+				|| this.isLaunching
+				|| this.isCooking
+				|| this.isCooked
+				|| this.isBurned
+				|| this.isAtWorkplace
+				|| !!this.currentTrayId
+				|| this.isSelectingDip
+				|| this.isSelectingDelivery
+				|| this.isReadyForDelivery
+			);
+	}
+
+	public isAwaitingFryerPickup() {
+
+		return this.active && (this.isCooked || this.isBurned);
+	}
+
+	public isBurnedProduct() {
+
+		return this.isBurned;
+	}
+
+	public isCurrentlyFrying() {
+
+		return this.isCooking;
+	}
+
+	public isChoosingDip() {
+
+		return this.isSelectingDip;
+	}
+
+	public isChoosingDelivery() {
+
+		return this.isSelectingDelivery;
+	}
+
+	public isInMotion() {
+
+		return this.isLaunching;
+	}
+
+	public isTransferringToWorkplace() {
+
+		return this.isLaunching && !!this.currentWorkplaceId && !this.isAtWorkplace;
+	}
+
 	public directDeliverToClient(client: { x: number; y: number; matchesProduct(product: AProduct): boolean; canReceiveDelivery(): boolean; receiveProductDelivery(product: AProduct): boolean; consumeRequestAndExit(): void; }) {
 
 		if (!this.canReceiveDirectDelivery()) {

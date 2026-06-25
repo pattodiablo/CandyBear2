@@ -5,16 +5,17 @@
 
 import milkMachine from "./Prefabs/milkMachine";
 import ToasterPrefab from "./Prefabs/ToasterPrefab";
-import Cookie from "./Prefabs/Cookie";
 import CookiesJar from "./Prefabs/CookiesJar";
 import AProduct from "./Prefabs/AProduct";
 import milkglass from "./Prefabs/milkglass";
 import sandwichPrefab from "./Prefabs/sandwichPrefab";
 import PanelPrefab from "./Prefabs/PanelPrefab";
 import FlavorBottle from "./Prefabs/FlavorBottle";
+import HelpHand from "./HelpHand";
 /* START-USER-IMPORTS */
 import Phaser from "phaser";
-import AClient from "./Prefabs/AClient";	
+import Cookie from "./Prefabs/Cookie";
+import AClient from "./Prefabs/AClient";
 import YumPrefab from "./Prefabs/YumPrefab";
 import Coin from "./Prefabs/Coin";
 import ConfettiPrefab from "./Prefabs/ConfettiPrefab";
@@ -58,6 +59,12 @@ interface LevelPlan {
 
 interface LevelSceneData {
 	levelNumber?: number;
+}
+
+interface HelpHandHint {
+	x: number;
+	y: number;
+	phase: string;
 }
 /* END-USER-IMPORTS */
 
@@ -123,7 +130,6 @@ export default class Level extends Phaser.Scene {
 		// cookieJar
 		const cookieJar = new CookiesJar(this, 75, 455);
 		this.add.existing(cookieJar);
-		this.cookiesJar = cookieJar;
 
 		// charola1
 		const charola1 = this.add.image(927, 399, "Charola");
@@ -186,6 +192,10 @@ export default class Level extends Phaser.Scene {
 		// overTrayIcon_1
 		this.add.image(928, 391, "overTrayIcon");
 
+		// tutiorialHand
+		const tutiorialHand = new HelpHand(this, 377, 292);
+		this.add.existing(tutiorialHand);
+
 		// glace1 (prefab fields)
 		glace1.FlavorType = "Red";
 
@@ -202,6 +212,7 @@ export default class Level extends Phaser.Scene {
 		this.workplace2 = workplace2;
 		this.chocolateDip = chocolateDip;
 		this.candyDip = candyDip;
+		this.cookieJar = cookieJar;
 		this.charola1 = charola1;
 		this.charola2 = charola2;
 		this.rawProduct1 = rawProduct1;
@@ -211,6 +222,7 @@ export default class Level extends Phaser.Scene {
 		this.blurOverlay = blurOverlay;
 		this.panel = panel;
 		this.menuBtn = menuBtn;
+		this.tutiorialHand = tutiorialHand;
 
 		this.events.emit("scene-awake");
 	}
@@ -228,6 +240,7 @@ export default class Level extends Phaser.Scene {
 	public workplace2!: Phaser.GameObjects.Image;
 	public chocolateDip!: Phaser.GameObjects.Image;
 	public candyDip!: Phaser.GameObjects.Image;
+	public cookieJar!: CookiesJar;
 	public charola1!: Phaser.GameObjects.Image;
 	public charola2!: Phaser.GameObjects.Image;
 	private rawProduct1!: AProduct;
@@ -237,7 +250,7 @@ export default class Level extends Phaser.Scene {
 	private blurOverlay!: Phaser.GameObjects.Image;
 	private panel!: PanelPrefab;
 	private menuBtn!: Phaser.GameObjects.Image;
-	private cookiesJar!: CookiesJar;
+	public tutiorialHand!: HelpHand;
 
 	/* START-USER-CODE */
 	public static readonly CAMPAIGN_LEVEL_COUNT = 40;
@@ -400,6 +413,15 @@ export default class Level extends Phaser.Scene {
 	private static readonly PROGRESSION_LOCK_AFFORDANCE_ANGLE = 7;
 	private progressionLockIcons: Phaser.GameObjects.Image[] = [];
 	private unbindDeveloperCheat?: () => void;
+	private static readonly HELP_HAND_TUTORIAL_MAX_LEVEL = 4;
+	private static readonly HELP_HAND_IDLE_MS = 10000;
+	private static readonly HELP_HAND_UPDATE_INTERVAL = 400;
+	private static readonly HELP_HAND_DEPTH_OFFSET = 60;
+	private helpHandUpdateTimer?: Phaser.Time.TimerEvent;
+	private lastHelpHandActionAt = 0;
+	private lastHelpHandPhase?: string;
+	private helpHandSuppressedPhase?: string;
+	private helpHandPointerHandler?: (pointer: Phaser.Input.Pointer) => void;
 
 	init(data: LevelSceneData = {}) {
 
@@ -484,6 +506,7 @@ export default class Level extends Phaser.Scene {
 
 	private flushLoadedContent() {
 
+		this.clearHelpHandTimer();
 		this.unbindDeveloperCheat?.();
 		this.unbindDeveloperCheat = undefined;
 		this.clearHudReferences();
@@ -1679,6 +1702,7 @@ export default class Level extends Phaser.Scene {
 				this.blurOverlay.disableInteractive();
 				this.blurOverlay.setVisible(false);
 				this.panel.setVisible(false);
+				this.setupHelpHand();
 				this.startLevelPreparation();
 			}
 		});
@@ -1778,6 +1802,26 @@ export default class Level extends Phaser.Scene {
 		const start = -((count - 1) * spacing) / 2;
 
 		return Array.from({ length: count }, (_, index) => start + index * spacing);
+	}
+
+	public hasAvailableFryer() {
+
+		return !this.fryer1Occupied || (this.fryer2Enabled && !this.fryer2Occupied);
+	}
+
+	public hasAvailableWorkplace() {
+
+		return !this.workplace1Occupied || (this.workplace2Enabled && !this.workplace2Occupied);
+	}
+
+	public hasAvailableMilkSlot() {
+
+		return this.milkMachineEnabled && (!this.milkRefill1Occupied || !this.milkRefill2Occupied);
+	}
+
+	public hasAvailableToasterSlot() {
+
+		return this.toasterEnabled && !this.toasterSlotOccupied;
 	}
 
 	public claimAvailableFryer() {
@@ -2139,15 +2183,15 @@ export default class Level extends Phaser.Scene {
 		this.isCookieJarDepleted = false;
 		this.clearCookieJarRefillTimer();
 
-		if (this.cookiesJar?.active) {
-			this.cookiesJar.setTexture(Level.COOKIE_JAR_TEXTURE);
+		if (this.cookieJar?.active) {
+			this.cookieJar.setTexture(Level.COOKIE_JAR_TEXTURE);
 		}
 	}
 
 	private depleteCookieJar() {
 
 		this.isCookieJarDepleted = true;
-		this.cookiesJar.setTexture(Level.EMPTY_COOKIE_JAR_TEXTURE);
+		this.cookieJar.setTexture(Level.EMPTY_COOKIE_JAR_TEXTURE);
 		this.clearCookieJarRefillTimer();
 		this.cookieJarRefillTimer = this.time.delayedCall(
 			this.getCookieJarRefillDurationMs(),
@@ -2167,7 +2211,7 @@ export default class Level extends Phaser.Scene {
 
 		this.isCookieJarDepleted = false;
 		this.cookiesUsedThisDay = 0;
-		this.cookiesJar.setTexture(Level.COOKIE_JAR_TEXTURE);
+		this.cookieJar.setTexture(Level.COOKIE_JAR_TEXTURE);
 	}
 
 	public getMostDesperateClient() {
@@ -2744,6 +2788,589 @@ export default class Level extends Phaser.Scene {
 		}
 
 		candidates[0].autoPlaceInTray(trayId, slot.x, slot.y);
+	}
+
+	private setupHelpHand() {
+
+		this.clearHelpHandTimer();
+		this.lastHelpHandActionAt = this.time.now;
+		this.lastHelpHandPhase = undefined;
+		this.helpHandSuppressedPhase = undefined;
+		this.tutiorialHand.setDepth(this.workstation.depth + Level.HELP_HAND_DEPTH_OFFSET);
+		this.tutiorialHand.hide();
+
+		if (this.helpHandPointerHandler) {
+			this.input.off(Phaser.Input.Events.POINTER_DOWN, this.helpHandPointerHandler);
+		}
+
+		this.helpHandPointerHandler = () => {
+			this.notifyHelpHandAction();
+		};
+		this.input.on(Phaser.Input.Events.POINTER_DOWN, this.helpHandPointerHandler);
+
+		this.helpHandUpdateTimer = this.time.addEvent({
+			delay: Level.HELP_HAND_UPDATE_INTERVAL,
+			loop: true,
+			callback: this.updateHelpHand,
+			callbackScope: this,
+		});
+	}
+
+	private clearHelpHandTimer() {
+
+		if (this.helpHandUpdateTimer) {
+			this.helpHandUpdateTimer.remove(false);
+			this.helpHandUpdateTimer = undefined;
+		}
+
+		if (this.helpHandPointerHandler) {
+			this.input.off(Phaser.Input.Events.POINTER_DOWN, this.helpHandPointerHandler);
+			this.helpHandPointerHandler = undefined;
+		}
+	}
+
+	private notifyHelpHandAction() {
+
+		this.lastHelpHandActionAt = this.time.now;
+
+		if (this.lastHelpHandPhase) {
+			this.helpHandSuppressedPhase = this.lastHelpHandPhase;
+		}
+
+		this.tutiorialHand.hide();
+	}
+
+	private canShowHelpHand() {
+
+		return !this.isGameplayPaused
+			&& !this.isExitConfirmVisible
+			&& !this.isUnlockPanelVisible
+			&& !this.panel.visible
+			&& !this.hasCelebratedLevelCompletion;
+	}
+
+	private shouldShowHelpHandForIdle() {
+
+		if (this.getCurrentLevelNumber() <= Level.HELP_HAND_TUTORIAL_MAX_LEVEL) {
+			return true;
+		}
+
+		const isIdle = (this.time.now - this.lastHelpHandActionAt) >= Level.HELP_HAND_IDLE_MS;
+
+		if (isIdle) {
+			this.helpHandSuppressedPhase = undefined;
+		}
+
+		return isIdle;
+	}
+
+	private updateHelpHand() {
+
+		if (!this.canShowHelpHand() || !this.shouldShowHelpHandForIdle()) {
+			this.lastHelpHandPhase = undefined;
+			this.tutiorialHand.hide();
+			return;
+		}
+
+		const hint = this.resolveHelpHandHint();
+
+		if (!hint) {
+			this.lastHelpHandPhase = undefined;
+			this.tutiorialHand.hide();
+			return;
+		}
+
+		if (hint.phase === this.helpHandSuppressedPhase) {
+			this.tutiorialHand.hide();
+			return;
+		}
+
+		if (hint.phase !== this.lastHelpHandPhase) {
+			this.lastHelpHandPhase = hint.phase;
+			this.tutiorialHand.showAt(hint.x, hint.y);
+			return;
+		}
+
+		if (!this.tutiorialHand.isPointing()) {
+			this.tutiorialHand.showAt(hint.x, hint.y);
+		}
+	}
+
+	private makeHelpHandHint(x: number, y: number, phase: string): HelpHandHint {
+
+		return { x, y, phase };
+	}
+
+	private resolveHelpHandHint(): HelpHandHint | undefined {
+
+		if (this.selectedFlavorBottle?.active) {
+			const glass = this.getDirectFlavorGlass(this.selectedFlavorBottle);
+
+			if (glass) {
+				return this.makeHelpHandHint(glass.x, glass.y, "flavor-glass");
+			}
+		}
+
+		if (this.selectedDeliveryProduct?.active) {
+			const client = this.getDeliveryHintClient(this.selectedDeliveryProduct);
+
+			if (client) {
+				return this.makeHelpHandHint(client.x, client.y - 80, "delivery-active");
+			}
+		}
+
+		if (this.selectedDipProduct?.active && this.selectedDipProduct.isChoosingDip()) {
+			const dipType = this.getRequiredDipType(this.selectedDipProduct);
+
+			if (dipType) {
+				const dip = this.getDipTargetPosition(dipType);
+				return this.makeHelpHandHint(dip.x, dip.y, `dip-select-${dipType}`);
+			}
+
+			return this.makeHelpHandHint(
+				this.selectedDipProduct.x,
+				this.selectedDipProduct.y,
+				"dip-select-product"
+			);
+		}
+
+		const choosingDeliveryProduct = this.getSceneDeliverables().find((product) => (
+			product instanceof AProduct
+				? product.isChoosingDelivery()
+				: product.isChoosingDelivery()
+		));
+
+		if (choosingDeliveryProduct) {
+			const client = this.getDeliveryHintClient(choosingDeliveryProduct);
+
+			if (client) {
+				return this.makeHelpHandHint(client.x, client.y - 80, "delivery-choose");
+			}
+		}
+
+		const choosingDipProduct = this.getSceneProducts().find((product) => product.isChoosingDip());
+
+		if (choosingDipProduct) {
+			const dipType = this.getRequiredDipType(choosingDipProduct);
+
+			if (dipType) {
+				const dip = this.getDipTargetPosition(dipType);
+				return this.makeHelpHandHint(dip.x, dip.y, `dip-choose-${dipType}`);
+			}
+
+			return this.makeHelpHandHint(choosingDipProduct.x, choosingDipProduct.y, "dip-choose-product");
+		}
+
+		if (this.hasProductCurrentlyFrying()) {
+			return undefined;
+		}
+
+		if (this.shouldHideHelpHandForWorkplaceWait()) {
+			return undefined;
+		}
+
+		return this.collectPossibleHelpHandMoves(
+			this.isHelpHandTutorialLevel()
+		)[0];
+	}
+
+	private isHelpHandTutorialLevel() {
+
+		return this.getCurrentLevelNumber() <= Level.HELP_HAND_TUTORIAL_MAX_LEVEL;
+	}
+
+	private collectPossibleHelpHandMoves(tutorialFocus: boolean): HelpHandHint[] {
+
+		const moves: HelpHandHint[] = [];
+		const pipelineProducts = this.getSceneProducts().filter((product) => product.isInProductionPipeline());
+		const hasPipeline = pipelineProducts.length > 0;
+
+		const shouldConsiderProduct = (product: AProduct) => (
+			!tutorialFocus || !hasPipeline || pipelineProducts.includes(product)
+		);
+
+		const shouldConsiderDeliverable = (product: AProduct | milkglass | sandwichPrefab) => {
+			if (!tutorialFocus || !hasPipeline) {
+				return true;
+			}
+
+			return product instanceof AProduct && pipelineProducts.includes(product);
+		};
+
+		if (tutorialFocus && hasPipeline) {
+			if (pipelineProducts.some((product) => (
+				product.isInMotion()
+				|| product.isRaisedOnHolder()
+				|| product.isTransferringToWorkplace()
+				|| product.isCurrentlyFrying()
+			))) {
+				return moves;
+			}
+		}
+
+		for (const product of this.getSceneDeliverables()) {
+			if (!shouldConsiderDeliverable(product) || !product.canReceiveDirectDelivery()) {
+				continue;
+			}
+
+			const client = this.getDirectDeliveryTarget(product);
+
+			if (client) {
+				moves.push(this.makeHelpHandHint(
+					client.x,
+					client.y - 80,
+					tutorialFocus ? "tutorial-deliver-client" : "deliver-client"
+				));
+			}
+		}
+
+		const trayHint = this.getTrayPlacementHint(
+			tutorialFocus,
+			tutorialFocus && hasPipeline ? pipelineProducts : []
+		);
+
+		if (trayHint) {
+			moves.push(trayHint);
+		}
+
+		for (const product of this.getSceneProducts()) {
+			if (!shouldConsiderProduct(product) || !product.canReceiveDirectDip()) {
+				continue;
+			}
+
+			const dipType = this.getRequiredDipType(product);
+
+			if (!dipType) {
+				continue;
+			}
+
+			const dip = this.getDipTargetPosition(dipType);
+			moves.push(this.makeHelpHandHint(
+				dip.x,
+				dip.y,
+				tutorialFocus ? `tutorial-dip-${dipType}` : `dip-${dipType}`
+			));
+		}
+
+		for (const product of this.getSceneProducts()) {
+			if (!shouldConsiderProduct(product) || !product.isAwaitingFryerPickup()) {
+				continue;
+			}
+
+			if (product.isBurnedProduct()) {
+				moves.push(this.makeHelpHandHint(
+					product.x,
+					product.y,
+					tutorialFocus ? "tutorial-fryer-discard" : `fryer-discard-${product.texture.key}`
+				));
+				continue;
+			}
+
+			if (!this.hasAvailableWorkplace()) {
+				continue;
+			}
+
+			moves.push(this.makeHelpHandHint(
+				product.x,
+				product.y,
+				tutorialFocus ? "tutorial-fryer-pickup" : `fryer-pickup-${product.texture.key}`
+			));
+		}
+
+		if (!tutorialFocus || !hasPipeline) {
+			for (const sandwich of this.getSceneSandwiches()) {
+				if (!sandwich.isAwaitingToasterPickup()) {
+					continue;
+				}
+
+				moves.push(this.makeHelpHandHint(
+					sandwich.x,
+					sandwich.y,
+					sandwich.canReceiveDirectDelivery() ? "toaster-pickup" : "toaster-discard"
+				));
+			}
+
+			const awaitingFlavorGlass = this.getSceneMilkGlasses().find((glass) => glass.canReceiveFlavor());
+
+			if (awaitingFlavorGlass && this.getFlavorBottleForGlass(awaitingFlavorGlass)) {
+				if (this.isFlavorBottleSelecting()) {
+					moves.push(this.makeHelpHandHint(
+						awaitingFlavorGlass.x,
+						awaitingFlavorGlass.y,
+						"milk-flavor-glass"
+					));
+				} else {
+					const bottle = this.getFlavorBottleForGlass(awaitingFlavorGlass);
+
+					if (bottle) {
+						moves.push(this.makeHelpHandHint(
+							bottle.x,
+							bottle.y,
+							`milk-flavor-${bottle.FlavorType}`
+						));
+					}
+				}
+			}
+
+			const idleSandwich = this.getSceneSandwiches().find((sandwich) => (
+				sandwich.isIdleOnHolder() && this.hasAvailableToasterSlot() && isProductAcquired("holder3")
+			));
+
+			if (idleSandwich) {
+				moves.push(this.makeHelpHandHint(idleSandwich.x, idleSandwich.y, "holder-sandwich"));
+			}
+
+			const idleMilkGlass = this.getSceneMilkGlasses().find((glass) => (
+				glass.isIdleOnHolder() && this.hasAvailableMilkSlot() && isProductAcquired("holder4")
+			));
+
+			if (idleMilkGlass) {
+				moves.push(this.makeHelpHandHint(idleMilkGlass.x, idleMilkGlass.y, "holder-milk"));
+			}
+		}
+
+		if (!tutorialFocus || !hasPipeline) {
+			for (const product of this.getSceneProducts()) {
+				if (!product.isIdleOnHolder() || !this.hasAvailableFryer()) {
+					continue;
+				}
+
+				const holderSlot = this.getBearProductHolderSlot(product);
+
+				if (!holderSlot || !isProductAcquired(holderSlot)) {
+					continue;
+				}
+
+				moves.push(this.makeHelpHandHint(
+					product.x,
+					product.y,
+					tutorialFocus ? `tutorial-holder-${product.texture.key}` : `holder-${product.texture.key}`
+				));
+			}
+		}
+
+		return moves;
+	}
+
+	private getBearProductHolderSlot(product: AProduct): ProductSlotId | undefined {
+
+		if (product.texture.key.startsWith("Product2")) {
+			return "holder2";
+		}
+
+		if (product.texture.key.startsWith("Product1")) {
+			return "holder1";
+		}
+
+		return undefined;
+	}
+
+	private getTrayPlaceableProducts(pipelineProducts: AProduct[] = []) {
+
+		const restrictToPipeline = pipelineProducts.length > 0;
+
+		return this.getSceneProducts().filter((product) => {
+			if (!product.canAutoPlaceInTray()) {
+				return false;
+			}
+
+			if (restrictToPipeline && !pipelineProducts.includes(product)) {
+				return false;
+			}
+
+			return true;
+		});
+	}
+
+	private getTrayPlacementHint(tutorialFocus: boolean, pipelineProducts: AProduct[] = []): HelpHandHint | undefined {
+
+		const placeableProducts = this.getTrayPlaceableProducts(pipelineProducts);
+
+		if (placeableProducts.length === 0) {
+			return undefined;
+		}
+
+		const trays: Array<{ id: "charola1" | "charola2"; target: Phaser.GameObjects.Image }> = [
+			{ id: "charola1", target: this.charola1 },
+			{ id: "charola2", target: this.charola2 },
+		];
+
+		for (const { id, target } of trays) {
+			if (!this.claimAvailableTraySlot(id)) {
+				continue;
+			}
+
+			const phase = tutorialFocus ? `tutorial-tray-${id}` : `tray-${id}`;
+			return this.makeHelpHandHint(target.x, target.y, phase);
+		}
+
+		return undefined;
+	}
+
+	private hasProductCurrentlyFrying() {
+
+		return this.getSceneProducts().some((product) => product.isCurrentlyFrying());
+	}
+
+	private shouldHideHelpHandForWorkplaceWait() {
+
+		return this.getSceneProducts().some((product) => {
+			if (product.isTransferringToWorkplace()) {
+				return true;
+			}
+
+			if (product.canReceiveDirectDip()) {
+				return this.getRequiredDipType(product) === null;
+			}
+
+			return false;
+		});
+	}
+
+	private getSceneProducts() {
+
+		return this.children.list
+			.filter((child): child is AProduct => child instanceof AProduct)
+			.filter((product) => product.active);
+	}
+
+	private getSceneDeliverables() {
+
+		return this.children.list
+			.filter((child): child is AProduct | milkglass | sandwichPrefab => (
+				child instanceof AProduct || child instanceof milkglass || child instanceof sandwichPrefab
+			))
+			.filter((product) => product.active);
+	}
+
+	private getSceneMilkGlasses() {
+
+		return this.children.list
+			.filter((child): child is milkglass => child instanceof milkglass)
+			.filter((glass) => glass.active);
+	}
+
+	private getSceneSandwiches() {
+
+		return this.children.list
+			.filter((child): child is sandwichPrefab => child instanceof sandwichPrefab)
+			.filter((sandwich) => sandwich.active);
+	}
+
+	private getDeliveryHintClient(product: AProduct | milkglass | sandwichPrefab) {
+
+		const directTarget = this.getDirectDeliveryTarget(product);
+
+		if (directTarget) {
+			return directTarget;
+		}
+
+		return this.activeClients.find((client) => (
+			client.active && client.canReceiveDelivery() && client.matchesProduct(product)
+		));
+	}
+
+	private getRequiredDipType(product: AProduct): "chocolate" | "candy" | null {
+
+		const matchingClients = this.getClientsWantingDippedProduct(product);
+
+		if (matchingClients.length === 0) {
+			return null;
+		}
+
+		const targetClient = matchingClients[0];
+		return this.getDipTypeForClient(targetClient, product);
+	}
+
+	private getClientsWantingDippedProduct(product: AProduct) {
+
+		const waitingClients = this.activeClients.filter((client) => (
+			client.active && client.canReceiveDelivery()
+		));
+
+		const matchingClients = waitingClients.filter((client) => (
+			this.getDipTypeForClient(client, product) !== null
+		));
+
+		matchingClients.sort((left, right) => (
+			left.getRemainingRequestTime() - right.getRemainingRequestTime()
+		));
+
+		return matchingClients;
+	}
+
+	private getDipTypeForClient(client: AClient, product: AProduct): "chocolate" | "candy" | null {
+
+		let wantsChocolate = false;
+		let wantsCandy = false;
+
+		for (const appearance of client.getPendingRequestAppearances()) {
+			if (appearance.key === product.ChocolateDip.key) {
+				wantsChocolate = true;
+			}
+
+			if (appearance.key === product.CandyDip.key) {
+				wantsCandy = true;
+			}
+		}
+
+		if (wantsChocolate && !wantsCandy) {
+			return "chocolate";
+		}
+
+		if (wantsCandy && !wantsChocolate) {
+			return "candy";
+		}
+
+		if (!wantsChocolate && !wantsCandy) {
+			return null;
+		}
+
+		const displayedRequest = client.getDisplayedRequestAppearance();
+
+		if (displayedRequest?.key === product.ChocolateDip.key) {
+			return "chocolate";
+		}
+
+		if (displayedRequest?.key === product.CandyDip.key) {
+			return "candy";
+		}
+
+		return null;
+	}
+
+	private getDipTargetPosition(dipType: "chocolate" | "candy") {
+
+		const dip = dipType === "chocolate" ? this.chocolateDip : this.candyDip;
+		return { x: dip.x, y: dip.y };
+	}
+
+	private getFlavorBottleForGlass(glass: milkglass) {
+
+		const waitingClients = this.activeClients.filter((client) => (
+			client.active && client.canReceiveDelivery() && client.matchesProduct(glass)
+		));
+
+		for (const client of waitingClients) {
+			for (const appearance of client.getPendingRequestAppearances()) {
+				if (appearance.key === "RedGlass") {
+					return this.findFlavorBottle("Red");
+				}
+
+				if (appearance.key === "GreenGlass") {
+					return this.findFlavorBottle("Green");
+				}
+			}
+		}
+
+		return this.children.list.find((child): child is FlavorBottle => child instanceof FlavorBottle);
+	}
+
+	private findFlavorBottle(flavorType: string) {
+
+		return this.children.list.find((child): child is FlavorBottle => (
+			child instanceof FlavorBottle && child.FlavorType === flavorType
+		));
 	}
 
 	create() {
