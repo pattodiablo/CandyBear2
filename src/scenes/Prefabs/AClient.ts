@@ -446,6 +446,15 @@ export default class AClient extends Phaser.GameObjects.Container {
 		return Math.max(0, this.requestExpiresAt - this.scene.time.now);
 	}
 
+	public isImpatient() {
+
+		if (!this.hasActiveRequest() || this.requestExpiresAt <= 0) {
+			return false;
+		}
+
+		return this.getRemainingRequestTime() <= AClient.QUESTION_FLOAT_START_REMAINING;
+	}
+
 	private wasServedQuickly() {
 
 		if (this.requestIssuedAt <= 0) {

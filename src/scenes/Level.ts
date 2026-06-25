@@ -404,13 +404,12 @@ export default class Level extends Phaser.Scene {
 	private static readonly PROGRESSION_LOCK_TEXTURE_KEY = "lock";
 	private static readonly PROGRESSION_LOCK_SCALE = 0.72;
 	private static readonly PROGRESSION_LOCK_DEPTH_OFFSET = 8;
-	private static readonly PROGRESSION_LOCK_HOVER_DURATION = 200;
-	private static readonly PROGRESSION_LOCK_RESET_DURATION = 160;
-	private static readonly PROGRESSION_LOCK_AFFORDANCE_DURATION = 420;
+	private static readonly PROGRESSION_LOCK_AFFORDANCE_SHAKE_X = 6;
+	private static readonly PROGRESSION_LOCK_AFFORDANCE_SHAKE_ANGLE = 10;
+	private static readonly PROGRESSION_LOCK_AFFORDANCE_SHAKE_STEP_MS = 70;
+	private static readonly PROGRESSION_LOCK_AFFORDANCE_SHAKE_COUNT = 4;
 	private static readonly PROGRESSION_LOCK_AFFORDANCE_DELAY_MIN = 900;
 	private static readonly PROGRESSION_LOCK_AFFORDANCE_DELAY_MAX = 2400;
-	private static readonly PROGRESSION_LOCK_AFFORDANCE_LIFT_Y = -4;
-	private static readonly PROGRESSION_LOCK_AFFORDANCE_ANGLE = 7;
 	private progressionLockIcons: Phaser.GameObjects.Image[] = [];
 	private unbindDeveloperCheat?: () => void;
 	private static readonly HELP_HAND_TUTORIAL_MAX_LEVEL = 4;
@@ -824,9 +823,14 @@ export default class Level extends Phaser.Scene {
 
 	private stopProgressionLockAffordance(lockIcon: Phaser.GameObjects.Image) {
 
+		lockIcon.setData("affordanceActive", false);
 		const affordanceTween = lockIcon.getData("affordanceTween") as Phaser.Tweens.Tween | undefined;
 		affordanceTween?.stop();
 		lockIcon.setData("affordanceTween", undefined);
+
+		const affordanceDelayTimer = lockIcon.getData("affordanceDelayTimer") as Phaser.Time.TimerEvent | undefined;
+		affordanceDelayTimer?.remove(false);
+		lockIcon.setData("affordanceDelayTimer", undefined);
 	}
 
 	private syncProgressionLockAffordance(lockIcon: Phaser.GameObjects.Image) {
@@ -844,19 +848,62 @@ export default class Level extends Phaser.Scene {
 			return;
 		}
 
+		lockIcon.setData("affordanceActive", true);
+		this.runProgressionLockShakeBurst(lockIcon, 0, true);
+	}
+
+	private runProgressionLockShakeBurst(
+		lockIcon: Phaser.GameObjects.Image,
+		shakeIndex: number,
+		loop: boolean
+	) {
+
+		if (!lockIcon.active || !lockIcon.getData("affordanceActive")) {
+			return;
+		}
+
+		const unlockId = lockIcon.getData("unlockId") as UnlockId | undefined;
+		const baseX = lockIcon.getData("baseX") as number;
+		const baseY = lockIcon.getData("baseY") as number;
+
+		if (!unlockId || !this.canAffordUnlock(unlockId)) {
+			this.stopProgressionLockAffordance(lockIcon);
+			lockIcon.setPosition(baseX, baseY);
+			lockIcon.setAngle(0);
+			return;
+		}
+
+		if (shakeIndex >= Level.PROGRESSION_LOCK_AFFORDANCE_SHAKE_COUNT) {
+			lockIcon.setPosition(baseX, baseY);
+			lockIcon.setAngle(0);
+
+			if (!loop || !lockIcon.getData("affordanceActive")) {
+				return;
+			}
+
+			const affordanceDelayTimer = this.time.delayedCall(
+				Phaser.Math.Between(
+					Level.PROGRESSION_LOCK_AFFORDANCE_DELAY_MIN,
+					Level.PROGRESSION_LOCK_AFFORDANCE_DELAY_MAX
+				),
+				() => {
+					this.runProgressionLockShakeBurst(lockIcon, 0, true);
+				}
+			);
+			lockIcon.setData("affordanceDelayTimer", affordanceDelayTimer);
+			return;
+		}
+
+		const direction = shakeIndex % 2 === 0 ? 1 : -1;
 		const affordanceTween = this.tweens.add({
 			targets: lockIcon,
-			y: baseY + Level.PROGRESSION_LOCK_AFFORDANCE_LIFT_Y,
-			angle: Level.PROGRESSION_LOCK_AFFORDANCE_ANGLE,
-			duration: Level.PROGRESSION_LOCK_AFFORDANCE_DURATION,
+			x: baseX + (direction * Level.PROGRESSION_LOCK_AFFORDANCE_SHAKE_X),
+			angle: direction * Level.PROGRESSION_LOCK_AFFORDANCE_SHAKE_ANGLE,
+			duration: Level.PROGRESSION_LOCK_AFFORDANCE_SHAKE_STEP_MS,
 			ease: "Sine.InOut",
-			yoyo: true,
-			repeat: -1,
-			repeatDelay: Phaser.Math.Between(
-				Level.PROGRESSION_LOCK_AFFORDANCE_DELAY_MIN,
-				Level.PROGRESSION_LOCK_AFFORDANCE_DELAY_MAX
-			),
-			delay: Phaser.Math.Between(0, 700),
+			onComplete: () => {
+				this.runProgressionLockShakeBurst(lockIcon, shakeIndex + 1, loop);
+			},
 		});
 		lockIcon.setData("affordanceTween", affordanceTween);
 	}
@@ -898,33 +945,19 @@ export default class Level extends Phaser.Scene {
 			const activeTween = lockIcon.getData("hoverTween") as Phaser.Tweens.Tween | undefined;
 			activeTween?.stop();
 
-			const hoverTween = this.tweens.add({
-				targets: lockIcon,
-				x: baseX + Phaser.Math.Between(-2, 2),
-				y: baseY - 5,
-				angle: Phaser.Math.Between(-8, 8),
-				duration: Level.PROGRESSION_LOCK_HOVER_DURATION,
-				ease: "Back.Out",
-			});
-			lockIcon.setData("hoverTween", hoverTween);
+			lockIcon.setPosition(baseX, baseY);
+			lockIcon.setAngle(0);
+			lockIcon.setData("affordanceActive", true);
+			this.runProgressionLockShakeBurst(lockIcon, 0, false);
 		});
 
 		lockIcon.on(Phaser.Input.Events.POINTER_OUT, () => {
 			const activeTween = lockIcon.getData("hoverTween") as Phaser.Tweens.Tween | undefined;
 			activeTween?.stop();
-
-			const hoverTween = this.tweens.add({
-				targets: lockIcon,
-				x: baseX,
-				y: baseY,
-				angle: 0,
-				duration: Level.PROGRESSION_LOCK_RESET_DURATION,
-				ease: "Quad.Out",
-				onComplete: () => {
-					this.syncProgressionLockAffordance(lockIcon);
-				},
-			});
-			lockIcon.setData("hoverTween", hoverTween);
+			lockIcon.setData("hoverTween", undefined);
+			lockIcon.setPosition(baseX, baseY);
+			lockIcon.setAngle(0);
+			this.syncProgressionLockAffordance(lockIcon);
 		});
 
 		this.progressionLockIcons.push(lockIcon);
@@ -2855,6 +2888,10 @@ export default class Level extends Phaser.Scene {
 			return true;
 		}
 
+		if (this.hasImpatientClient() && this.canUseCookieJar()) {
+			return true;
+		}
+
 		const isIdle = (this.time.now - this.lastHelpHandActionAt) >= Level.HELP_HAND_IDLE_MS;
 
 		if (isIdle) {
@@ -2862,6 +2899,31 @@ export default class Level extends Phaser.Scene {
 		}
 
 		return isIdle;
+	}
+
+	private hasImpatientClient() {
+
+		return this.activeClients.some((client) => (
+			client.active && client.canReceiveDelivery() && client.isImpatient()
+		));
+	}
+
+	private getCookieJarHint(tutorialFocus: boolean): HelpHandHint | undefined {
+
+		if (!this.canUseCookieJar() || !this.hasImpatientClient()) {
+			return undefined;
+		}
+
+		return this.makeHelpHandHint(
+			this.cookieJar.x,
+			this.cookieJar.y,
+			tutorialFocus ? "tutorial-cookie-jar" : "cookie-jar"
+		);
+	}
+
+	private preferCookieJarOverClientHint(clientHint: HelpHandHint): HelpHandHint {
+
+		return this.getCookieJarHint(this.isHelpHandTutorialLevel()) ?? clientHint;
 	}
 
 	private updateHelpHand() {
@@ -2915,7 +2977,9 @@ export default class Level extends Phaser.Scene {
 			const client = this.getDeliveryHintClient(this.selectedDeliveryProduct);
 
 			if (client) {
-				return this.makeHelpHandHint(client.x, client.y - 80, "delivery-active");
+				return this.preferCookieJarOverClientHint(
+					this.makeHelpHandHint(client.x, client.y - 80, "delivery-active")
+				);
 			}
 		}
 
@@ -2944,7 +3008,9 @@ export default class Level extends Phaser.Scene {
 			const client = this.getDeliveryHintClient(choosingDeliveryProduct);
 
 			if (client) {
-				return this.makeHelpHandHint(client.x, client.y - 80, "delivery-choose");
+				return this.preferCookieJarOverClientHint(
+					this.makeHelpHandHint(client.x, client.y - 80, "delivery-choose")
+				);
 			}
 		}
 
@@ -2966,6 +3032,10 @@ export default class Level extends Phaser.Scene {
 		}
 
 		if (this.shouldHideHelpHandForWorkplaceWait()) {
+			return undefined;
+		}
+
+		if (this.shouldHideHelpHandForMilkFlavorWait()) {
 			return undefined;
 		}
 
@@ -2997,7 +3067,16 @@ export default class Level extends Phaser.Scene {
 			return product instanceof AProduct && pipelineProducts.includes(product);
 		};
 
-		if (tutorialFocus && hasPipeline) {
+		const trayDeliveryHint = this.getTrayDeliveryHint(
+			tutorialFocus,
+			tutorialFocus && hasPipeline ? pipelineProducts : []
+		);
+
+		if (trayDeliveryHint) {
+			moves.push(trayDeliveryHint);
+		}
+
+		if (tutorialFocus && hasPipeline && moves.length === 0) {
 			if (pipelineProducts.some((product) => (
 				product.isInMotion()
 				|| product.isRaisedOnHolder()
@@ -3008,8 +3087,18 @@ export default class Level extends Phaser.Scene {
 			}
 		}
 
+		const cookieJarHint = this.getCookieJarHint(tutorialFocus);
+
+		if (cookieJarHint) {
+			moves.push(cookieJarHint);
+		}
+
 		for (const product of this.getSceneDeliverables()) {
 			if (!shouldConsiderDeliverable(product) || !product.canReceiveDirectDelivery()) {
+				continue;
+			}
+
+			if (product instanceof AProduct && product.isOnTray()) {
 				continue;
 			}
 
@@ -3032,6 +3121,8 @@ export default class Level extends Phaser.Scene {
 		if (trayHint) {
 			moves.push(trayHint);
 		}
+
+		this.addMilkHelpHandMoves(moves, tutorialFocus);
 
 		for (const product of this.getSceneProducts()) {
 			if (!shouldConsiderProduct(product) || !product.canReceiveDirectDip()) {
@@ -3090,42 +3181,12 @@ export default class Level extends Phaser.Scene {
 				));
 			}
 
-			const awaitingFlavorGlass = this.getSceneMilkGlasses().find((glass) => glass.canReceiveFlavor());
-
-			if (awaitingFlavorGlass && this.getFlavorBottleForGlass(awaitingFlavorGlass)) {
-				if (this.isFlavorBottleSelecting()) {
-					moves.push(this.makeHelpHandHint(
-						awaitingFlavorGlass.x,
-						awaitingFlavorGlass.y,
-						"milk-flavor-glass"
-					));
-				} else {
-					const bottle = this.getFlavorBottleForGlass(awaitingFlavorGlass);
-
-					if (bottle) {
-						moves.push(this.makeHelpHandHint(
-							bottle.x,
-							bottle.y,
-							`milk-flavor-${bottle.FlavorType}`
-						));
-					}
-				}
-			}
-
 			const idleSandwich = this.getSceneSandwiches().find((sandwich) => (
 				sandwich.isIdleOnHolder() && this.hasAvailableToasterSlot() && isProductAcquired("holder3")
 			));
 
 			if (idleSandwich) {
 				moves.push(this.makeHelpHandHint(idleSandwich.x, idleSandwich.y, "holder-sandwich"));
-			}
-
-			const idleMilkGlass = this.getSceneMilkGlasses().find((glass) => (
-				glass.isIdleOnHolder() && this.hasAvailableMilkSlot() && isProductAcquired("holder4")
-			));
-
-			if (idleMilkGlass) {
-				moves.push(this.makeHelpHandHint(idleMilkGlass.x, idleMilkGlass.y, "holder-milk"));
 			}
 		}
 
@@ -3163,6 +3224,51 @@ export default class Level extends Phaser.Scene {
 		}
 
 		return undefined;
+	}
+
+	private getProductsOnTrays() {
+
+		return [...this.charola1Products, ...this.charola2Products].filter((product) => product.active);
+	}
+
+	private getTrayDeliveryHint(tutorialFocus: boolean, pipelineProducts: AProduct[] = []): HelpHandHint | undefined {
+
+		const restrictToPipeline = pipelineProducts.length > 0;
+		const matches: Array<{ product: AProduct; client: AClient }> = [];
+
+		for (const product of this.getProductsOnTrays()) {
+			if (!product.canReceiveDirectDelivery()) {
+				continue;
+			}
+
+			if (restrictToPipeline && !pipelineProducts.includes(product)) {
+				continue;
+			}
+
+			const client = this.getDirectDeliveryTarget(product);
+
+			if (!client) {
+				continue;
+			}
+
+			matches.push({ product, client });
+		}
+
+		if (matches.length === 0) {
+			return undefined;
+		}
+
+		matches.sort((left, right) => (
+			left.client.getRemainingRequestTime() - right.client.getRemainingRequestTime()
+		));
+
+		const { product } = matches[0];
+
+		return this.makeHelpHandHint(
+			product.x,
+			product.y,
+			tutorialFocus ? "tutorial-tray-deliver" : `tray-deliver-${product.texture.key}`
+		);
 	}
 
 	private getTrayPlaceableProducts(pipelineProducts: AProduct[] = []) {
@@ -3345,25 +3451,162 @@ export default class Level extends Phaser.Scene {
 		return { x: dip.x, y: dip.y };
 	}
 
-	private getFlavorBottleForGlass(glass: milkglass) {
+	private addMilkHelpHandMoves(moves: HelpHandHint[], tutorialFocus: boolean) {
+
+		if (!isProductAcquired("holder4")) {
+			return;
+		}
+
+		if (this.getSceneMilkGlasses().some((glass) => glass.isRaisedOnHolder() || glass.isInMotion())) {
+			return;
+		}
+
+		if (this.isFlavorBottleSelecting()) {
+			const selectingGlass = this.getSceneMilkGlasses().find((glass) => glass.canReceiveFlavor());
+
+			if (selectingGlass) {
+				moves.push(this.makeHelpHandHint(
+					selectingGlass.x,
+					selectingGlass.y,
+					tutorialFocus ? "tutorial-milk-flavor-glass" : "milk-flavor-glass"
+				));
+			}
+
+			return;
+		}
+
+		for (const glass of this.getSceneMilkGlasses()) {
+			if (!glass.canReceiveDirectDelivery()) {
+				continue;
+			}
+
+			const client = this.getDirectDeliveryTarget(glass);
+
+			if (!client) {
+				continue;
+			}
+
+			moves.push(this.makeHelpHandHint(
+				glass.x,
+				glass.y,
+				tutorialFocus ? "tutorial-milk-deliver" : "milk-deliver"
+			));
+		}
+
+		for (const glass of this.getSceneMilkGlasses()) {
+			if (!glass.canReceiveFlavor()) {
+				continue;
+			}
+
+			const flavorType = this.getRequiredFlavorTypeForGlass(glass);
+
+			if (!flavorType) {
+				continue;
+			}
+
+			const bottle = this.findFlavorBottle(flavorType);
+
+			if (bottle) {
+				moves.push(this.makeHelpHandHint(
+					bottle.x,
+					bottle.y,
+					tutorialFocus ? `tutorial-milk-flavor-${flavorType}` : `milk-flavor-${flavorType}`
+				));
+			}
+		}
+
+		const idleMilkGlass = this.getSceneMilkGlasses().find((glass) => (
+			glass.isIdleOnHolder() && this.hasAvailableMilkSlot() && this.milkMachineEnabled
+		));
+
+		if (idleMilkGlass) {
+			moves.push(this.makeHelpHandHint(
+				idleMilkGlass.x,
+				idleMilkGlass.y,
+				tutorialFocus ? "tutorial-holder-milk" : "holder-milk"
+			));
+		}
+	}
+
+	private getRequiredFlavorTypeForGlass(glass: milkglass): "Red" | "Green" | null {
+
+		if (!glass.canReceiveFlavor()) {
+			return null;
+		}
 
 		const waitingClients = this.activeClients.filter((client) => (
-			client.active && client.canReceiveDelivery() && client.matchesProduct(glass)
+			client.active && client.canReceiveDelivery()
 		));
+		let wantsRed = false;
+		let wantsGreen = false;
 
 		for (const client of waitingClients) {
 			for (const appearance of client.getPendingRequestAppearances()) {
 				if (appearance.key === "RedGlass") {
-					return this.findFlavorBottle("Red");
+					wantsRed = true;
 				}
 
 				if (appearance.key === "GreenGlass") {
-					return this.findFlavorBottle("Green");
+					wantsGreen = true;
 				}
 			}
 		}
 
-		return this.children.list.find((child): child is FlavorBottle => child instanceof FlavorBottle);
+		if (wantsRed && !wantsGreen) {
+			return "Red";
+		}
+
+		if (wantsGreen && !wantsRed) {
+			return "Green";
+		}
+
+		if (!wantsRed && !wantsGreen) {
+			return null;
+		}
+
+		const desperateClient = this.getMostDesperateClient();
+
+		if (!desperateClient) {
+			return null;
+		}
+
+		for (const appearance of desperateClient.getPendingRequestAppearances()) {
+			if (appearance.key === "RedGlass") {
+				return "Red";
+			}
+
+			if (appearance.key === "GreenGlass") {
+				return "Green";
+			}
+		}
+
+		return null;
+	}
+
+	private shouldHideHelpHandForMilkFlavorWait() {
+
+		const hasGlassAwaitingFlavorOrder = this.getSceneMilkGlasses().some((glass) => (
+			glass.canReceiveFlavor() && this.getRequiredFlavorTypeForGlass(glass) === null
+		));
+
+		if (!hasGlassAwaitingFlavorOrder) {
+			return false;
+		}
+
+		return !this.getSceneMilkGlasses().some((glass) => (
+			glass.canReceiveDirectDelivery() && !!this.getDirectDeliveryTarget(glass)
+		));
+	}
+
+	private getFlavorBottleForGlass(glass: milkglass) {
+
+		const flavorType = this.getRequiredFlavorTypeForGlass(glass);
+
+		if (!flavorType) {
+			return undefined;
+		}
+
+		return this.findFlavorBottle(flavorType);
 	}
 
 	private findFlavorBottle(flavorType: string) {

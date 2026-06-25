@@ -222,6 +222,11 @@ export default class AProduct extends Phaser.GameObjects.Image {
 			&& !this.isSelectingDelivery;
 	}
 
+	public isOnTray() {
+
+		return !!this.currentTrayId;
+	}
+
 	public isIdleOnHolder() {
 
 		return this.active
