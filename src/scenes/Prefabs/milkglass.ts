@@ -226,6 +226,7 @@ export default class milkglass extends Phaser.GameObjects.Image {
 			this.isReadyForDelivery = true;
 			this.isLaunching = false;
 			this.isRaised = false;
+			levelScene.tryAutoResolveFlavorSelection();
 		});
 	}
 

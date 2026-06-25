@@ -2064,17 +2064,39 @@ export default class Level extends Phaser.Scene {
 		this.selectedFlavorBottle.applyToGlass(glass);
 	}
 
+	public tryAutoResolveFlavorSelection() {
+
+		if (!this.selectedFlavorBottle?.active) {
+			return false;
+		}
+
+		const glass = this.getDirectFlavorGlass(this.selectedFlavorBottle);
+
+		if (!glass) {
+			return false;
+		}
+
+		this.selectedFlavorBottle.applyToGlass(glass);
+		return true;
+	}
+
 	public getDirectFlavorGlass(bottle: FlavorBottle) {
 
-		const flavorCandidates = this.children.list
-			.filter((child): child is milkglass => child instanceof milkglass)
-			.filter((glass) => glass.canReceiveFlavor());
+		const flavorCandidates = this.getFlavorReadyGlasses();
 
-		if (flavorCandidates.length !== 1) {
+		if (flavorCandidates.length === 0) {
 			return undefined;
 		}
 
-		return flavorCandidates[0];
+		return [...flavorCandidates].sort((left, right) => (
+			Phaser.Math.Distance.Between(left.x, left.y, bottle.x, bottle.y)
+			- Phaser.Math.Distance.Between(right.x, right.y, bottle.x, bottle.y)
+		))[0];
+	}
+
+	private getFlavorReadyGlasses() {
+
+		return this.getSceneMilkGlasses().filter((glass) => glass.canReceiveFlavor());
 	}
 
 	public clearDipSelection(product?: AProduct) {

@@ -52,6 +52,7 @@ export default class FlavorBottle extends Phaser.GameObjects.Image {
 	private isLaunching = false;
 	private isSelectingFlavor = false;
 	private selectionTimeout?: Phaser.Time.TimerEvent;
+	private flavorGlassPollTimer?: Phaser.Time.TimerEvent;
 	private danceTween?: Phaser.Tweens.Tween;
 
 	private handlePointerOver() {
@@ -71,27 +72,20 @@ export default class FlavorBottle extends Phaser.GameObjects.Image {
 	}
 
 	private handlePointerDown() {
-		if (this.isLaunching) {
+		if (this.isLaunching || this.isSelectingFlavor) {
 			return;
 		}
 
 		const levelScene = this.scene as Level;
 
-		if (this.isSelectingFlavor) {
-			return;
-		}
-
-		const directGlass = levelScene.getDirectFlavorGlass(this);
-
-		if (directGlass) {
-			this.activate(() => {
-				this.applyToGlass(directGlass);
-			});
-			return;
-		}
-
 		levelScene.beginFlavorSelection(this);
-		this.activate();
+		this.activate(() => {
+			const directGlass = levelScene.getDirectFlavorGlass(this);
+
+			if (directGlass) {
+				this.applyToGlass(directGlass);
+			}
+		});
 	}
 
 	private activate(onReady?: () => void) {
@@ -107,8 +101,13 @@ export default class FlavorBottle extends Phaser.GameObjects.Image {
 			onComplete: () => {
 				this.isLaunching = false;
 				this.isSelectingFlavor = true;
-				this.startActiveState();
 				onReady?.();
+
+				if (!this.isSelectingFlavor) {
+					return;
+				}
+
+				this.startActiveState();
 			}
 		});
 	}
@@ -123,9 +122,39 @@ export default class FlavorBottle extends Phaser.GameObjects.Image {
 			ease: "Sine.InOut"
 		});
 
+		this.startFlavorGlassPolling();
 		this.startSelectionTimeout(() => {
 			this.cancelFlavorSelection();
 		});
+	}
+
+	private startFlavorGlassPolling() {
+
+		this.clearFlavorGlassPolling();
+		this.flavorGlassPollTimer = this.scene.time.addEvent({
+			delay: 100,
+			loop: true,
+			callback: () => {
+				if (!this.isSelectingFlavor || this.isLaunching) {
+					this.clearFlavorGlassPolling();
+					return;
+				}
+
+				const levelScene = this.scene as Level;
+				const directGlass = levelScene.getDirectFlavorGlass(this);
+
+				if (directGlass) {
+					this.clearFlavorGlassPolling();
+					this.applyToGlass(directGlass);
+				}
+			},
+		});
+	}
+
+	private clearFlavorGlassPolling() {
+
+		this.flavorGlassPollTimer?.remove(false);
+		this.flavorGlassPollTimer = undefined;
 	}
 
 	public applyToGlass(glass: milkglass) {
@@ -138,6 +167,7 @@ export default class FlavorBottle extends Phaser.GameObjects.Image {
 		const targetX = glass.x;
 		const targetY = glass.y;
 
+		this.clearFlavorGlassPolling();
 		this.clearSelectionTimeout();
 		this.clearActiveState();
 		this.isSelectingFlavor = false;
@@ -165,6 +195,7 @@ export default class FlavorBottle extends Phaser.GameObjects.Image {
 		}
 
 		const levelScene = this.scene as Level;
+		this.clearFlavorGlassPolling();
 		this.clearSelectionTimeout();
 		this.clearActiveState();
 		this.isSelectingFlavor = false;
