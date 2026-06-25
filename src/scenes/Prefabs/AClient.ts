@@ -276,7 +276,8 @@ export default class AClient extends Phaser.GameObjects.Container {
 			this.displayedProductIndex = 0;
 		}
 
-		this.showDisplayedProduct(true);
+		this.stopProductCarousel();
+		this.showDisplayedProduct(this.pendingProducts.length > 1);
 		this.startProductCarousel();
 	}
 
@@ -284,7 +285,6 @@ export default class AClient extends Phaser.GameObjects.Container {
 
 		this.productCarouselTimer?.remove(false);
 		this.productCarouselTimer = undefined;
-		this.scene.tweens.killTweensOf(this.productSample);
 	}
 
 	private startRequestWaitTimer() {
@@ -411,7 +411,9 @@ export default class AClient extends Phaser.GameObjects.Container {
 
 		this.pendingProducts.splice(matchedIndex, 1);
 
-		if (this.displayedProductIndex >= this.pendingProducts.length) {
+		if (matchedIndex < this.displayedProductIndex) {
+			this.displayedProductIndex--;
+		} else if (this.displayedProductIndex >= this.pendingProducts.length) {
 			this.displayedProductIndex = 0;
 		}
 
@@ -511,9 +513,11 @@ export default class AClient extends Phaser.GameObjects.Container {
 
 		this.stopRequestWaitTimer();
 		this.stopProductCarousel();
+		this.scene.tweens.killTweensOf(this.productSample);
 		this.resetQuestionUrgencyAnimation();
 		this.clientQuestion.setAlpha(0);
 		this.clientQuestion.setScale(1);
+		this.productSample.setScale(1);
 		this.productSample.setVisible(false);
 		this.pendingProducts = [];
 		this.displayedProductIndex = 0;
@@ -526,6 +530,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 		this.questionRevealTimer = undefined;
 		this.stopRequestWaitTimer();
 		this.stopProductCarousel();
+		this.scene.tweens.killTweensOf(this.productSample);
 		this.resetQuestionUrgencyAnimation();
 	}
 
