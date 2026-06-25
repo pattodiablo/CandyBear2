@@ -46,6 +46,7 @@ import {
 	type UnlockId,
 } from "./unlockCatalog";
 import { bindDeveloperCheatCode, DEVELOPER_CHEAT_COINS } from "./developerCheat";
+import { getCookiesPerDayLimit } from "./momentUpgradeBonuses";
 
 interface LevelPlan {
 	levelNumber: number;
@@ -326,7 +327,6 @@ export default class Level extends Phaser.Scene {
 	private cookiesUsedThisDay = 0;
 	private isCookieJarDepleted = false;
 	private cookieJarRefillTimer?: Phaser.Time.TimerEvent;
-	private static readonly COOKIES_PER_DAY = 5;
 	private static readonly COOKIE_JAR_TEXTURE = "cookieJar";
 	private static readonly EMPTY_COOKIE_JAR_TEXTURE = "emptyCookieJar";
 	private static readonly COOKIE_JAR_REFILL_BASE_MS = 50000;
@@ -532,6 +532,18 @@ export default class Level extends Phaser.Scene {
 
 	public recordSuccessfulDelivery() {
 		this.successfulClientsServed++;
+	}
+
+	public getCurrentLevelNumber() {
+		return this.currentLevelPlan.levelNumber;
+	}
+
+	public getCurrentLevelDifficulty() {
+		return this.currentLevelPlan.difficulty;
+	}
+
+	public getCookiesPerDayLimit() {
+		return getCookiesPerDayLimit();
 	}
 
 	public recordQuickServiceLike() {
@@ -2099,7 +2111,7 @@ export default class Level extends Phaser.Scene {
 			&& !this.panel.visible
 			&& !this.isCookieLaunching
 			&& !this.isCookieJarDepleted
-			&& this.cookiesUsedThisDay < Level.COOKIES_PER_DAY
+			&& this.cookiesUsedThisDay < this.getCookiesPerDayLimit()
 			&& this.getMostDesperateClient() !== undefined;
 	}
 
@@ -2198,7 +2210,7 @@ export default class Level extends Phaser.Scene {
 
 		this.cookiesUsedThisDay++;
 
-		if (this.cookiesUsedThisDay >= Level.COOKIES_PER_DAY) {
+		if (this.cookiesUsedThisDay >= this.getCookiesPerDayLimit()) {
 			this.depleteCookieJar();
 		}
 

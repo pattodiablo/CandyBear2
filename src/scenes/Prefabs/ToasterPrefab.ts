@@ -4,6 +4,10 @@
 /* START OF COMPILED CODE */
 
 /* START-USER-IMPORTS */
+import {
+	getMachineAnimationTimeScale,
+	getToasterSpeedBonus,
+} from "../momentUpgradeBonuses";
 /* END-USER-IMPORTS */
 
 export type ToasterSlotId = "toasterSlot1";
@@ -62,11 +66,13 @@ export default class ToasterPrefab extends Phaser.GameObjects.Container {
 		}
 
 		sprite.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
+			sprite.anims.timeScale = 1;
 			sprite.stop();
 			sprite.destroy();
 			onComplete?.();
 		});
 
+		sprite.anims.timeScale = getMachineAnimationTimeScale(getToasterSpeedBonus());
 		sprite.play({ key: "sandwichRoast", repeat: 0 });
 		return sprite;
 	}

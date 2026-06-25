@@ -10,7 +10,12 @@ import type AProduct from "./AProduct";
 import type Level from "../Level";
 import type milkglass from "./milkglass";
 import type sandwichPrefab from "./sandwichPrefab";
-import { getAvailableClientRequests } from "../clientOrderPool";
+import {
+	pickClientOrders,
+	rollClientOrderCount,
+	type ClientRequestAppearance,
+} from "../clientOrderPool";
+import { getClientRequestWaitDurationMs } from "../momentUpgradeBonuses";
 /* END-USER-IMPORTS */
 
 export default class AClient extends Phaser.GameObjects.Container {
@@ -66,7 +71,9 @@ export default class AClient extends Phaser.GameObjects.Container {
 	private requestUrgencyTimer?: Phaser.Time.TimerEvent;
 	private requestExpiresAt = 0;
 	private requestIssuedAt = 0;
-	private requestedProduct?: {key:string,frame?:string|number};
+	private pendingProducts: ClientRequestAppearance[] = [];
+	private displayedProductIndex = 0;
+	private productCarouselTimer?: Phaser.Time.TimerEvent;
 
 	private static readonly TARGET_Y = 370;
 	private static readonly EXIT_Y = 470;
@@ -74,7 +81,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 	private static readonly QUESTION_FLOAT_DISTANCE = 12;
 	private static readonly QUESTION_EARLY_MAX = 900;
 	private static readonly QUESTION_LATE_MAX = 2200;
-	private static readonly REQUEST_WAIT_DURATION = 20000;
+
 	static readonly COOKIE_WAIT_BONUS_MS = 6000;
 	private static readonly QUICK_SERVICE_WINDOW_MS = 4000;
 	private static readonly QUESTION_FLOAT_START_REMAINING = 5000;
@@ -82,6 +89,13 @@ export default class AClient extends Phaser.GameObjects.Container {
 	private static readonly QUESTION_BASE_DURATION = 500;
 	private static readonly QUESTION_BASE_Y = -145;
 	private static readonly QUESTION_MAX_SPEED_SCALE = 4;
+	private static readonly PRODUCT_DISPLAY_MS = 2000;
+	private static readonly PRODUCT_SWAP_OUT_MS = 180;
+	private static readonly PRODUCT_SWAP_IN_MS = 220;
+
+	private hasActiveRequest() {
+		return this.pendingProducts.length > 0;
+	}
 
 	private initializeInteraction() {
 
@@ -153,16 +167,23 @@ export default class AClient extends Phaser.GameObjects.Container {
 
 	private showClientQuestion() {
 
-		if (!this.active || this.requestedProduct) {
+		if (!this.active || this.hasActiveRequest()) {
 			return;
 		}
 
 		this.questionRevealTimer = undefined;
 		this.applyClientAppearance({ key: "ClientBear" });
-		const requestPool = getAvailableClientRequests();
-		this.requestedProduct = Phaser.Utils.Array.GetRandom(requestPool);
-		this.applyProductSample(this.requestedProduct);
+
+		const levelScene = this.scene as Level;
+		const orderCount = rollClientOrderCount(
+			levelScene.getCurrentLevelNumber(),
+			levelScene.getCurrentLevelDifficulty()
+		);
+		this.pendingProducts = pickClientOrders(orderCount);
+		this.displayedProductIndex = 0;
+		this.showDisplayedProduct(false);
 		this.productSample.setVisible(true);
+		this.startProductCarousel();
 		this.clientQuestion.setAlpha(0);
 		this.clientQuestion.setScale(0.4);
 		this.scene.tweens.add({
@@ -180,10 +201,96 @@ export default class AClient extends Phaser.GameObjects.Container {
 		this.startRequestWaitTimer();
 	}
 
+	private startProductCarousel() {
+
+		this.stopProductCarousel();
+
+		if (this.pendingProducts.length <= 1) {
+			return;
+		}
+
+		this.productCarouselTimer = this.scene.time.addEvent({
+			delay: AClient.PRODUCT_DISPLAY_MS,
+			loop: true,
+			callback: this.advanceProductCarousel,
+			callbackScope: this,
+		});
+	}
+
+	private advanceProductCarousel() {
+
+		if (this.pendingProducts.length <= 1) {
+			return;
+		}
+
+		this.displayedProductIndex = (this.displayedProductIndex + 1) % this.pendingProducts.length;
+		this.showDisplayedProduct(true);
+	}
+
+	private showDisplayedProduct(animateSwap: boolean) {
+
+		const product = this.pendingProducts[this.displayedProductIndex];
+
+		if (!product) {
+			return;
+		}
+
+		if (!animateSwap) {
+			this.scene.tweens.killTweensOf(this.productSample);
+			this.applyProductSample(product);
+			this.productSample.setScale(1);
+			return;
+		}
+
+		this.scene.tweens.killTweensOf(this.productSample);
+		this.scene.tweens.add({
+			targets: this.productSample,
+			scaleX: 0,
+			scaleY: 0,
+			duration: AClient.PRODUCT_SWAP_OUT_MS,
+			ease: "Cubic.In",
+			onComplete: () => {
+				if (!this.active || !this.hasActiveRequest()) {
+					return;
+				}
+
+				this.applyProductSample(this.pendingProducts[this.displayedProductIndex] ?? product);
+				this.scene.tweens.add({
+					targets: this.productSample,
+					scaleX: 1,
+					scaleY: 1,
+					duration: AClient.PRODUCT_SWAP_IN_MS,
+					ease: "Back.Out",
+				});
+			},
+		});
+	}
+
+	private syncProductCarouselAfterFulfillment() {
+
+		if (!this.hasActiveRequest()) {
+			return;
+		}
+
+		if (this.displayedProductIndex >= this.pendingProducts.length) {
+			this.displayedProductIndex = 0;
+		}
+
+		this.showDisplayedProduct(true);
+		this.startProductCarousel();
+	}
+
+	private stopProductCarousel() {
+
+		this.productCarouselTimer?.remove(false);
+		this.productCarouselTimer = undefined;
+		this.scene.tweens.killTweensOf(this.productSample);
+	}
+
 	private startRequestWaitTimer() {
 
 		this.stopRequestWaitTimer();
-		this.requestExpiresAt = this.scene.time.now + AClient.REQUEST_WAIT_DURATION;
+		this.requestExpiresAt = this.scene.time.now + getClientRequestWaitDurationMs();
 		this.scheduleRequestWaitTimers();
 	}
 
@@ -225,7 +332,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 
 	public extendRequestWaitTime(extraMs: number) {
 
-		if (!this.requestedProduct || this.requestExpiresAt <= 0) {
+		if (!this.hasActiveRequest() || this.requestExpiresAt <= 0) {
 			return false;
 		}
 
@@ -236,7 +343,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 
 	private updateQuestionUrgency() {
 
-		if (!this.requestedProduct || this.requestExpiresAt <= 0) {
+		if (!this.hasActiveRequest() || this.requestExpiresAt <= 0) {
 			return;
 		}
 
@@ -273,7 +380,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 
 	private handleRequestTimeout() {
 
-		if (!this.requestedProduct) {
+		if (!this.hasActiveRequest()) {
 			return;
 		}
 
@@ -285,21 +392,44 @@ export default class AClient extends Phaser.GameObjects.Container {
 
 	public matchesProduct(product: AProduct | milkglass | sandwichPrefab) {
 
-		if (!this.requestedProduct) {
+		if (!this.hasActiveRequest()) {
 			return false;
 		}
 
-		return product.matchesAppearance(this.requestedProduct);
+		return this.pendingProducts.some((appearance) => product.matchesAppearance(appearance));
+	}
+
+	public receiveProductDelivery(product: AProduct | milkglass | sandwichPrefab) {
+
+		const matchedIndex = this.pendingProducts.findIndex((appearance) => (
+			product.matchesAppearance(appearance)
+		));
+
+		if (matchedIndex < 0) {
+			return false;
+		}
+
+		this.pendingProducts.splice(matchedIndex, 1);
+
+		if (this.displayedProductIndex >= this.pendingProducts.length) {
+			this.displayedProductIndex = 0;
+		}
+
+		if (this.hasActiveRequest()) {
+			this.syncProductCarouselAfterFulfillment();
+		}
+
+		return !this.hasActiveRequest();
 	}
 
 	public canReceiveDelivery() {
 
-		return !!this.requestedProduct;
+		return this.hasActiveRequest();
 	}
 
 	public getRemainingRequestTime() {
 
-		if (!this.requestedProduct || this.requestExpiresAt <= 0) {
+		if (!this.hasActiveRequest() || this.requestExpiresAt <= 0) {
 			return Number.POSITIVE_INFINITY;
 		}
 
@@ -361,11 +491,13 @@ export default class AClient extends Phaser.GameObjects.Container {
 	private clearRequestState() {
 
 		this.stopRequestWaitTimer();
+		this.stopProductCarousel();
 		this.resetQuestionUrgencyAnimation();
 		this.clientQuestion.setAlpha(0);
 		this.clientQuestion.setScale(1);
 		this.productSample.setVisible(false);
-		this.requestedProduct = undefined;
+		this.pendingProducts = [];
+		this.displayedProductIndex = 0;
 		this.requestIssuedAt = 0;
 	}
 
@@ -374,6 +506,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 		this.questionRevealTimer?.remove(false);
 		this.questionRevealTimer = undefined;
 		this.stopRequestWaitTimer();
+		this.stopProductCarousel();
 		this.resetQuestionUrgencyAnimation();
 	}
 

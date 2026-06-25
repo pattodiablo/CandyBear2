@@ -1,3 +1,4 @@
+import Phaser from "phaser";
 import { isProductAcquired, type ProductSlotId } from "./productProgress";
 import { isWorkstationAcquired, type WorkstationId } from "./workstationProgress";
 
@@ -71,4 +72,31 @@ export function getAvailableClientRequests() {
 		.map(({ appearance }) => appearance);
 
 	return availableRequests.length > 0 ? availableRequests : [...DEFAULT_CLIENT_REQUESTS];
+}
+
+export function rollClientOrderCount(levelNumber: number, difficulty: number) {
+	const normalizedLevel = Math.max(1, Math.floor(levelNumber));
+
+	if (normalizedLevel <= 10) {
+		return 1;
+	}
+
+	if (normalizedLevel <= 17) {
+		return 2;
+	}
+
+	const thirdOrderChance = Phaser.Math.Clamp(
+		0.2 + ((normalizedLevel - 18) * 0.03) + ((difficulty - 1) * 0.12),
+		0.2,
+		0.72
+	);
+
+	return Math.random() < thirdOrderChance ? 3 : 2;
+}
+
+export function pickClientOrders(orderCount: number) {
+	const requestPool = Phaser.Utils.Array.Shuffle([...getAvailableClientRequests()]);
+	const normalizedCount = Math.max(1, Math.floor(orderCount));
+
+	return requestPool.slice(0, Math.min(normalizedCount, requestPool.length));
 }

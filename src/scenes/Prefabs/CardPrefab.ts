@@ -35,8 +35,17 @@ export default class CardPrefab extends Phaser.GameObjects.Container {
 		likesCost.setStyle({ "color": "#F8ECDA", "fontFamily": "Klop", "fontSize": "54px" });
 		anverso.add(likesCost);
 
+		// UpgradeDescription
+		const upgradeDescription = scene.add.text(1, 361, "", {});
+		upgradeDescription.setOrigin(0.5, 0.5);
+		upgradeDescription.text = "Card upgrade description";
+		upgradeDescription.setStyle({ "align": "center", "color": "#FF5F7E", "fixedWidth": 250, "fixedHeight": 200, "fontFamily": "Klop", "fontSize": "25px" });
+		upgradeDescription.setWordWrapWidth(220);
+		anverso.add(upgradeDescription);
+
 		this.coinCost = coinCost;
 		this.likesCost = likesCost;
+		this.upgradeDescription = upgradeDescription;
 		// awake handler
 		this.scene.events.once("scene-awake", () => this.awake());
 
@@ -47,14 +56,17 @@ export default class CardPrefab extends Phaser.GameObjects.Container {
 
 	private coinCost: Phaser.GameObjects.Text;
 	private likesCost: Phaser.GameObjects.Text;
+	private upgradeDescription: Phaser.GameObjects.Text;
 	public Reverso: {key:string,frame?:string|number} = {"key":"reversoCard1"};
 	public buyed: boolean = false;
-	public cardNumber = 0;
+	public cardNumber: number = 0;
 
 	/* START-USER-CODE */
 	private static readonly CARD_SCALE = 0.61;
 	private static readonly FLIP_HALF_DURATION = 160;
 	private static readonly ANVERSO_TEXTURE_KEY = "AnversoCard";
+	private static readonly UPGRADE_LOCKED_COLOR = "#FF5F7E";
+	private static readonly UPGRADE_UNLOCKED_COLOR = "#72D7C7";
 	private cardImage!: Phaser.GameObjects.Image;
 	private isShowingAnverso = true;
 	private isFlipping = false;
@@ -194,6 +206,26 @@ export default class CardPrefab extends Phaser.GameObjects.Container {
 		this.likesCost.setText(String(likeCost));
 	}
 
+	public setUpgradeDescription(upgradeName: string, upgradeEffect = "") {
+		if (!upgradeName) {
+			this.upgradeDescription.setText("");
+			this.applyUpgradeDescriptionPresentation();
+			return;
+		}
+
+		this.upgradeDescription.setText(
+			upgradeEffect ? `${upgradeName}\n${upgradeEffect}` : upgradeName
+		);
+		this.applyUpgradeDescriptionPresentation();
+	}
+
+	private applyUpgradeDescriptionPresentation() {
+		this.upgradeDescription.setColor(
+			this.buyed ? CardPrefab.UPGRADE_UNLOCKED_COLOR : CardPrefab.UPGRADE_LOCKED_COLOR
+		);
+		this.upgradeDescription.setVisible(this.buyed || this.isShowingAnverso);
+	}
+
 	public beginPurchaseFlip() {
 		if (this.isFlipping || this.buyed) {
 			return;
@@ -267,6 +299,7 @@ export default class CardPrefab extends Phaser.GameObjects.Container {
 
 		this.applyReversoTexture();
 		this.cardImage.scaleX = this.baseCardScaleX;
+		this.applyUpgradeDescriptionPresentation();
 		this.setupInteractivity();
 	}
 
@@ -281,14 +314,16 @@ export default class CardPrefab extends Phaser.GameObjects.Container {
 			storeMomentCardAsBought(this.cardNumber);
 		}
 
+		this.applyUpgradeDescriptionPresentation();
 		this.setupInteractivity();
 	}
 
 	private applySideVisibility() {
-		const showCosts = this.isShowingAnverso;
+		const showCosts = this.isShowingAnverso && !this.buyed;
 
 		this.coinCost.setVisible(showCosts);
 		this.likesCost.setVisible(showCosts);
+		this.applyUpgradeDescriptionPresentation();
 	}
 
 	/* END-USER-CODE */

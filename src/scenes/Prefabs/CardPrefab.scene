@@ -61,6 +61,24 @@
                             "fontFamily": "Klop",
                             "fontSize": "54px",
                             "color": "#F8ECDA"
+                        },
+                        {
+                            "type": "Text",
+                            "id": "72697e0f-fed4-4098-9426-d37e814658f8",
+                            "label": "UpgradeDescription",
+                            "scope": "CLASS",
+                            "x": 1,
+                            "y": 361,
+                            "originX": 0.5,
+                            "originY": 0.5,
+                            "text": "Card upgrade description",
+                            "fixedWidth": 250,
+                            "fixedHeight": 200,
+                            "align": "center",
+                            "fontFamily": "Klop",
+                            "fontSize": "25px",
+                            "color": "#FF5F7E",
+                            "wordWrapWidth": 220
                         }
                     ]
                 }

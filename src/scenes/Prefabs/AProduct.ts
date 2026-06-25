@@ -6,6 +6,7 @@
 /* START-USER-IMPORTS */
 import Phaser from "phaser";
 import type Level from "../Level";
+import { getAdjustedFryDurationMs } from "../momentUpgradeBonuses";
 import { getProductCoinReward, type ProductSlotId } from "../productProgress";
 import ConfettiPrefab from "./ConfettiPrefab";
 /* END-USER-IMPORTS */
@@ -182,7 +183,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		});
 	}
 
-	private startDirectDelivery(client: { x: number; y: number; matchesProduct(product: AProduct): boolean; canReceiveDelivery(): boolean; consumeRequestAndExit(): void; }) {
+	private startDirectDelivery(client: { x: number; y: number; matchesProduct(product: AProduct): boolean; canReceiveDelivery(): boolean; receiveProductDelivery(product: AProduct): boolean; consumeRequestAndExit(): void; }) {
 
 		this.isAtWorkplace = false;
 		this.isReadyForDelivery = false;
@@ -221,7 +222,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 			&& !this.isSelectingDelivery;
 	}
 
-	public directDeliverToClient(client: { x: number; y: number; matchesProduct(product: AProduct): boolean; canReceiveDelivery(): boolean; consumeRequestAndExit(): void; }) {
+	public directDeliverToClient(client: { x: number; y: number; matchesProduct(product: AProduct): boolean; canReceiveDelivery(): boolean; receiveProductDelivery(product: AProduct): boolean; consumeRequestAndExit(): void; }) {
 
 		if (!this.canReceiveDirectDelivery()) {
 			return;
@@ -387,7 +388,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 			ease: "Sine.InOut"
 		});
 
-		this.fryTimer = this.scene.time.delayedCall(this.fryDuration, () => {
+		this.fryTimer = this.scene.time.delayedCall(getAdjustedFryDurationMs(this.fryDuration), () => {
 			this.finishFrying(fryerY);
 		});
 	}
@@ -665,7 +666,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		});
 	}
 
-	public deliverToClient(client: { x: number; y: number; matchesProduct(product: AProduct): boolean; canReceiveDelivery(): boolean; consumeRequestAndExit(showYum?: boolean): void; }) {
+	public deliverToClient(client: { x: number; y: number; matchesProduct(product: AProduct): boolean; canReceiveDelivery(): boolean; receiveProductDelivery(product: AProduct): boolean; consumeRequestAndExit(showYum?: boolean): void; }) {
 
 		if (!this.isSelectingDelivery) {
 			return;
@@ -704,7 +705,14 @@ export default class AProduct extends Phaser.GameObjects.Image {
 
 				if (client.matchesProduct(this)) {
 					levelScene.showCoinsAt(client.x, getProductCoinReward(this.getProductSlotId()));
-					client.consumeRequestAndExit(true);
+					const isOrderComplete = client.receiveProductDelivery(this);
+
+					if (isOrderComplete) {
+						client.consumeRequestAndExit(true);
+					} else {
+						this.scene.sound.play(`eating${Phaser.Math.Between(1, 3)}`);
+					}
+
 					this.destroy();
 					return;
 				}

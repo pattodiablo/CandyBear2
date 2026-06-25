@@ -8,7 +8,12 @@ import SceneSelectorBtn from "./Prefabs/SceneSelectorBtn";
 import Phaser from "phaser";
 import CardPrefab from "./Prefabs/CardPrefab";
 import dayHolderPrefab from "./Prefabs/dayHolderPrefab";
-import { getAllMomentCardCatalogEntries, getMomentCardCatalogEntry } from "./momentCardCatalog";
+import {
+	getAllMomentCardCatalogEntries,
+	getMomentCardCatalogEntry,
+	MOMENT_CARDS_PER_PAGE,
+	TOTAL_MOMENT_CARDS,
+} from "./momentCardCatalog";
 import { getTotalLikes, spendTotalLikes } from "./likeProgress";
 import { getHighestUnlockedLevel, getLevelStars, getStoredTotalCoins, spendTotalCoins } from "./levelProgress";
 import { isMomentCardBought } from "./momentProgress";
@@ -77,9 +82,8 @@ export default class SceneSelector extends Phaser.Scene {
 
 	/* START-USER-CODE */
 	private static readonly TOTAL_DAY_HOLDERS = 40;
-	private static readonly TOTAL_MOMENT_CARDS = 40;
 	private static readonly LEVELS_ITEMS_PER_PAGE = 10;
-	private static readonly MOMENTS_ITEMS_PER_PAGE = 5;
+	private static readonly MOMENTS_ITEMS_PER_PAGE = MOMENT_CARDS_PER_PAGE;
 	private static readonly ITEMS_PER_ROW = 5;
 	private static readonly SCENE_CENTER_X = 640;
 	private static readonly GRID_COLUMN_GAP = 215;
@@ -184,7 +188,7 @@ export default class SceneSelector extends Phaser.Scene {
 	}
 
 	private createMomentCards() {
-		for (let index = 0; index < SceneSelector.TOTAL_MOMENT_CARDS; index++) {
+		for (let index = 0; index < TOTAL_MOMENT_CARDS; index++) {
 			const { x, y } = this.getGridPosition(index, SceneSelector.MOMENTS_ITEMS_PER_PAGE, false);
 			const momentCard = new CardPrefab(this, x, y);
 			const cardNumber = index + 1;
@@ -195,6 +199,7 @@ export default class SceneSelector extends Phaser.Scene {
 			momentCard.Reverso = { key: cardEntry.reversoTextureKey };
 			momentCard.buyed = isMomentCardBought(cardNumber);
 			momentCard.setCosts(cardEntry.coinCost, cardEntry.likeCost);
+			momentCard.setUpgradeDescription(cardEntry.upgradeName, cardEntry.upgrade.effect);
 			momentCard.initializeCard();
 			momentCard.setVisible(false);
 			momentCard.on("purchase-request", () => {

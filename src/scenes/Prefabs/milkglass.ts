@@ -258,7 +258,7 @@ export default class milkglass extends Phaser.GameObjects.Image {
 			&& !this.isSelectingDelivery;
 	}
 
-	public directDeliverToClient(client: { x: number; y: number; matchesProduct(product: milkglass): boolean; canReceiveDelivery(): boolean; consumeRequestAndExit(showYum?: boolean): void; }) {
+	public directDeliverToClient(client: { x: number; y: number; matchesProduct(product: milkglass): boolean; canReceiveDelivery(): boolean; receiveProductDelivery(product: milkglass): boolean; consumeRequestAndExit(showYum?: boolean): void; }) {
 
 		if (!this.canReceiveDirectDelivery()) {
 			return;
@@ -296,7 +296,7 @@ export default class milkglass extends Phaser.GameObjects.Image {
 		});
 	}
 
-	public deliverToClient(client: { x: number; y: number; matchesProduct(product: milkglass): boolean; canReceiveDelivery(): boolean; consumeRequestAndExit(showYum?: boolean): void; }) {
+	public deliverToClient(client: { x: number; y: number; matchesProduct(product: milkglass): boolean; canReceiveDelivery(): boolean; receiveProductDelivery(product: milkglass): boolean; consumeRequestAndExit(showYum?: boolean): void; }) {
 
 		if (!this.isSelectingDelivery || !this.currentSlotId) {
 			return;
@@ -331,7 +331,14 @@ export default class milkglass extends Phaser.GameObjects.Image {
 
 				if (client.matchesProduct(this)) {
 					levelScene.showCoinsAt(client.x, getProductCoinReward("holder4"));
-					client.consumeRequestAndExit(true);
+					const isOrderComplete = client.receiveProductDelivery(this);
+
+					if (isOrderComplete) {
+						client.consumeRequestAndExit(true);
+					} else {
+						this.scene.sound.play(`eating${Phaser.Math.Between(1, 3)}`);
+					}
+
 					this.destroy();
 					return;
 				}
