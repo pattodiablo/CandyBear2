@@ -47,6 +47,7 @@ import {
 	type UnlockId,
 } from "./unlockCatalog";
 import { bindDeveloperCheatCode, DEVELOPER_CHEAT_COINS } from "./developerCheat";
+import { applySoftRainbowCameraFilter } from "../filters/softRainbowCameraFilter";
 import { getCookiesPerDayLimit } from "./momentUpgradeBonuses";
 
 interface LevelPlan {
@@ -3654,6 +3655,7 @@ export default class Level extends Phaser.Scene {
 		this.setupIntroOverlay();
 		this.setupMenuButton();
 		this.setupDeveloperCheat();
+	//	applySoftRainbowCameraFilter(this, { strength: 0.5, speed: 0.3});
 		this.playSceneIntro();
 	}
 

@@ -16,6 +16,7 @@ import {
 	type ClientRequestAppearance,
 } from "../clientOrderPool";
 import { getClientRequestWaitDurationMs } from "../momentUpgradeBonuses";
+import SmallHeartBurst from "./SmallHeartBurst";
 /* END-USER-IMPORTS */
 
 export default class AClient extends Phaser.GameObjects.Container {
@@ -71,6 +72,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 	private requestUrgencyTimer?: Phaser.Time.TimerEvent;
 	private requestExpiresAt = 0;
 	private requestIssuedAt = 0;
+	private initialOrderCount = 1;
 	private pendingProducts: ClientRequestAppearance[] = [];
 	private displayedProductIndex = 0;
 	private productCarouselTimer?: Phaser.Time.TimerEvent;
@@ -83,6 +85,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 	private static readonly QUESTION_LATE_MAX = 2200;
 
 	static readonly COOKIE_WAIT_BONUS_MS = 6000;
+	private static readonly PARTIAL_DELIVERY_HEART_Y_OFFSET = -48;
 	private static readonly QUICK_SERVICE_WINDOW_MS = 4000;
 	private static readonly QUESTION_FLOAT_START_REMAINING = 5000;
 	private static readonly URGENCY_UPDATE_INTERVAL = 100;
@@ -179,6 +182,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 			levelScene.getCurrentLevelNumber(),
 			levelScene.getCurrentLevelDifficulty()
 		);
+		this.initialOrderCount = orderCount;
 		this.pendingProducts = pickClientOrders(orderCount);
 		this.displayedProductIndex = 0;
 		this.showDisplayedProduct(false);
@@ -409,6 +413,8 @@ export default class AClient extends Phaser.GameObjects.Container {
 			return false;
 		}
 
+		const isMultiProductOrder = this.pendingProducts.length > 1;
+
 		this.pendingProducts.splice(matchedIndex, 1);
 
 		if (matchedIndex < this.displayedProductIndex) {
@@ -419,9 +425,27 @@ export default class AClient extends Phaser.GameObjects.Container {
 
 		if (this.hasActiveRequest()) {
 			this.syncProductCarouselAfterFulfillment();
+
+			if (isMultiProductOrder) {
+				this.grantPartialDeliveryPatienceBonus();
+			}
 		}
 
 		return !this.hasActiveRequest();
+	}
+
+	private grantPartialDeliveryPatienceBonus() {
+
+		if (!this.extendRequestWaitTime(AClient.COOKIE_WAIT_BONUS_MS)) {
+			return;
+		}
+
+		SmallHeartBurst.launchAt(
+			this.scene,
+			this.x,
+			this.y + AClient.PARTIAL_DELIVERY_HEART_Y_OFFSET,
+			this.depth + 2
+		);
 	}
 
 	public canReceiveDelivery() {
@@ -463,7 +487,9 @@ export default class AClient extends Phaser.GameObjects.Container {
 			return false;
 		}
 
-		return (this.scene.time.now - this.requestIssuedAt) <= AClient.QUICK_SERVICE_WINDOW_MS;
+		const quickServiceWindowMs = AClient.QUICK_SERVICE_WINDOW_MS * this.initialOrderCount;
+
+		return (this.scene.time.now - this.requestIssuedAt) <= quickServiceWindowMs;
 	}
 
 	public consumeRequestAndExit(showYum = false) {
@@ -522,6 +548,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 		this.pendingProducts = [];
 		this.displayedProductIndex = 0;
 		this.requestIssuedAt = 0;
+		this.initialOrderCount = 1;
 	}
 
 	private handleDestroyed() {

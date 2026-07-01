@@ -17,6 +17,7 @@ import {
 import { getTotalLikes, spendTotalLikes } from "./likeProgress";
 import { getHighestUnlockedLevel, getLevelStars, getStoredTotalCoins, spendTotalCoins } from "./levelProgress";
 import { isMomentCardBought } from "./momentProgress";
+import { applySoftRainbowCameraFilter } from "../filters/softRainbowCameraFilter";
 /* END-USER-IMPORTS */
 
 export default class SceneSelector extends Phaser.Scene {
@@ -146,6 +147,7 @@ export default class SceneSelector extends Phaser.Scene {
 		this.initializePagination();
 		this.refreshPage();
 		this.updateMomentsButtonAttention();
+		applySoftRainbowCameraFilter(this, { strength: 0.5, speed: 0.3});
 		this.startBackgroundMusic();
 	}
 

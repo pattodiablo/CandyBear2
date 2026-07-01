@@ -27,13 +27,34 @@ export default class SpineClient extends SpineGameObject {
 
 	/* START-USER-CODE */
 
-	private static readonly APPEARANCE_VARIANTS = [
-		{ body: "body", head: "head" },
-		{ body: "bodySkin1", head: "headSkin1" },
-		{ body: "bodySkin2", head: "headSkin2" },
-	] as const;
+	private static readonly APPEARANCE_VARIANTS = SpineClient.buildAppearanceVariants();
 
 	private appearanceVariantIndex = 0;
+
+	private static getHeadAttachmentName(skinIndex: number) {
+		if (skinIndex === 0) {
+			return "head";
+		}
+
+		if ([7, 8, 12, 13].includes(skinIndex)) {
+			return `headskin${skinIndex}`;
+		}
+
+		return `headSkin${skinIndex}`;
+	}
+
+	private static buildAppearanceVariants() {
+		const variants = [{ body: "body", head: "head" }];
+
+		for (let skinIndex = 1; skinIndex <= 15; skinIndex++) {
+			variants.push({
+				body: `bodySkin${skinIndex}`,
+				head: SpineClient.getHeadAttachmentName(skinIndex),
+			});
+		}
+
+		return variants;
+	}
 
 	private randomizeAppearance() {
 
