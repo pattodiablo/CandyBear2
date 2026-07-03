@@ -36,11 +36,22 @@ export default class SpineClient extends SpineGameObject {
 			return "head";
 		}
 
-		if ([7, 8, 12, 13].includes(skinIndex)) {
-			return `headskin${skinIndex}`;
+		return `headSkin${skinIndex}`;
+	}
+
+	private resolveHeadAttachmentName(skinIndex: number) {
+		const preferredName = SpineClient.getHeadAttachmentName(skinIndex);
+		const fallbackName = preferredName === "head"
+			? preferredName
+			: preferredName.replace("headSkin", "headskin");
+
+		for (const attachmentName of [preferredName, fallbackName]) {
+			if (this.skeleton.getAttachment("head", attachmentName)) {
+				return attachmentName;
+			}
 		}
 
-		return `headSkin${skinIndex}`;
+		return preferredName;
 	}
 
 	private static buildAppearanceVariants() {
@@ -65,7 +76,10 @@ export default class SpineClient extends SpineGameObject {
 		const variant = SpineClient.APPEARANCE_VARIANTS[this.appearanceVariantIndex];
 
 		this.skeleton.setAttachment("body", variant.body);
-		this.skeleton.setAttachment("head", variant.head);
+		this.skeleton.setAttachment(
+			"head",
+			this.resolveHeadAttachmentName(this.appearanceVariantIndex)
+		);
 	}
 
 	public getAppearanceVariantIndex() {

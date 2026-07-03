@@ -37,12 +37,35 @@ export default class AClient extends Phaser.GameObjects.Container {
 		const clientBear = new SpineClient(scene, scene.spine, 1, 9);
 		this.add(clientBear);
 
+		// order1
+		const order1 = scene.add.image(-52, -237, "_MISSING");
+		order1.visible = false;
+		this.add(order1);
+
+		// order2
+		const order2 = scene.add.image(0, -237, "_MISSING");
+		order2.visible = false;
+		this.add(order2);
+
+		// order_1
+		const order_1 = scene.add.image(52, -237, "_MISSING");
+		order_1.visible = false;
+		this.add(order_1);
+
 		this.clientQuestion = clientQuestion;
 		this.productSample = productSample;
 		this.clientBear = clientBear;
+		this.order1 = order1;
+		this.order2 = order2;
+		this.order_1 = order_1;
 
 		/* START-USER-CTR-CODE */
 		this.clientBear = clientBear;
+		this.orderIconSlots = [order1, order2, order_1];
+		this.orderIconSlotSizes = this.orderIconSlots.map((slot) => ({
+			width: slot.width > 0 ? slot.width : AClient.ORDER_ICON_FALLBACK_SIZE,
+			height: slot.height > 0 ? slot.height : AClient.ORDER_ICON_FALLBACK_SIZE,
+		}));
 		this.initialY = this.y;
 		this.clientQuestion.setAlpha(0);
 		this.initializeInteraction();
@@ -54,14 +77,11 @@ export default class AClient extends Phaser.GameObjects.Container {
 	private clientQuestion: Phaser.GameObjects.Image;
 	private productSample: Phaser.GameObjects.Image;
 	private clientBear: SpineClient;
+	private order1: Phaser.GameObjects.Image;
+	private order2: Phaser.GameObjects.Image;
+	private order_1: Phaser.GameObjects.Image;
 	public Product1_Chocolate: {key:string,frame?:string|number} = {"key":"Product1Chocolate"};
 	public Product1_Candy: {key:string,frame?:string|number} = {"key":"Product1Candy"};
-	public Product2_Chocolate: {key:string,frame?:string|number} = {"key":"Product2Chocolate"};
-	public Product2_Candy: {key:string,frame?:string|number} = {"key":"Product2Candy"};
-	public MilkGlass_Filled: {key:string,frame?:string|number} = {"key":"GlassAnim","frame":"Vaso0089.png"};
-	public MilkGlass_Green: {key:string,frame?:string|number} = {"key":"GreenGlass"};
-	public MilkGlass_Red: {key:string,frame?:string|number} = {"key":"RedGlass"};
-	public Sandwich_Filled: {key:string,frame?:string|number} = {"key":"sandWichAnim","frame":"sandwich0005.png"};
 	public ClientBack: {key:string,frame?:string|number} = {"key":"ClientBack"};
 
 	/* START-USER-CODE */
@@ -95,6 +115,10 @@ export default class AClient extends Phaser.GameObjects.Container {
 	private static readonly PRODUCT_DISPLAY_MS = 2000;
 	private static readonly PRODUCT_SWAP_OUT_MS = 180;
 	private static readonly PRODUCT_SWAP_IN_MS = 220;
+	private static readonly ORDER_ICON_FALLBACK_SIZE = 36;
+
+	private readonly orderIconSlots: Phaser.GameObjects.Image[];
+	private readonly orderIconSlotSizes: Array<{ width: number; height: number }>;
 
 	private hasActiveRequest() {
 		return this.pendingProducts.length > 0;
@@ -187,6 +211,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 		this.displayedProductIndex = 0;
 		this.showDisplayedProduct(false);
 		this.productSample.setVisible(true);
+		this.syncOrderMiniIcons();
 		this.startProductCarousel();
 		this.clientQuestion.setAlpha(0);
 		this.clientQuestion.setScale(0.4);
@@ -282,6 +307,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 
 		this.stopProductCarousel();
 		this.showDisplayedProduct(this.pendingProducts.length > 1);
+		this.syncOrderMiniIcons();
 		this.startProductCarousel();
 	}
 
@@ -539,6 +565,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 
 		this.stopRequestWaitTimer();
 		this.stopProductCarousel();
+		this.hideOrderMiniIcons();
 		this.scene.tweens.killTweensOf(this.productSample);
 		this.resetQuestionUrgencyAnimation();
 		this.clientQuestion.setAlpha(0);
@@ -561,14 +588,64 @@ export default class AClient extends Phaser.GameObjects.Container {
 		this.resetQuestionUrgencyAnimation();
 	}
 
-	private applyProductSample(appearance: { key: string; frame?: string | number }) {
+	private syncOrderMiniIcons() {
 
-		if (appearance.frame !== undefined) {
-			this.productSample.setTexture(appearance.key, appearance.frame);
+		this.hideOrderMiniIcons();
+
+		if (this.pendingProducts.length < 2) {
 			return;
 		}
 
-		this.productSample.setTexture(appearance.key);
+		const slotAssignments = this.pendingProducts.length === 2
+			? [this.order1, this.order_1]
+			: this.orderIconSlots;
+
+		this.pendingProducts.forEach((appearance, index) => {
+			const slot = slotAssignments[index];
+			const slotSize = this.orderIconSlotSizes[this.orderIconSlots.indexOf(slot)];
+
+			if (!slot || !slotSize) {
+				return;
+			}
+
+			this.applyAppearanceToImage(slot, appearance, slotSize.width, slotSize.height);
+			slot.setVisible(true);
+		});
+	}
+
+	private hideOrderMiniIcons() {
+
+		this.orderIconSlots.forEach((slot) => {
+			slot.setVisible(false);
+		});
+	}
+
+	private applyProductSample(appearance: ClientRequestAppearance) {
+
+		this.applyAppearanceToImage(this.productSample, appearance);
+	}
+
+	private applyAppearanceToImage(
+		image: Phaser.GameObjects.Image,
+		appearance: ClientRequestAppearance,
+		displayWidth?: number,
+		displayHeight?: number,
+	) {
+
+		if (appearance.frame !== undefined) {
+			image.setTexture(appearance.key, appearance.frame);
+		} else {
+			image.setTexture(appearance.key);
+		}
+
+		if (
+			displayWidth !== undefined
+			&& displayHeight !== undefined
+			&& displayWidth > 0
+			&& displayHeight > 0
+		) {
+			image.setDisplaySize(displayWidth, displayHeight);
+		}
 	}
 
 	private applyClientAppearance(appearance: { key: string; frame?: string | number }) {

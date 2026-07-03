@@ -52,6 +52,35 @@
                     "scope": "CLASS",
                     "x": 1,
                     "y": 9
+                },
+                {
+                    "type": "Image",
+                    "id": "4fd94f83-a5d5-46aa-9d8b-fed847c18639",
+                    "label": "order1",
+                    "scope": "CLASS",
+                    "texture": {},
+                    "x": -52,
+                    "y": -237,
+                    "visible": false
+                },
+                {
+                    "type": "Image",
+                    "id": "09702b7e-0712-49c2-9c31-e860796f837b",
+                    "label": "order2",
+                    "scope": "CLASS",
+                    "texture": {},
+                    "y": -237,
+                    "visible": false
+                },
+                {
+                    "type": "Image",
+                    "id": "15f10210-50f2-4f08-8e00-ba6d404ac139",
+                    "label": "order_1",
+                    "scope": "CLASS",
+                    "texture": {},
+                    "x": 52,
+                    "y": -237,
+                    "visible": false
                 }
             ]
         }
