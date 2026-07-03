@@ -48,24 +48,26 @@
             "y": 582
         },
         {
-            "type": "Image",
+            "prefabId": "c4f8e2a1-9b3d-4f6a-8c2e-1d5a7b9e0f31",
             "id": "8c644116-637e-49aa-a3aa-d0c7d2c2dbe6",
+            "unlock": [
+                "x",
+                "y"
+            ],
             "label": "fryer1",
             "scope": "PUBLIC",
-            "texture": {
-                "key": "Fryer"
-            },
             "x": 390,
             "y": 523
         },
         {
-            "type": "Image",
+            "prefabId": "c4f8e2a1-9b3d-4f6a-8c2e-1d5a7b9e0f31",
             "id": "790b2c24-41fe-4bbc-82cc-b60cebcccfc8",
+            "unlock": [
+                "x",
+                "y"
+            ],
             "label": "fryer2",
             "scope": "PUBLIC",
-            "texture": {
-                "key": "Fryer"
-            },
             "x": 390,
             "y": 654
         },

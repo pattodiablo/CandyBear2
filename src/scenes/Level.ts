@@ -5,6 +5,7 @@
 
 import milkMachine from "./Prefabs/milkMachine";
 import ToasterPrefab from "./Prefabs/ToasterPrefab";
+import FryerPrefab from "./Prefabs/FryerPrefab";
 import CookiesJar from "./Prefabs/CookiesJar";
 import AProduct from "./Prefabs/AProduct";
 import milkglass from "./Prefabs/milkglass";
@@ -93,10 +94,12 @@ export default class Level extends Phaser.Scene {
 		this.add.existing(toaster);
 
 		// fryer1
-		const fryer1 = this.add.image(390, 523, "Fryer");
+		const fryer1 = new FryerPrefab(this, 390, 523);
+		this.add.existing(fryer1);
 
 		// fryer2
-		const fryer2 = this.add.image(390, 654, "Fryer");
+		const fryer2 = new FryerPrefab(this, 390, 654);
+		this.add.existing(fryer2);
 
 		// holder1
 		const holder1 = this.add.image(80, 561, "Holder");
@@ -231,8 +234,8 @@ export default class Level extends Phaser.Scene {
 	private workstation!: Phaser.GameObjects.Image;
 	public milkmachine!: milkMachine;
 	public toaster!: ToasterPrefab;
-	public fryer1!: Phaser.GameObjects.Image;
-	public fryer2!: Phaser.GameObjects.Image;
+	public fryer1!: FryerPrefab;
+	public fryer2!: FryerPrefab;
 	private holder1!: Phaser.GameObjects.Image;
 	private holder2!: Phaser.GameObjects.Image;
 	private holder3!: Phaser.GameObjects.Image;
@@ -999,7 +1002,7 @@ export default class Level extends Phaser.Scene {
 				workstationId: "fryer2",
 				target: this.fryer2,
 				applyTexture: (textureKey) => {
-					this.fryer2.setTexture(textureKey);
+					this.fryer2.setFryerTexture(textureKey);
 				},
 				setEnabled: (enabled) => {
 					this.fryer2Enabled = enabled;
@@ -1883,6 +1886,21 @@ export default class Level extends Phaser.Scene {
 		if (fryerId === "fryer2") {
 			this.fryer2Occupied = false;
 		}
+	}
+
+	public playFryerAnimation(fryerId: "fryer1" | "fryer2") {
+
+		this.getFryerById(fryerId)?.playFryAnimation();
+	}
+
+	public resetFryerAppearance(fryerId: "fryer1" | "fryer2") {
+
+		this.getFryerById(fryerId)?.resetFryerAppearance();
+	}
+
+	private getFryerById(fryerId: "fryer1" | "fryer2") {
+
+		return fryerId === "fryer1" ? this.fryer1 : this.fryer2;
 	}
 
 	public claimAvailableWorkplace() {

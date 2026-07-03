@@ -1,0 +1,40 @@
+{
+    "id": "c4f8e2a1-9b3d-4f6a-8c2e-1d5a7b9e0f31",
+    "sceneType": "PREFAB",
+    "settings": {
+        "exportClass": true,
+        "autoImport": true,
+        "preloadMethodName": "",
+        "preloadPackFiles": [],
+        "createMethodName": "",
+        "compilerOutputLanguage": "TYPE_SCRIPT",
+        "borderWidth": 1280,
+        "borderHeight": 720
+    },
+    "displayList": [
+        {
+            "type": "Container",
+            "id": "f8a1b2c3-d4e5-4f67-8901-23456789abcd",
+            "label": "container_1",
+            "list": [
+                {
+                    "type": "Sprite",
+                    "id": "a9b8c7d6-e5f4-4321-9876-543210fedcba",
+                    "label": "fryer",
+                    "scope": "PUBLIC",
+                    "texture": {
+                        "key": "FryerAnim",
+                        "frame": 0
+                    }
+                }
+            ]
+        }
+    ],
+    "plainObjects": [],
+    "meta": {
+        "app": "Phaser Editor - Scene Editor",
+        "url": "https://phaser.io/editor",
+        "contentType": "phasereditor2d.core.scene.SceneContentType",
+        "version": 5
+    }
+}

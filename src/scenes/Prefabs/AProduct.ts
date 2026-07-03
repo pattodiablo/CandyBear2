@@ -457,8 +457,15 @@ export default class AProduct extends Phaser.GameObjects.Image {
 
 	private startFrying(fryerY: number) {
 
+		const levelScene = this.scene as Level;
+
 		this.isCooking = true;
 		this.isCooked = false;
+
+		if (this.currentFryerId) {
+			levelScene.playFryerAnimation(this.currentFryerId);
+		}
+
 		this.scene.sound.play(["fry", "fry2", "fry3"][Phaser.Math.Between(0, 2)]);
 		this.floatTween = this.scene.tweens.add({
 			targets: this,
@@ -475,6 +482,12 @@ export default class AProduct extends Phaser.GameObjects.Image {
 	}
 
 	private finishFrying(fryerY: number) {
+
+		const levelScene = this.scene as Level;
+
+		if (this.currentFryerId) {
+			levelScene.resetFryerAppearance(this.currentFryerId);
+		}
 
 		this.clearFryingState();
 		this.y = fryerY;

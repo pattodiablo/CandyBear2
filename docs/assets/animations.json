@@ -374,6 +374,39 @@
             "frameRate": 2,
             "skipMissedFrames": true,
             "randomFrame": false
+        },
+        {
+            "key": "fryerAnimation",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "FryerAnim",
+                    "frame": 0,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "FryerAnim",
+                    "frame": 1,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "FryerAnim",
+                    "frame": 2,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "FryerAnim",
+                    "frame": 3,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 6,
+            "skipMissedFrames": true,
+            "randomFrame": false
         }
     ],
     "globalTimeScale": 1,
