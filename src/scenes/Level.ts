@@ -1021,7 +1021,7 @@ export default class Level extends Phaser.Scene {
 				target: this.toaster,
 				lockOffsetY: -8,
 				applyTexture: (textureKey) => {
-					this.toaster.toaster.setTexture(textureKey);
+					this.toaster.setToasterTexture(textureKey);
 				},
 				setEnabled: (enabled) => {
 					this.toasterEnabled = enabled;

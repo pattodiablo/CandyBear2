@@ -346,6 +346,13 @@
                 "key": "milkProduct"
             },
             {
+                "url": [
+                    "assets/audio/MilkRefill.mp3"
+                ],
+                "type": "audio",
+                "key": "MilkRefill"
+            },
+            {
                 "url": "assets/nextdayBtn.png",
                 "type": "image",
                 "key": "nextdayBtn"
@@ -627,6 +634,19 @@
                 "url": "assets/toaster.png",
                 "type": "image",
                 "key": "toaster"
+            },
+            {
+                "url": "assets/toasterAnim.png",
+                "frameConfig": {
+                    "frameWidth": 193,
+                    "frameHeight": 262,
+                    "startFrame": 0,
+                    "endFrame": -1,
+                    "spacing": 0,
+                    "margin": 0
+                },
+                "type": "spritesheet",
+                "key": "toasterAnim"
             },
             {
                 "url": "assets/TutiorialHand.png",

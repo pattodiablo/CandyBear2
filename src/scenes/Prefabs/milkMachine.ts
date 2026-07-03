@@ -94,6 +94,7 @@ export default class milkMachine extends Phaser.GameObjects.Container {
 		slotSprite.setTexture("GlassAnim", milkMachine.DEFAULT_FRAME);
 		slotSprite.stop();
 		slotSprite.removeAllListeners(Phaser.Animations.Events.ANIMATION_COMPLETE);
+		this.scene.sound.play("MilkRefill");
 
 		if (!this.scene.anims.exists("MilkRefill")) {
 			slotSprite.setFrame(milkMachine.FILLED_FRAME);
@@ -104,7 +105,6 @@ export default class milkMachine extends Phaser.GameObjects.Container {
 		slotSprite.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
 			slotSprite.anims.timeScale = 1;
 			slotSprite.stop();
-			this.scene.sound.play(`pop${Phaser.Math.Between(1, 3)}`);
 			onComplete?.();
 		});
 		slotSprite.anims.timeScale = getMachineAnimationTimeScale(getMilkRefillSpeedBonus());

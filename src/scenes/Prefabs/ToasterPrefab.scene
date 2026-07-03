@@ -18,12 +18,13 @@
             "label": "container_1",
             "list": [
                 {
-                    "type": "Image",
+                    "type": "Sprite",
                     "id": "5f95a469-9b00-4666-9188-26cea93a1341",
                     "label": "toaster",
                     "scope": "PUBLIC",
                     "texture": {
-                        "key": "toaster"
+                        "key": "toasterAnim",
+                        "frame": 0
                     }
                 },
                 {

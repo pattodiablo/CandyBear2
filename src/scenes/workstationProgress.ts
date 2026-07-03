@@ -12,7 +12,7 @@ export const ACQUIRED_WORKSTATIONS_STORAGE_KEY = "candybear2-acquired-workstatio
 const UNLOCKED_TEXTURE_BY_WORKSTATION: Record<WorkstationId, string> = {
 	fryer2: "Fryer",
 	milkmachine: "Milkmachine",
-	toaster: "toaster",
+	toaster: "toasterAnim",
 	workplace2: "workplace",
 };
 
