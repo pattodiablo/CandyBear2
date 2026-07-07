@@ -114,6 +114,20 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		this.levelsButtonBaseScaleX = levelsBtn.scaleX;
 		this.levelsButtonBaseScaleY = levelsBtn.scaleY;
 		this.levelsButtonBaseY = levelsBtn.y;
+
+		this.upgradeAvailableMessage = scene.add.text(46, 292, "Upgrades disponibles", {
+			color: "#DF3D7A",
+			fontFamily: "Klop",
+			fontSize: "24px",
+			fontStyle: "bold",
+			align: "center",
+			stroke: "#fff8f3",
+			strokeThickness: 4,
+		});
+		this.upgradeAvailableMessage.setOrigin(0.5);
+		this.upgradeAvailableMessage.setVisible(false);
+		this.add(this.upgradeAvailableMessage);
+
 		this.disableLevelsButton();
 
 		this.dayLabelText = scene.add.text(44, -70, "Day 1", {
@@ -151,6 +165,9 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 	private static readonly STAR_POP_DURATION = 220;
 	private static readonly STAR_SETTLE_DURATION = 120;
 	private static readonly MAX_STARS = 3;
+	private static readonly UPGRADE_ATTENTION_MESSAGE_TOGGLE_DURATION = 700;
+	private static readonly UPGRADE_ATTENTION_SCALE_MULTIPLIER = 1.1;
+	private static readonly UPGRADE_ATTENTION_SCALE_DURATION = 900;
 	private starHolder!: Phaser.GameObjects.Image;
 	private readonly stars: Phaser.GameObjects.Image[];
 	private readonly starBaseScales: Array<{ scaleX: number; scaleY: number }>;
@@ -168,6 +185,10 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 	private isReadyButtonPressed = false;
 	private isNextDayButtonPressed = false;
 	private isLevelsButtonPressed = false;
+	private isLevelsUpgradeAttentionActive = false;
+	private upgradeAvailableMessage!: Phaser.GameObjects.Text;
+	private levelsUpgradeMessageToggleTimer?: Phaser.Time.TimerEvent;
+	private levelsButtonAttentionScaleTween?: Phaser.Tweens.Tween;
 
 	public enableReadyButton(onClick: () => void, onLevelsClick?: () => void) {
 		this.finalLabels.setVisible(false);
@@ -286,6 +307,11 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 				return;
 			}
 
+			if (this.isLevelsUpgradeAttentionActive) {
+				this.levelsButtonAttentionScaleTween?.stop();
+				this.levelsButtonAttentionScaleTween = undefined;
+			}
+
 			this.animateLevelsButton(
 				PanelPrefab.READY_BUTTON_HOVER_SCALE,
 				PanelPrefab.READY_BUTTON_HOVER_SCALE,
@@ -295,6 +321,11 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 
 		this.levelsBtn.on(Phaser.Input.Events.POINTER_OUT, () => {
 			if (this.isLevelsButtonPressed) {
+				return;
+			}
+
+			if (this.isLevelsUpgradeAttentionActive) {
+				this.resumeLevelsButtonAttentionScale();
 				return;
 			}
 
@@ -317,6 +348,7 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 
 	public disableLevelsButton() {
 
+		this.stopLevelsUpgradeAttention();
 		this.levelsBtn.setVisible(false);
 		this.levelsBtn.disableInteractive();
 		this.levelsBtn.removeAllListeners();
@@ -366,7 +398,8 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 	public showFinalState(
 		performance: LevelStarPerformance,
 		onNextDayClick?: () => void,
-		onLevelsClick?: () => void
+		onLevelsClick?: () => void,
+		showUpgradeAttention = false
 	) {
 
 		this.prepareFinalState();
@@ -374,11 +407,21 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 
 		this.revealEarnedStars(earnedStars, () => {
 			if (onNextDayClick) {
-				this.enableNextDayButton(onNextDayClick);
+				this.enableNextDayButton(() => {
+					this.stopLevelsUpgradeAttention();
+					onNextDayClick();
+				});
 			}
 
 			if (onLevelsClick) {
-				this.enableLevelsButton(onLevelsClick);
+				this.enableLevelsButton(() => {
+					this.stopLevelsUpgradeAttention();
+					onLevelsClick();
+				});
+			}
+
+			if (showUpgradeAttention && onLevelsClick) {
+				this.startLevelsUpgradeAttention();
 			}
 		});
 	}
@@ -511,7 +554,13 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 
 	private animateLevelsButton(scaleX: number, scaleY: number, y: number, onComplete?: () => void) {
 
-		this.scene.tweens.killTweensOf(this.levelsBtn);
+		if (this.isLevelsUpgradeAttentionActive) {
+			this.levelsButtonAttentionScaleTween?.stop();
+			this.levelsButtonAttentionScaleTween = undefined;
+		} else {
+			this.scene.tweens.killTweensOf(this.levelsBtn);
+		}
+
 		this.scene.tweens.add({
 			targets: this.levelsBtn,
 			scaleX,
@@ -521,6 +570,54 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 			ease: "Quad.Out",
 			onComplete,
 		});
+	}
+
+	private startLevelsUpgradeAttention() {
+		this.stopLevelsUpgradeAttention();
+		this.isLevelsUpgradeAttentionActive = true;
+		this.upgradeAvailableMessage.setVisible(true);
+		this.levelsBtn.setScale(this.levelsButtonBaseScaleX, this.levelsButtonBaseScaleY);
+
+		this.levelsUpgradeMessageToggleTimer = this.scene.time.addEvent({
+			delay: PanelPrefab.UPGRADE_ATTENTION_MESSAGE_TOGGLE_DURATION,
+			loop: true,
+			callback: () => {
+				this.upgradeAvailableMessage.setVisible(!this.upgradeAvailableMessage.visible);
+			},
+		});
+
+		this.resumeLevelsButtonAttentionScale();
+	}
+
+	private resumeLevelsButtonAttentionScale() {
+		if (!this.isLevelsUpgradeAttentionActive) {
+			return;
+		}
+
+		this.levelsButtonAttentionScaleTween?.stop();
+		this.levelsBtn.setScale(this.levelsButtonBaseScaleX, this.levelsButtonBaseScaleY);
+		this.levelsBtn.y = this.levelsButtonBaseY;
+
+		this.levelsButtonAttentionScaleTween = this.scene.tweens.add({
+			targets: this.levelsBtn,
+			scaleX: this.levelsButtonBaseScaleX * PanelPrefab.UPGRADE_ATTENTION_SCALE_MULTIPLIER,
+			scaleY: this.levelsButtonBaseScaleY * PanelPrefab.UPGRADE_ATTENTION_SCALE_MULTIPLIER,
+			duration: PanelPrefab.UPGRADE_ATTENTION_SCALE_DURATION,
+			yoyo: true,
+			repeat: -1,
+			ease: "Sine.InOut",
+		});
+	}
+
+	private stopLevelsUpgradeAttention() {
+		this.isLevelsUpgradeAttentionActive = false;
+		this.levelsUpgradeMessageToggleTimer?.remove(false);
+		this.levelsUpgradeMessageToggleTimer = undefined;
+		this.levelsButtonAttentionScaleTween?.stop();
+		this.levelsButtonAttentionScaleTween = undefined;
+		this.upgradeAvailableMessage?.setVisible(false);
+		this.levelsBtn.setScale(this.levelsButtonBaseScaleX, this.levelsButtonBaseScaleY);
+		this.levelsBtn.y = this.levelsButtonBaseY;
 	}
 
 	// Write your code here.
