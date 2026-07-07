@@ -51,6 +51,7 @@ export default class milkMachine extends Phaser.GameObjects.Container {
 	private machineBody!: Phaser.GameObjects.Image;
 	private static readonly DEFAULT_FRAME = "Vaso0001.png";
 	private static readonly FILLED_FRAME = "Vaso0089.png";
+	private static readonly GLASS_REST_Y_OFFSET = -10;
 	private readonly slotSprites: Record<MilkSlotId, Phaser.GameObjects.Sprite>;
 
 	private createSlotSprite(marker: Phaser.GameObjects.Image) {
@@ -82,31 +83,42 @@ export default class milkMachine extends Phaser.GameObjects.Container {
 		const marker = this.getSlotMarker(slotId);
 		const worldPoint = new Phaser.Math.Vector2();
 		this.getWorldTransformMatrix().transformPoint(marker.x, marker.y, worldPoint);
-		// Offset target slightly upward so milk glasses rest a bit above the marker
-		worldPoint.y -= 10;
+		worldPoint.y += milkMachine.GLASS_REST_Y_OFFSET;
 		return worldPoint;
 	}
 
-	public playMilkRefill(slotId: MilkSlotId, onComplete?: () => void) {
+	public playMilkRefillAtWorld(
+		slotId: MilkSlotId,
+		worldX: number,
+		worldY: number,
+		onComplete?: () => void,
+	) {
 
 		const slotSprite = this.getSlotSprite(slotId);
+		const marker = this.getSlotMarker(slotId);
+		const localPoint = new Phaser.Math.Vector2();
+		this.getWorldTransformMatrix().applyInverse(worldX, worldY, localPoint);
+		slotSprite.setPosition(localPoint.x, localPoint.y);
 		slotSprite.setVisible(true);
 		slotSprite.setTexture("GlassAnim", milkMachine.DEFAULT_FRAME);
 		slotSprite.stop();
 		slotSprite.removeAllListeners(Phaser.Animations.Events.ANIMATION_COMPLETE);
 		this.scene.sound.play("MilkRefill");
 
+		const finishRefill = () => {
+			slotSprite.anims.timeScale = 1;
+			slotSprite.stop();
+			slotSprite.setPosition(marker.x, marker.y);
+			onComplete?.();
+		};
+
 		if (!this.scene.anims.exists("MilkRefill")) {
 			slotSprite.setFrame(milkMachine.FILLED_FRAME);
-			onComplete?.();
+			finishRefill();
 			return slotSprite;
 		}
 
-		slotSprite.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
-			slotSprite.anims.timeScale = 1;
-			slotSprite.stop();
-			onComplete?.();
-		});
+		slotSprite.once(Phaser.Animations.Events.ANIMATION_COMPLETE, finishRefill);
 		slotSprite.anims.timeScale = getMachineAnimationTimeScale(getMilkRefillSpeedBonus());
 		slotSprite.play({ key: "MilkRefill", repeat: 0 });
 		return slotSprite;
@@ -115,7 +127,9 @@ export default class milkMachine extends Phaser.GameObjects.Container {
 	public clearSlot(slotId: MilkSlotId) {
 
 		const slotSprite = this.getSlotSprite(slotId);
+		const marker = this.getSlotMarker(slotId);
 		slotSprite.stop();
+		slotSprite.setPosition(marker.x, marker.y);
 		slotSprite.setVisible(false);
 		slotSprite.setTexture("GlassAnim", milkMachine.DEFAULT_FRAME);
 	}

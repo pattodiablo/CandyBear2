@@ -3427,24 +3427,45 @@ export default class Level extends Phaser.Scene {
 		}
 
 		if (!tutorialFocus || !hasPipeline) {
+			const hasSandwichRequest = this.hasActiveSandwichRequest();
+
 			for (const sandwich of this.getSceneSandwiches()) {
 				if (!sandwich.isAwaitingToasterPickup()) {
+					continue;
+				}
+
+				if (sandwich.canReceiveDirectDelivery()) {
+					if (!hasSandwichRequest) {
+						continue;
+					}
+
+					moves.push(this.makeHelpHandHint(
+						sandwich.x,
+						sandwich.y,
+						tutorialFocus ? "tutorial-toaster-pickup" : "toaster-pickup"
+					));
 					continue;
 				}
 
 				moves.push(this.makeHelpHandHint(
 					sandwich.x,
 					sandwich.y,
-					sandwich.canReceiveDirectDelivery() ? "toaster-pickup" : "toaster-discard"
+					tutorialFocus ? "tutorial-toaster-discard" : "toaster-discard"
 				));
 			}
 
-			const idleSandwich = this.getSceneSandwiches().find((sandwich) => (
-				sandwich.isIdleOnHolder() && this.hasAvailableToasterSlot() && isProductAcquired("holder3")
-			));
+			if (hasSandwichRequest) {
+				const idleSandwich = this.getSceneSandwiches().find((sandwich) => (
+					sandwich.isIdleOnHolder() && this.hasAvailableToasterSlot() && isProductAcquired("holder3")
+				));
 
-			if (idleSandwich) {
-				moves.push(this.makeHelpHandHint(idleSandwich.x, idleSandwich.y, "holder-sandwich"));
+				if (idleSandwich) {
+					moves.push(this.makeHelpHandHint(
+						idleSandwich.x,
+						idleSandwich.y,
+						tutorialFocus ? "tutorial-holder-sandwich" : "holder-sandwich"
+					));
+				}
 			}
 		}
 
@@ -3619,6 +3640,15 @@ export default class Level extends Phaser.Scene {
 		return this.children.list
 			.filter((child): child is sandwichPrefab => child instanceof sandwichPrefab)
 			.filter((sandwich) => sandwich.active);
+	}
+
+	private hasActiveSandwichRequest() {
+
+		return this.activeClients.some((client) => (
+			client.active
+			&& client.canReceiveDelivery()
+			&& client.getPendingRequestAppearances().some((appearance) => appearance.key === "sandWichAnim")
+		));
 	}
 
 	private getDeliveryHintClient(product: AProduct | milkglass | sandwichPrefab) {

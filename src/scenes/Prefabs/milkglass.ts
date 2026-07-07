@@ -11,6 +11,10 @@ import ConfettiPrefab from "./ConfettiPrefab";
 import type { FlavorType } from "./FlavorBottle";
 import { getFlavorGlassTextureKey } from "./FlavorBottle";
 import type { MilkSlotId } from "./milkMachine";
+import {
+	getMachineAnimationTimeScale,
+	getMilkRefillSpeedBonus,
+} from "../momentUpgradeBonuses";
 /* END-USER-IMPORTS */
 
 export default class milkglass extends Phaser.GameObjects.Image {
@@ -48,6 +52,9 @@ export default class milkglass extends Phaser.GameObjects.Image {
 	private static readonly FILLED_FRAME = "Vaso0089.png";
 	private static readonly MACHINE_SELECTION_SCALE = 1.2;
 	private static readonly SELECTION_TIMEOUT = 2500;
+	private static readonly REFILL_POP_PEAK_SCALE = 1.2;
+	private static readonly REFILL_POP_RISE_DURATION = 120;
+	private static readonly REFILL_POP_SETTLE_DURATION = 80;
 	private readonly baseScaleX: number;
 	private readonly baseScaleY: number;
 	private readonly baseX: number;
@@ -183,29 +190,41 @@ export default class milkglass extends Phaser.GameObjects.Image {
 		levelScene.registerHolderProductReplacement(this, replacementGlass);
 		this.playSwooshSound();
 
+		const restTarget = levelScene.milkmachine.getSlotTarget(targetSlot.id);
+
 		this.scene.tweens.add({
 			targets: this,
-			x: targetSlot.target.x,
-			y: targetSlot.target.y,
+			x: restTarget.x,
+			y: restTarget.y,
 			angle: this.baseAngle + milkglass.SPIN_ANGLE,
 			duration: 420,
 			ease: "Cubic.InOut",
 			onComplete: () => {
 				this.isRaised = false;
-				this.isLaunching = false;
 				this.angle = this.baseAngle;
+				this.snapToMachineRestPosition(targetSlot.id);
 				this.completeMilkRefill(targetSlot.id);
 			}
 		});
+	}
+
+	private snapToMachineRestPosition(slotId: MilkSlotId) {
+
+		const levelScene = this.scene as Level;
+		const restTarget = levelScene.milkmachine.getSlotTarget(slotId);
+		this.setPosition(restTarget.x, restTarget.y);
 	}
 
 	private completeMilkRefill(slotId: MilkSlotId) {
 
 		const levelScene = this.scene as Level;
 		this.currentSlotId = slotId;
+		this.snapToMachineRestPosition(slotId);
+		this.isLaunching = true;
 		this.disableInteractive();
 		this.setVisible(false);
-		levelScene.milkmachine.playMilkRefill(slotId, () => {
+
+		levelScene.milkmachine.playMilkRefillAtWorld(slotId, this.x, this.y, () => {
 			if (!this.active) {
 				return;
 			}
@@ -213,20 +232,53 @@ export default class milkglass extends Phaser.GameObjects.Image {
 			levelScene.milkmachine.clearSlot(slotId);
 			this.applyFilledAppearance();
 			this.setVisible(true);
-			this.setInteractive({
-				hitArea: new Phaser.Geom.Circle(
-					this.displayOriginX,
-					this.displayOriginY,
-					Math.max(this.width, this.height) * milkglass.HIT_AREA_SCALE * 0.5
-				),
-				hitAreaCallback: Phaser.Geom.Circle.Contains,
-				useHandCursor: true
+			this.playRefillPop(() => {
+				if (!this.active) {
+					return;
+				}
+
+				this.setInteractive({
+					hitArea: new Phaser.Geom.Circle(
+						this.displayOriginX,
+						this.displayOriginY,
+						Math.max(this.width, this.height) * milkglass.HIT_AREA_SCALE * 0.5
+					),
+					hitAreaCallback: Phaser.Geom.Circle.Contains,
+					useHandCursor: true
+				});
+				this.isAtMachine = true;
+				this.isReadyForDelivery = true;
+				this.isLaunching = false;
+				this.isRaised = false;
+				levelScene.tryAutoResolveFlavorSelection();
 			});
-			this.isAtMachine = true;
-			this.isReadyForDelivery = true;
-			this.isLaunching = false;
-			this.isRaised = false;
-			levelScene.tryAutoResolveFlavorSelection();
+		});
+	}
+
+	private playRefillPop(onComplete?: () => void) {
+
+		const timeScale = getMachineAnimationTimeScale(getMilkRefillSpeedBonus());
+		const riseDuration = milkglass.REFILL_POP_RISE_DURATION / timeScale;
+		const settleDuration = milkglass.REFILL_POP_SETTLE_DURATION / timeScale;
+
+		this.scene.tweens.killTweensOf(this);
+		this.setScale(this.baseScaleX, this.baseScaleY);
+		this.scene.tweens.add({
+			targets: this,
+			scaleX: this.baseScaleX * milkglass.REFILL_POP_PEAK_SCALE,
+			scaleY: this.baseScaleY * milkglass.REFILL_POP_PEAK_SCALE,
+			duration: riseDuration,
+			ease: "Back.Out",
+			onComplete: () => {
+				this.scene.tweens.add({
+					targets: this,
+					scaleX: this.baseScaleX,
+					scaleY: this.baseScaleY,
+					duration: settleDuration,
+					ease: "Sine.Out",
+					onComplete,
+				});
+			},
 		});
 	}
 
