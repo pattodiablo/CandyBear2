@@ -1,3 +1,7 @@
+import { getTotalLikes } from "./likeProgress";
+import { getStoredTotalCoins } from "./levelProgress";
+import { isMomentCardBought } from "./momentProgress";
+
 export interface MomentCardUpgradeDefinition {
 	name: string;
 	effect: string;
@@ -84,4 +88,15 @@ export function getMomentCardUpgradeName(cardNumber: number) {
 
 export function getAllMomentCardCatalogEntries() {
 	return MOMENT_CARD_CATALOG;
+}
+
+export function canAffordAnyMomentCard(
+	totalCoins = getStoredTotalCoins(),
+	totalLikes = getTotalLikes(),
+) {
+	return MOMENT_CARD_CATALOG.some((entry) => (
+		!isMomentCardBought(entry.cardNumber)
+		&& totalCoins >= entry.coinCost
+		&& totalLikes >= entry.likeCost
+	));
 }

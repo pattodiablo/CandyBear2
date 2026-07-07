@@ -397,6 +397,17 @@
             "scope": "PUBLIC",
             "x": 377,
             "y": 292
+        },
+        {
+            "type": "Image",
+            "id": "f9b3492c-2371-4efb-afb6-2de1f8f6cce7",
+            "label": "upgradeLabel",
+            "scope": "CLASS",
+            "texture": {
+                "key": "upgradeLabel"
+            },
+            "x": 1226,
+            "y": 127
         }
     ],
     "plainObjects": [],

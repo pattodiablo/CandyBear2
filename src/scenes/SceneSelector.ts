@@ -9,7 +9,7 @@ import Phaser from "phaser";
 import CardPrefab from "./Prefabs/CardPrefab";
 import dayHolderPrefab from "./Prefabs/dayHolderPrefab";
 import {
-	getAllMomentCardCatalogEntries,
+	canAffordAnyMomentCard,
 	getMomentCardCatalogEntry,
 	MOMENT_CARDS_PER_PAGE,
 	TOTAL_MOMENT_CARDS,
@@ -59,7 +59,7 @@ export default class SceneSelector extends Phaser.Scene {
 		const likeHeart = this.add.image(1235, 118, "likeHeart");
 
 		// momentsBtnPrefab (prefab fields)
-		momentsBtnPrefab.btnText = "Moments";
+		momentsBtnPrefab.btnText = "Upgrades";
 		momentsBtnPrefab.initialState = false;
 
 		this.nextPage = nextPage;
@@ -253,19 +253,8 @@ export default class SceneSelector extends Phaser.Scene {
 		this.updateMomentsButtonAttention();
 	}
 
-	private canAffordAnyMomentCard() {
-		const totalCoins = getStoredTotalCoins();
-		const totalLikes = getTotalLikes();
-
-		return getAllMomentCardCatalogEntries().some((entry) => (
-			!isMomentCardBought(entry.cardNumber)
-			&& totalCoins >= entry.coinCost
-			&& totalLikes >= entry.likeCost
-		));
-	}
-
 	private updateMomentsButtonAttention() {
-		const shouldBlink = this.activeTab === "levels" && this.canAffordAnyMomentCard();
+		const shouldBlink = this.activeTab === "levels" && canAffordAnyMomentCard();
 		this.momentsBtnPrefab.setAttentionActive(shouldBlink);
 	}
 

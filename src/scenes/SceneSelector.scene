@@ -71,7 +71,7 @@
             ],
             "label": "MomentsBtnPrefab",
             "scope": "CLASS",
-            "btnText": "Moments",
+            "btnText": "Upgrades",
             "initialState": false,
             "x": 809,
             "y": 91

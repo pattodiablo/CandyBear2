@@ -667,6 +667,11 @@
                 "key": "TutiorialHand"
             },
             {
+                "url": "assets/upgradeLabel.png",
+                "type": "image",
+                "key": "upgradeLabel"
+            },
+            {
                 "url": "assets/workplace.png",
                 "type": "image",
                 "key": "workplace"
