@@ -75,6 +75,18 @@
             cursor: wait;
         }
 
+        #mobile-launch-skip-button {
+            background: transparent;
+            color: rgba(255, 255, 255, 0.9);
+            border: 2px solid rgba(255, 255, 255, 0.35);
+            box-shadow: none;
+        }
+
+        #mobile-launch-skip-button:disabled {
+            opacity: 0.55;
+            cursor: wait;
+        }
+
         #mobile-flush-button {
             background: #fd7db6;
             color: #ffffff;
@@ -101,12 +113,13 @@
             line-height: 1.4;
         }
     </style>
-<script defer src="phaser-69325db5484b60dded91.bundle.js"></script><script defer src="main-83ac0d1938ac51df3083.bundle.js"></script></head>
+<script defer src="phaser-69325db5484b60dded91.bundle.js"></script><script defer src="main-3d2763d07ebf3beb0193.bundle.js"></script></head>
 
 <body>
     <div id="mobile-launch-overlay">
         <div id="mobile-launch-actions">
             <button id="mobile-launch-button" class="mobile-launch-button" type="button" disabled>Loading game...</button>
+            <button id="mobile-launch-skip-button" class="mobile-launch-button" type="button" disabled>Skip</button>
             <button id="mobile-flush-button" class="mobile-launch-button" type="button">Clear Saved Data</button>
             <div id="mobile-flush-status" aria-live="polite"></div>
         </div>
@@ -135,6 +148,7 @@
 
             const overlay = document.getElementById("mobile-launch-overlay");
             const launchButton = document.getElementById("mobile-launch-button");
+            const skipButton = document.getElementById("mobile-launch-skip-button");
             const flushButton = document.getElementById("mobile-flush-button");
             const flushStatus = document.getElementById("mobile-flush-status");
 
@@ -203,23 +217,32 @@
                 }, { once: true });
             };
 
-            const launchGame = async () => {
+            const launchGame = async (useFullscreen = true) => {
                 if (launchButton.disabled) {
                     return;
                 }
 
                 launchButton.disabled = true;
+                skipButton.disabled = true;
                 overlay.classList.remove("visible");
                 expandBrowserArea();
                 bootGame();
-                await requestFullscreen();
+
+                if (useFullscreen) {
+                    await requestFullscreen();
+                }
+
                 refreshGameScale();
                 window.requestAnimationFrame(() => {
                     refreshGameScale();
                     window.requestAnimationFrame(refreshGameScale);
                 });
                 window.setTimeout(refreshGameScale, 200);
-                await lockOrientation();
+
+                if (useFullscreen) {
+                    await lockOrientation();
+                }
+
                 window.setTimeout(refreshGameScale, 400);
             };
 
@@ -236,19 +259,21 @@
                 flushStatus.textContent = "Saved data cleared. Tap play to start fresh.";
             };
 
-            const enableLaunchButton = () => {
+            const enableLaunchButtons = () => {
                 launchButton.disabled = false;
+                skipButton.disabled = false;
                 launchButton.textContent = "Tap To Play Fullscreen";
             };
 
             overlay.classList.add("visible");
-            launchButton.addEventListener("click", launchGame, { once: true });
+            launchButton.addEventListener("click", () => launchGame(true), { once: true });
+            skipButton.addEventListener("click", () => launchGame(false), { once: true });
             flushButton.addEventListener("click", flushStoredProgress);
 
             if (typeof window.bootCandyBearGame === "function") {
-                enableLaunchButton();
+                enableLaunchButtons();
             } else {
-                window.addEventListener("candybear-game-ready", enableLaunchButton, { once: true });
+                window.addEventListener("candybear-game-ready", enableLaunchButtons, { once: true });
             }
         })();
     </script>

@@ -308,9 +308,10 @@ export default class Level extends Phaser.Scene {
 	private static readonly DAY_INDICATOR_CENTER_OFFSET_X = 100;
 	private static readonly DAY_INDICATOR_Y = 40;
 	private static readonly LIKE_HEART_Y = 265;
-	private static readonly LIKES_COUNTER_Y = 82;
+	private static readonly LIKES_COUNTER_Y = 96;
 	private static readonly LIKE_HEART_ICON_X = 55;
-	private static readonly LIKE_HEART_ICON_SCALE = 0.42;
+	private static readonly LIKE_HEART_ICON_OFFSET_Y = 12;
+	private static readonly LIKE_HEART_ICON_SCALE = 0.52;
 	private static readonly REWARD_COIN_Y = 307;
 	private static readonly REWARD_COIN_LAND_Y = 422;
 	private static readonly REWARD_COIN_RISE = 18;
@@ -734,7 +735,11 @@ export default class Level extends Phaser.Scene {
 		const likeY = Level.LIKES_COUNTER_Y;
 
 		// Heart icon below the coins (static, not the animated flying one)
-		const heart = this.add.image(Level.LIKE_HEART_ICON_X, likeY + 10, "likeHeart");
+		const heart = this.add.image(
+			Level.LIKE_HEART_ICON_X,
+			likeY + Level.LIKE_HEART_ICON_OFFSET_Y,
+			"likeHeart"
+		);
 		heart.setScale(Level.LIKE_HEART_ICON_SCALE);
 		heart.setScrollFactor(0);
 		heart.setDepth(this.workstation.depth + 10);
@@ -2264,13 +2269,25 @@ export default class Level extends Phaser.Scene {
 
 		if (this.cookieJar?.active) {
 			this.cookieJar.setTexture(Level.COOKIE_JAR_TEXTURE);
+			this.updateCookieJarBadge();
 		}
+	}
+
+	private updateCookieJarBadge() {
+
+		if (!this.cookieJar?.active) {
+			return;
+		}
+
+		const remainingCookies = Math.max(0, this.getCookiesPerDayLimit() - this.cookiesUsedThisDay);
+		this.cookieJar.setRemainingCookies(remainingCookies);
 	}
 
 	private depleteCookieJar() {
 
 		this.isCookieJarDepleted = true;
 		this.cookieJar.setTexture(Level.EMPTY_COOKIE_JAR_TEXTURE);
+		this.updateCookieJarBadge();
 		this.clearCookieJarRefillTimer();
 		this.cookieJarRefillTimer = this.time.delayedCall(
 			this.getCookieJarRefillDurationMs(),
@@ -2291,6 +2308,7 @@ export default class Level extends Phaser.Scene {
 		this.isCookieJarDepleted = false;
 		this.cookiesUsedThisDay = 0;
 		this.cookieJar.setTexture(Level.COOKIE_JAR_TEXTURE);
+		this.updateCookieJarBadge();
 	}
 
 	public getMostDesperateClient() {
@@ -2332,6 +2350,7 @@ export default class Level extends Phaser.Scene {
 		});
 
 		this.cookiesUsedThisDay++;
+		this.updateCookieJarBadge();
 
 		if (this.cookiesUsedThisDay >= this.getCookiesPerDayLimit()) {
 			this.depleteCookieJar();
@@ -3666,6 +3685,7 @@ export default class Level extends Phaser.Scene {
 
 		this.flushLoadedContent();
 		this.editorCreate();
+		this.updateCookieJarBadge();
 		this.applyLevelProgression();
 		this.panelRestY = this.panel.y;
 		this.applyLevelPlanToIntroPanel();

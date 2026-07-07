@@ -18,18 +18,20 @@
     "sceneType": "PREFAB",
     "displayList": [
         {
-            "unlock": [
-                "x",
-                "y"
-            ],
-            "type": "Image",
+            "type": "Container",
             "id": "54a76b73-f3c1-42a5-8dd1-718ef72e34ba",
-            "label": "cookieJar",
-            "texture": {
-                "key": "cookieJar"
-            },
-            "x": 0,
-            "y": 0
+            "label": "container_1",
+            "list": [
+                {
+                    "type": "Image",
+                    "id": "a1b2c3d4-e5f6-4789-a012-3456789abcde",
+                    "label": "jarImage",
+                    "scope": "CLASS",
+                    "texture": {
+                        "key": "cookieJar"
+                    }
+                }
+            ]
         }
     ],
     "meta": {
