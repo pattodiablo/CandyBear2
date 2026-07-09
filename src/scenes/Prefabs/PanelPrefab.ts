@@ -111,29 +111,26 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		this.nextDayButtonBaseScaleX = nextdayBtn.scaleX;
 		this.nextDayButtonBaseScaleY = nextdayBtn.scaleY;
 		this.nextDayButtonBaseY = nextdayBtn.y;
-		this.levelsButtonBaseScaleX = levelsBtn.scaleX;
-		this.levelsButtonBaseScaleY = levelsBtn.scaleY;
-		this.levelsButtonBaseY = levelsBtn.y;
-
 		this.upgradeAvailableMessage = scene.add.text(
 			levelsBtn.x,
-			levelsBtn.y + PanelPrefab.UPGRADE_MESSAGE_OFFSET_Y,
+			0,
 			"Upgrades disponibles",
 			{
 				color: "#DF3D7A",
 				fontFamily: "Klop",
-				fontSize: "24px",
+				fontSize: "22px",
 				fontStyle: "bold",
 				align: "center",
 				stroke: "#fff8f3",
 				strokeThickness: 4,
 			}
 		);
-		this.upgradeAvailableMessage.setOrigin(0.5);
+		this.upgradeAvailableMessage.setOrigin(0.5, 0);
 		this.upgradeAvailableMessage.setDepth(PanelPrefab.UPGRADE_MESSAGE_DEPTH);
 		this.upgradeAvailableMessage.setVisible(false);
 		this.add(this.upgradeAvailableMessage);
 
+		this.applyFinalButtonLayout();
 		this.disableLevelsButton();
 
 		this.dayLabelText = scene.add.text(44, -70, "Day 1", {
@@ -174,8 +171,11 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 	private static readonly UPGRADE_ATTENTION_MESSAGE_TOGGLE_DURATION = 700;
 	private static readonly UPGRADE_ATTENTION_SCALE_MULTIPLIER = 1.1;
 	private static readonly UPGRADE_ATTENTION_SCALE_DURATION = 900;
-	private static readonly UPGRADE_MESSAGE_OFFSET_Y = 52;
+	private static readonly UPGRADE_MESSAGE_GAP = 8;
 	private static readonly UPGRADE_MESSAGE_DEPTH = 12;
+	private static readonly FINAL_BUTTON_SCALE = 0.7;
+	private static readonly FINAL_NEXT_DAY_BUTTON_Y = 125;
+	private static readonly FINAL_LEVELS_BUTTON_Y = 200;
 	private starHolder!: Phaser.GameObjects.Image;
 	private readonly stars: Phaser.GameObjects.Image[];
 	private readonly starBaseScales: Array<{ scaleX: number; scaleY: number }>;
@@ -392,6 +392,7 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 	public prepareFinalState() {
 
 		this.clearStarRevealTimers();
+		this.applyFinalButtonLayout();
 		this.disableReadyButton();
 		this.disableNextDayButton();
 		this.disableLevelsButton();
@@ -580,11 +581,28 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		});
 	}
 
+	private applyFinalButtonLayout() {
+		this.nextdayBtn.setScale(PanelPrefab.FINAL_BUTTON_SCALE);
+		this.levelsBtn.setScale(PanelPrefab.FINAL_BUTTON_SCALE);
+		this.nextdayBtn.setY(PanelPrefab.FINAL_NEXT_DAY_BUTTON_Y);
+		this.levelsBtn.setY(PanelPrefab.FINAL_LEVELS_BUTTON_Y);
+
+		this.nextDayButtonBaseScaleX = PanelPrefab.FINAL_BUTTON_SCALE;
+		this.nextDayButtonBaseScaleY = PanelPrefab.FINAL_BUTTON_SCALE;
+		this.nextDayButtonBaseY = PanelPrefab.FINAL_NEXT_DAY_BUTTON_Y;
+		this.levelsButtonBaseScaleX = PanelPrefab.FINAL_BUTTON_SCALE;
+		this.levelsButtonBaseScaleY = PanelPrefab.FINAL_BUTTON_SCALE;
+		this.levelsButtonBaseY = PanelPrefab.FINAL_LEVELS_BUTTON_Y;
+
+		this.applyUpgradeMessageLayout();
+	}
+
 	private applyUpgradeMessageLayout() {
-		this.upgradeAvailableMessage.setPosition(
-			this.levelsBtn.x,
-			this.levelsBtn.y + PanelPrefab.UPGRADE_MESSAGE_OFFSET_Y
-		);
+		const messageY = this.levelsBtn.y
+			+ (this.levelsBtn.displayHeight * 0.5)
+			+ PanelPrefab.UPGRADE_MESSAGE_GAP;
+
+		this.upgradeAvailableMessage.setPosition(this.levelsBtn.x, messageY);
 	}
 
 	private startLevelsUpgradeAttention() {

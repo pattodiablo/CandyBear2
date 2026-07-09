@@ -383,8 +383,15 @@ export default class Level extends Phaser.Scene {
 	private levelPrepTimer?: Phaser.Time.TimerEvent;
 	private clientSpawnRetryTimer?: Phaser.Time.TimerEvent;
 	private exitConfirmContainer?: Phaser.GameObjects.Container;
+	private exitConfirmMessage?: Phaser.GameObjects.Text;
 	private exitConfirmYesButton?: Phaser.GameObjects.Container;
 	private exitConfirmNoButton?: Phaser.GameObjects.Container;
+	private exitConfirmUpgradeMessage?: Phaser.GameObjects.Text;
+	private exitConfirmUpgradeBlinkTween?: Phaser.Tweens.Tween;
+	private upgradeLabelBaseY = 0;
+	private isUpgradeLabelAttentionActive = false;
+	private upgradeLabelBlinkTween?: Phaser.Tweens.Tween;
+	private upgradeLabelFloatTween?: Phaser.Tweens.Tween;
 	private unlockPanelContainer?: Phaser.GameObjects.Container;
 	private unlockPreviewImage?: Phaser.GameObjects.Image;
 	private unlockNameText?: Phaser.GameObjects.Text;
@@ -399,13 +406,31 @@ export default class Level extends Phaser.Scene {
 	private savedGameplayTimeScale = 1;
 	private static readonly EXIT_CONFIRM_DEPTH = 1002;
 	private static readonly MENU_BUTTON_DEPTH_OFFSET = 11;
+	private static readonly HUD_MENU_DEPTH_OFFSET = 12;
+	private static readonly UPGRADE_LABEL_MENU_OFFSET_Y = 72;
+	private static readonly UPGRADE_LABEL_FLOAT_DISTANCE = 8;
+	private static readonly UPGRADE_LABEL_FLOAT_DURATION = 900;
+	private static readonly UPGRADE_LABEL_BLINK_DURATION = 420;
+	private static readonly UPGRADE_LABEL_BLINK_ALPHA = 0.35;
 	private static readonly EXIT_BUTTON_PADDING_X = 32;
 	private static readonly EXIT_BUTTON_PADDING_Y = 10;
+	private static readonly EXIT_BUTTON_WIDTH = 230;
 	private static readonly EXIT_BUTTON_CORNER_RADIUS = 18;
 	private static readonly EXIT_BUTTON_STROKE_WIDTH = 4;
 	private static readonly EXIT_BUTTON_TEXT_COLOR = "#ffffff";
-	private static readonly EXIT_BUTTON_YES_Y = 22;
-	private static readonly EXIT_BUTTON_NO_Y = 122;
+	private static readonly EXIT_BUTTON_YES_Y = 32;
+	private static readonly EXIT_BUTTON_NO_Y = 132;
+	private static readonly EXIT_UPGRADE_MESSAGE_GAP = 14;
+	private static readonly EXIT_LAYOUT_STANDARD = {
+		messageY: -52,
+		yesY: Level.EXIT_BUTTON_YES_Y,
+		noY: Level.EXIT_BUTTON_NO_Y,
+	};
+	private static readonly EXIT_LAYOUT_WITH_UPGRADE = {
+		messageY: -88,
+		yesY: 0,
+		noY: 88,
+	};
 	private static readonly UNLOCK_PREVIEW_Y = -118;
 	private static readonly UNLOCK_PREVIEW_SCALE = 0.55;
 	private static readonly UNLOCK_NAME_Y = -28;
@@ -1249,10 +1274,123 @@ export default class Level extends Phaser.Scene {
 		}
 	}
 
+	private getHudMenuDepth() {
+
+		return this.workstation.depth + Level.HUD_MENU_DEPTH_OFFSET;
+	}
+
+	private setupUpgradeLabel() {
+
+		const upgradeLabel = this.upgradeLabel;
+
+		if (!upgradeLabel) {
+			return;
+		}
+
+		upgradeLabel.setPosition(
+			this.menuBtn.x,
+			this.menuBtn.y + Level.UPGRADE_LABEL_MENU_OFFSET_Y
+		);
+		this.upgradeLabelBaseY = upgradeLabel.y;
+		upgradeLabel.setScrollFactor(0);
+		upgradeLabel.setDepth(this.getHudMenuDepth());
+		upgradeLabel.setVisible(false);
+		upgradeLabel.setAlpha(1);
+		this.isUpgradeLabelAttentionActive = false;
+		this.updateUpgradeLabelAttention();
+	}
+
+	private updateUpgradeLabelAttention() {
+
+		const upgradeLabel = this.upgradeLabel;
+
+		if (!upgradeLabel) {
+			return;
+		}
+
+		const shouldShowAttention = canAffordAnyMomentCard(this.coinCount, getTotalLikes());
+
+		if (!shouldShowAttention) {
+			if (this.isUpgradeLabelAttentionActive) {
+				this.isUpgradeLabelAttentionActive = false;
+				this.stopUpgradeLabelAttention();
+				upgradeLabel.setVisible(false);
+			}
+
+			return;
+		}
+
+		upgradeLabel.setVisible(true);
+		upgradeLabel.setDepth(this.getHudMenuDepth());
+
+		if (this.isUpgradeLabelAttentionActive) {
+			return;
+		}
+
+		this.isUpgradeLabelAttentionActive = true;
+		this.startUpgradeLabelAttention();
+	}
+
+	private startUpgradeLabelAttention() {
+
+		const upgradeLabel = this.upgradeLabel;
+
+		if (!upgradeLabel) {
+			return;
+		}
+
+		this.stopUpgradeLabelAttentionTween();
+		upgradeLabel.setAlpha(1);
+		upgradeLabel.y = this.upgradeLabelBaseY;
+
+		this.upgradeLabelBlinkTween = this.tweens.add({
+			targets: upgradeLabel,
+			alpha: {
+				from: 1,
+				to: Level.UPGRADE_LABEL_BLINK_ALPHA,
+			},
+			duration: Level.UPGRADE_LABEL_BLINK_DURATION,
+			yoyo: true,
+			repeat: -1,
+			ease: "Sine.InOut",
+		});
+
+		this.upgradeLabelFloatTween = this.tweens.add({
+			targets: upgradeLabel,
+			y: this.upgradeLabelBaseY - Level.UPGRADE_LABEL_FLOAT_DISTANCE,
+			duration: Level.UPGRADE_LABEL_FLOAT_DURATION,
+			yoyo: true,
+			repeat: -1,
+			ease: "Sine.InOut",
+		});
+	}
+
+	private stopUpgradeLabelAttentionTween() {
+
+		this.upgradeLabelBlinkTween?.stop();
+		this.upgradeLabelBlinkTween = undefined;
+		this.upgradeLabelFloatTween?.stop();
+		this.upgradeLabelFloatTween = undefined;
+	}
+
+	private stopUpgradeLabelAttention() {
+
+		const upgradeLabel = this.upgradeLabel;
+
+		this.stopUpgradeLabelAttentionTween();
+
+		if (!upgradeLabel) {
+			return;
+		}
+
+		upgradeLabel.setAlpha(1);
+		upgradeLabel.y = this.upgradeLabelBaseY;
+	}
+
 	private setupMenuButton() {
 
 		this.menuBtn.setScrollFactor(0);
-		this.menuBtn.setDepth(this.workstation.depth + Level.MENU_BUTTON_DEPTH_OFFSET);
+		this.menuBtn.setDepth(this.getHudMenuDepth());
 		this.menuBtn.setInteractive({ useHandCursor: true });
 
 		this.menuBtn.on(Phaser.Input.Events.POINTER_OVER, () => {
@@ -1283,7 +1421,7 @@ export default class Level extends Phaser.Scene {
 		background.setScale(0.75);
 		container.add(background);
 
-		const message = this.add.text(0, -70, "Are you sure\nto exit?", {
+		this.exitConfirmMessage = this.add.text(0, Level.EXIT_LAYOUT_STANDARD.messageY, "Are you sure\nto exit?", {
 			color: "#DF3D7A",
 			fontFamily: "Klop",
 			fontSize: "42px",
@@ -1292,12 +1430,30 @@ export default class Level extends Phaser.Scene {
 			stroke: "#fff8f3",
 			strokeThickness: 6,
 		});
-		message.setOrigin(0.5);
-		container.add(message);
+		this.exitConfirmMessage.setOrigin(0.5);
+		container.add(this.exitConfirmMessage);
 
-		this.exitConfirmYesButton = this.createExitDialogButton(0, Level.EXIT_BUTTON_YES_Y, "Yes");
-		this.exitConfirmNoButton = this.createExitDialogButton(0, Level.EXIT_BUTTON_NO_Y, "No");
+		this.exitConfirmYesButton = this.createExitDialogButton(0, Level.EXIT_LAYOUT_STANDARD.yesY, "Yes");
+		this.exitConfirmNoButton = this.createExitDialogButton(0, Level.EXIT_LAYOUT_STANDARD.noY, "No");
 		container.add([this.exitConfirmYesButton, this.exitConfirmNoButton]);
+
+		this.exitConfirmUpgradeMessage = this.add.text(
+			0,
+			0,
+			"New upgrades await in the\nmain menu!",
+			{
+				color: "#DF3D7A",
+				fontFamily: "Klop",
+				fontSize: "26px",
+				fontStyle: "bold",
+				align: "center",
+				stroke: "#fff8f3",
+				strokeThickness: 4,
+			}
+		);
+		this.exitConfirmUpgradeMessage.setOrigin(0.5, 0);
+		this.exitConfirmUpgradeMessage.setVisible(false);
+		container.add(this.exitConfirmUpgradeMessage);
 
 		container.setScrollFactor(0);
 		container.setDepth(Level.EXIT_CONFIRM_DEPTH);
@@ -1306,7 +1462,12 @@ export default class Level extends Phaser.Scene {
 		this.exitConfirmContainer = container;
 	}
 
-	private createExitDialogButton(x: number, y: number, label: string) {
+	private createExitDialogButton(
+		x: number,
+		y: number,
+		label: string,
+		buttonWidth = Level.EXIT_BUTTON_WIDTH,
+	) {
 
 		const container = this.add.container(x, y);
 		const labelText = this.add.text(0, 0, label, {
@@ -1318,8 +1479,6 @@ export default class Level extends Phaser.Scene {
 			strokeThickness: 4,
 		});
 		labelText.setOrigin(0.5);
-
-		const buttonWidth = labelText.width + (Level.EXIT_BUTTON_PADDING_X * 2);
 		const buttonHeight = labelText.height + (Level.EXIT_BUTTON_PADDING_Y * 2);
 		const halfButtonWidth = buttonWidth * 0.5;
 		const halfButtonHeight = buttonHeight * 0.5;
@@ -1428,6 +1587,7 @@ export default class Level extends Phaser.Scene {
 		this.isExitConfirmVisible = true;
 		this.bindExitConfirmationButtons();
 		this.menuBtn.setScale(1);
+		this.updateExitUpgradeMessageAttention();
 
 		this.blurOverlay.setVisible(true);
 		this.blurOverlay.setAlpha(1);
@@ -1452,8 +1612,73 @@ export default class Level extends Phaser.Scene {
 		this.exitConfirmContainer.setAlpha(0);
 		this.exitConfirmYesButton?.setScale(1);
 		this.exitConfirmNoButton?.setScale(1);
+		this.stopExitUpgradeMessageAttention();
+		this.applyExitConfirmationLayout(false);
 		this.resumeGameplay();
 		this.hideModalOverlayIfIdle();
+	}
+
+	private applyExitConfirmationLayout(hasUpgradeMessage: boolean) {
+
+		const layout = hasUpgradeMessage
+			? Level.EXIT_LAYOUT_WITH_UPGRADE
+			: Level.EXIT_LAYOUT_STANDARD;
+
+		this.exitConfirmMessage?.setY(layout.messageY);
+		this.exitConfirmYesButton?.setY(layout.yesY);
+		this.exitConfirmNoButton?.setY(layout.noY);
+
+		if (!this.exitConfirmUpgradeMessage || !this.exitConfirmNoButton) {
+			return;
+		}
+
+		if (hasUpgradeMessage) {
+			const noButtonBottom = layout.noY + (this.exitConfirmNoButton.displayHeight * 0.5);
+			this.exitConfirmUpgradeMessage.setY(
+				noButtonBottom + Level.EXIT_UPGRADE_MESSAGE_GAP
+			);
+		}
+	}
+
+	private updateExitUpgradeMessageAttention() {
+
+		const upgradeMessage = this.exitConfirmUpgradeMessage;
+
+		if (!upgradeMessage) {
+			return;
+		}
+
+		this.stopExitUpgradeMessageAttention();
+
+		const hasUpgradeMessage = canAffordAnyMomentCard(this.coinCount, getTotalLikes());
+		this.applyExitConfirmationLayout(hasUpgradeMessage);
+
+		if (!hasUpgradeMessage) {
+			upgradeMessage.setVisible(false);
+			upgradeMessage.setAlpha(1);
+			return;
+		}
+
+		upgradeMessage.setVisible(true);
+		upgradeMessage.setAlpha(1);
+		this.exitConfirmUpgradeBlinkTween = this.tweens.add({
+			targets: upgradeMessage,
+			alpha: {
+				from: 1,
+				to: Level.UPGRADE_LABEL_BLINK_ALPHA,
+			},
+			duration: Level.UPGRADE_LABEL_BLINK_DURATION,
+			yoyo: true,
+			repeat: -1,
+			ease: "Sine.InOut",
+		});
+	}
+
+	private stopExitUpgradeMessageAttention() {
+
+		this.exitConfirmUpgradeBlinkTween?.stop();
+		this.exitConfirmUpgradeBlinkTween = undefined;
+		this.exitConfirmUpgradeMessage?.setAlpha(1);
 	}
 
 	private hideModalOverlayIfIdle() {
@@ -1796,10 +2021,12 @@ export default class Level extends Phaser.Scene {
 
 		this.coinCounterText?.setText(`${this.coinCount}`);
 		this.updateProgressionLockAffordance();
+		this.updateUpgradeLabelAttention();
 	}
 
 	private updateLikesCounter() {
 		this.likesCounterText?.setText(`${getTotalLikes()}`);
+		this.updateUpgradeLabelAttention();
 	}
 
 	private setupDeveloperCheat() {
@@ -2605,7 +2832,7 @@ export default class Level extends Phaser.Scene {
 					() => {
 						this.confirmExitToSceneSelector();
 					},
-					canAffordAnyMomentCard()
+					canAffordAnyMomentCard(this.coinCount, getTotalLikes())
 				);
 			}
 		});
@@ -3699,6 +3926,7 @@ export default class Level extends Phaser.Scene {
 		this.setupTrayInputs();
 		this.setupIntroOverlay();
 		this.setupMenuButton();
+		this.setupUpgradeLabel();
 		this.setupDeveloperCheat();
 	//	applySoftRainbowCameraFilter(this, { strength: 0.5, speed: 0.3});
 		this.playSceneIntro();
