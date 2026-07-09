@@ -68,6 +68,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 		}));
 		this.initialY = this.y;
 		this.clientQuestion.setAlpha(0);
+		this.applyLevelAppearance();
 		this.initializeInteraction();
 		this.once(Phaser.GameObjects.Events.DESTROY, this.handleDestroyed, this);
 		this.startEntrance();
@@ -106,6 +107,8 @@ export default class AClient extends Phaser.GameObjects.Container {
 
 	static readonly COOKIE_WAIT_BONUS_MS = 6000;
 	private static readonly PARTIAL_DELIVERY_HEART_Y_OFFSET = -48;
+	/** Boost de like al servir muy rápido (multiplicador de la chance base del skin). */
+	private static readonly QUICK_SERVICE_LIKE_BOOST = 1.35;
 	private static readonly QUICK_SERVICE_WINDOW_MS = 4000;
 	private static readonly QUESTION_FLOAT_START_REMAINING = 5000;
 	private static readonly URGENCY_UPDATE_INTERVAL = 100;
@@ -153,6 +156,20 @@ export default class AClient extends Phaser.GameObjects.Container {
 		}
 
 		levelScene.resolveDeliverySelection(this);
+	}
+
+	private applyLevelAppearance() {
+		const levelScene = this.scene as Level;
+
+		if (typeof levelScene.getCurrentLevelNumber !== "function") {
+			this.clientBear.applyAppearanceVariant(0);
+			return;
+		}
+
+		this.clientBear.randomizeAppearanceForLevel(
+			levelScene.getCurrentLevelNumber(),
+			levelScene.getCurrentLevelDifficulty()
+		);
 	}
 
 	private startEntrance() {
@@ -320,7 +337,9 @@ export default class AClient extends Phaser.GameObjects.Container {
 	private startRequestWaitTimer() {
 
 		this.stopRequestWaitTimer();
-		this.requestExpiresAt = this.scene.time.now + getClientRequestWaitDurationMs();
+		const baseWaitMs = getClientRequestWaitDurationMs();
+		const waitMs = Math.round(baseWaitMs * this.clientBear.getWaitMultiplier());
+		this.requestExpiresAt = this.scene.time.now + waitMs;
 		this.scheduleRequestWaitTimers();
 	}
 
@@ -518,9 +537,24 @@ export default class AClient extends Phaser.GameObjects.Container {
 		return (this.scene.time.now - this.requestIssuedAt) <= quickServiceWindowMs;
 	}
 
+	/**
+	 * Chance de like según el skin del osito.
+	 * Skins bajos más propensos; servicio rápido da un boost leve.
+	 */
+	private shouldGrantLike(wasQuickService: boolean) {
+		let likeChance = this.clientBear.getLikeChance();
+
+		if (wasQuickService) {
+			likeChance = Math.min(1, likeChance * AClient.QUICK_SERVICE_LIKE_BOOST);
+		}
+
+		return Math.random() < likeChance;
+	}
+
 	public consumeRequestAndExit(showYum = false) {
 
 		const wasQuickService = showYum && this.wasServedQuickly();
+		const grantLike = showYum && this.shouldGrantLike(wasQuickService);
 
 		this.questionRevealTimer?.remove(false);
 		this.questionRevealTimer = undefined;
@@ -547,7 +581,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 				levelScene.recordSuccessfulDelivery();
 				this.scene.sound.play(`eating${Phaser.Math.Between(1, 3)}`);
 
-				if (wasQuickService) {
+				if (grantLike) {
 					levelScene.showLikeHeartAt(exitX, () => {
 						const yumPrefab = levelScene.showYumAt(exitX);
 						levelScene.respawnClient(this, yumPrefab);
