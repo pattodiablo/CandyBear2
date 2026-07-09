@@ -115,16 +115,22 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		this.levelsButtonBaseScaleY = levelsBtn.scaleY;
 		this.levelsButtonBaseY = levelsBtn.y;
 
-		this.upgradeAvailableMessage = scene.add.text(46, 292, "Upgrades disponibles", {
-			color: "#DF3D7A",
-			fontFamily: "Klop",
-			fontSize: "24px",
-			fontStyle: "bold",
-			align: "center",
-			stroke: "#fff8f3",
-			strokeThickness: 4,
-		});
+		this.upgradeAvailableMessage = scene.add.text(
+			levelsBtn.x,
+			levelsBtn.y + PanelPrefab.UPGRADE_MESSAGE_OFFSET_Y,
+			"Upgrades disponibles",
+			{
+				color: "#DF3D7A",
+				fontFamily: "Klop",
+				fontSize: "24px",
+				fontStyle: "bold",
+				align: "center",
+				stroke: "#fff8f3",
+				strokeThickness: 4,
+			}
+		);
 		this.upgradeAvailableMessage.setOrigin(0.5);
+		this.upgradeAvailableMessage.setDepth(PanelPrefab.UPGRADE_MESSAGE_DEPTH);
 		this.upgradeAvailableMessage.setVisible(false);
 		this.add(this.upgradeAvailableMessage);
 
@@ -168,6 +174,8 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 	private static readonly UPGRADE_ATTENTION_MESSAGE_TOGGLE_DURATION = 700;
 	private static readonly UPGRADE_ATTENTION_SCALE_MULTIPLIER = 1.1;
 	private static readonly UPGRADE_ATTENTION_SCALE_DURATION = 900;
+	private static readonly UPGRADE_MESSAGE_OFFSET_Y = 52;
+	private static readonly UPGRADE_MESSAGE_DEPTH = 12;
 	private starHolder!: Phaser.GameObjects.Image;
 	private readonly stars: Phaser.GameObjects.Image[];
 	private readonly starBaseScales: Array<{ scaleX: number; scaleY: number }>;
@@ -572,9 +580,18 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		});
 	}
 
+	private applyUpgradeMessageLayout() {
+		this.upgradeAvailableMessage.setPosition(
+			this.levelsBtn.x,
+			this.levelsBtn.y + PanelPrefab.UPGRADE_MESSAGE_OFFSET_Y
+		);
+	}
+
 	private startLevelsUpgradeAttention() {
 		this.stopLevelsUpgradeAttention();
 		this.isLevelsUpgradeAttentionActive = true;
+		this.applyUpgradeMessageLayout();
+		this.upgradeAvailableMessage.setDepth(PanelPrefab.UPGRADE_MESSAGE_DEPTH);
 		this.upgradeAvailableMessage.setVisible(true);
 		this.levelsBtn.setScale(this.levelsButtonBaseScaleX, this.levelsButtonBaseScaleY);
 
