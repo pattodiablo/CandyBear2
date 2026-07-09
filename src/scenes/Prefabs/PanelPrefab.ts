@@ -158,8 +158,9 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 	private levelsBtn: Phaser.GameObjects.Image;
 
 	/* START-USER-CODE */
-	private static readonly READY_BUTTON_HOVER_SCALE = 0.74;
-	private static readonly READY_BUTTON_PRESSED_SCALE = 0.67;
+	/** Multiplicadores relativos a la escala base de cada botón (no absolutos). */
+	private static readonly BUTTON_HOVER_SCALE_MULT = 1.06;
+	private static readonly BUTTON_PRESSED_SCALE_MULT = 0.96;
 	private static readonly READY_BUTTON_PRESS_OFFSET_Y = 4;
 	private static readonly READY_BUTTON_TWEEN_DURATION = 90;
 	private static readonly DEACTIVATED_STAR_ALPHA = 0.35;
@@ -169,13 +170,18 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 	private static readonly STAR_SETTLE_DURATION = 120;
 	private static readonly MAX_STARS = 3;
 	private static readonly UPGRADE_ATTENTION_MESSAGE_TOGGLE_DURATION = 700;
-	private static readonly UPGRADE_ATTENTION_SCALE_MULTIPLIER = 1.1;
+	private static readonly UPGRADE_ATTENTION_SCALE_MULTIPLIER = 1.08;
 	private static readonly UPGRADE_ATTENTION_SCALE_DURATION = 900;
 	private static readonly UPGRADE_MESSAGE_GAP = 8;
 	private static readonly UPGRADE_MESSAGE_DEPTH = 12;
-	private static readonly FINAL_BUTTON_SCALE = 0.7;
-	private static readonly FINAL_NEXT_DAY_BUTTON_Y = 125;
-	private static readonly FINAL_LEVELS_BUTTON_Y = 200;
+	/**
+	 * nextdayBtn es 473×126 y LevelsBtn 342×91: escalas distintas para
+	 * que se vean proporcionales y no invadan "Earnings today" / monedas.
+	 */
+	private static readonly FINAL_NEXT_DAY_BUTTON_SCALE = 0.52;
+	private static readonly FINAL_LEVELS_BUTTON_SCALE = 0.55;
+	private static readonly FINAL_NEXT_DAY_BUTTON_Y = 150;
+	private static readonly FINAL_LEVELS_BUTTON_Y = 218;
 	private starHolder!: Phaser.GameObjects.Image;
 	private readonly stars: Phaser.GameObjects.Image[];
 	private readonly starBaseScales: Array<{ scaleX: number; scaleY: number }>;
@@ -213,8 +219,8 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 			}
 
 			this.animateReadyButton(
-				PanelPrefab.READY_BUTTON_HOVER_SCALE,
-				PanelPrefab.READY_BUTTON_HOVER_SCALE,
+				this.readyBtnBaseScaleX * PanelPrefab.BUTTON_HOVER_SCALE_MULT,
+				this.readyBtnBaseScaleY * PanelPrefab.BUTTON_HOVER_SCALE_MULT,
 				this.readyBtnBaseY - 2
 			);
 		});
@@ -230,8 +236,8 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		this.readyBtn.once(Phaser.Input.Events.POINTER_DOWN, () => {
 			this.isReadyButtonPressed = true;
 			this.animateReadyButton(
-				PanelPrefab.READY_BUTTON_PRESSED_SCALE,
-				PanelPrefab.READY_BUTTON_PRESSED_SCALE,
+				this.readyBtnBaseScaleX * PanelPrefab.BUTTON_PRESSED_SCALE_MULT,
+				this.readyBtnBaseScaleY * PanelPrefab.BUTTON_PRESSED_SCALE_MULT,
 				this.readyBtnBaseY + PanelPrefab.READY_BUTTON_PRESS_OFFSET_Y,
 				() => {
 			this.readyBtn.disableInteractive();
@@ -266,8 +272,8 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 			}
 
 			this.animateNextDayButton(
-				PanelPrefab.READY_BUTTON_HOVER_SCALE,
-				PanelPrefab.READY_BUTTON_HOVER_SCALE,
+				this.nextDayButtonBaseScaleX * PanelPrefab.BUTTON_HOVER_SCALE_MULT,
+				this.nextDayButtonBaseScaleY * PanelPrefab.BUTTON_HOVER_SCALE_MULT,
 				this.nextDayButtonBaseY - 2
 			);
 		});
@@ -283,8 +289,8 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		this.nextdayBtn.once(Phaser.Input.Events.POINTER_DOWN, () => {
 			this.isNextDayButtonPressed = true;
 			this.animateNextDayButton(
-				PanelPrefab.READY_BUTTON_PRESSED_SCALE,
-				PanelPrefab.READY_BUTTON_PRESSED_SCALE,
+				this.nextDayButtonBaseScaleX * PanelPrefab.BUTTON_PRESSED_SCALE_MULT,
+				this.nextDayButtonBaseScaleY * PanelPrefab.BUTTON_PRESSED_SCALE_MULT,
 				this.nextDayButtonBaseY + PanelPrefab.READY_BUTTON_PRESS_OFFSET_Y,
 				() => {
 					this.nextdayBtn.disableInteractive();
@@ -321,8 +327,8 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 			}
 
 			this.animateLevelsButton(
-				PanelPrefab.READY_BUTTON_HOVER_SCALE,
-				PanelPrefab.READY_BUTTON_HOVER_SCALE,
+				this.levelsButtonBaseScaleX * PanelPrefab.BUTTON_HOVER_SCALE_MULT,
+				this.levelsButtonBaseScaleY * PanelPrefab.BUTTON_HOVER_SCALE_MULT,
 				this.levelsButtonBaseY - 2
 			);
 		});
@@ -343,8 +349,8 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		this.levelsBtn.once(Phaser.Input.Events.POINTER_DOWN, () => {
 			this.isLevelsButtonPressed = true;
 			this.animateLevelsButton(
-				PanelPrefab.READY_BUTTON_PRESSED_SCALE,
-				PanelPrefab.READY_BUTTON_PRESSED_SCALE,
+				this.levelsButtonBaseScaleX * PanelPrefab.BUTTON_PRESSED_SCALE_MULT,
+				this.levelsButtonBaseScaleY * PanelPrefab.BUTTON_PRESSED_SCALE_MULT,
 				this.levelsButtonBaseY + PanelPrefab.READY_BUTTON_PRESS_OFFSET_Y,
 				() => {
 					this.levelsBtn.disableInteractive();
@@ -582,16 +588,16 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 	}
 
 	private applyFinalButtonLayout() {
-		this.nextdayBtn.setScale(PanelPrefab.FINAL_BUTTON_SCALE);
-		this.levelsBtn.setScale(PanelPrefab.FINAL_BUTTON_SCALE);
+		this.nextdayBtn.setScale(PanelPrefab.FINAL_NEXT_DAY_BUTTON_SCALE);
+		this.levelsBtn.setScale(PanelPrefab.FINAL_LEVELS_BUTTON_SCALE);
 		this.nextdayBtn.setY(PanelPrefab.FINAL_NEXT_DAY_BUTTON_Y);
 		this.levelsBtn.setY(PanelPrefab.FINAL_LEVELS_BUTTON_Y);
 
-		this.nextDayButtonBaseScaleX = PanelPrefab.FINAL_BUTTON_SCALE;
-		this.nextDayButtonBaseScaleY = PanelPrefab.FINAL_BUTTON_SCALE;
+		this.nextDayButtonBaseScaleX = PanelPrefab.FINAL_NEXT_DAY_BUTTON_SCALE;
+		this.nextDayButtonBaseScaleY = PanelPrefab.FINAL_NEXT_DAY_BUTTON_SCALE;
 		this.nextDayButtonBaseY = PanelPrefab.FINAL_NEXT_DAY_BUTTON_Y;
-		this.levelsButtonBaseScaleX = PanelPrefab.FINAL_BUTTON_SCALE;
-		this.levelsButtonBaseScaleY = PanelPrefab.FINAL_BUTTON_SCALE;
+		this.levelsButtonBaseScaleX = PanelPrefab.FINAL_LEVELS_BUTTON_SCALE;
+		this.levelsButtonBaseScaleY = PanelPrefab.FINAL_LEVELS_BUTTON_SCALE;
 		this.levelsButtonBaseY = PanelPrefab.FINAL_LEVELS_BUTTON_Y;
 
 		this.applyUpgradeMessageLayout();

@@ -44,6 +44,7 @@ import {
 	getBundledWorkstationsForProductUnlock,
 	getUnlockCatalogEntry,
 	isProductUnlockId,
+	isUnlockAvailableAtLevel,
 	shouldShowWorkstationLockIcon,
 	type UnlockId,
 } from "./unlockCatalog";
@@ -861,6 +862,11 @@ export default class Level extends Phaser.Scene {
 		return this.coinCount >= getUnlockCatalogEntry(unlockId).coinCost;
 	}
 
+	private canPurchaseUnlock(unlockId: UnlockId) {
+		return isUnlockAvailableAtLevel(unlockId, this.getCurrentLevelNumber())
+			&& this.canAffordUnlock(unlockId);
+	}
+
 	private stopProgressionLockAffordance(lockIcon: Phaser.GameObjects.Image) {
 
 		lockIcon.setData("affordanceActive", false);
@@ -884,7 +890,7 @@ export default class Level extends Phaser.Scene {
 		lockIcon.setPosition(baseX, baseY);
 		lockIcon.setAngle(0);
 
-		if (!unlockId || !this.canAffordUnlock(unlockId)) {
+		if (!unlockId || !this.canPurchaseUnlock(unlockId)) {
 			return;
 		}
 
@@ -906,7 +912,7 @@ export default class Level extends Phaser.Scene {
 		const baseX = lockIcon.getData("baseX") as number;
 		const baseY = lockIcon.getData("baseY") as number;
 
-		if (!unlockId || !this.canAffordUnlock(unlockId)) {
+		if (!unlockId || !this.canPurchaseUnlock(unlockId)) {
 			this.stopProgressionLockAffordance(lockIcon);
 			lockIcon.setPosition(baseX, baseY);
 			lockIcon.setAngle(0);
@@ -1083,7 +1089,11 @@ export default class Level extends Phaser.Scene {
 			applyTexture(getWorkstationTextureKey(workstationId, isAcquired));
 			setEnabled(isAcquired);
 
-			if (!isAcquired && shouldShowWorkstationLockIcon(workstationId)) {
+			if (
+				!isAcquired
+				&& shouldShowWorkstationLockIcon(workstationId)
+				&& isUnlockAvailableAtLevel(workstationId, this.getCurrentLevelNumber())
+			) {
 				this.showProgressionLockIcon(target, workstationId, lockOffsetY);
 			}
 		}
@@ -1268,7 +1278,11 @@ export default class Level extends Phaser.Scene {
 				this.deactivateProgressionProduct(this.ensureHolderSlotProduct(slotId));
 			}
 
-			if (!isAcquired && slotId !== "holder1") {
+			if (
+				!isAcquired
+				&& slotId !== "holder1"
+				&& isUnlockAvailableAtLevel(slotId, this.getCurrentLevelNumber())
+			) {
 				this.showProgressionLockIcon(holder, slotId);
 			}
 		}
@@ -1802,6 +1816,14 @@ export default class Level extends Phaser.Scene {
 
 		this.unlockPreviewImage.setScale(Level.UNLOCK_PREVIEW_SCALE);
 		this.unlockNameText.setText(entry.displayName);
+
+		const isAvailable = isUnlockAvailableAtLevel(unlockId, this.getCurrentLevelNumber());
+		if (!isAvailable) {
+			this.unlockCostText.setText(`Day ${entry.unlockLevel}+`);
+			this.unlockCostText.setColor("#D62839");
+			return;
+		}
+
 		this.unlockCostText.setText(`${entry.coinCost} coins`);
 		this.unlockCostText.setColor("#A96625");
 	}
@@ -1837,6 +1859,11 @@ export default class Level extends Phaser.Scene {
 		}
 
 		if (isProductUnlockId(unlockId) ? isProductAcquired(unlockId) : isWorkstationAcquired(unlockId)) {
+			return;
+		}
+
+		if (!isUnlockAvailableAtLevel(unlockId, this.getCurrentLevelNumber())) {
+			this.sound.play("deny");
 			return;
 		}
 
@@ -1903,6 +1930,11 @@ export default class Level extends Phaser.Scene {
 		}
 
 		const entry = getUnlockCatalogEntry(this.currentUnlockId);
+
+		if (!isUnlockAvailableAtLevel(this.currentUnlockId, this.getCurrentLevelNumber())) {
+			this.sound.play("deny");
+			return;
+		}
 
 		if (this.coinCount < entry.coinCost) {
 			this.showInsufficientUnlockFundsFeedback();

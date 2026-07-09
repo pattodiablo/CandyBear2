@@ -11,6 +11,7 @@ import dayHolderPrefab from "./Prefabs/dayHolderPrefab";
 import {
 	canAffordAnyMomentCard,
 	getMomentCardCatalogEntry,
+	isMomentCardPrerequisiteMet,
 	MOMENT_CARDS_PER_PAGE,
 	TOTAL_MOMENT_CARDS,
 } from "./momentCardCatalog";
@@ -88,13 +89,21 @@ export default class SceneSelector extends Phaser.Scene {
 	private static readonly ITEMS_PER_ROW = 5;
 	private static readonly SCENE_CENTER_X = 640;
 	private static readonly GRID_COLUMN_GAP = 215;
-	private static readonly MOMENTS_GRID_COLUMN_GAP = 186;
+	/** Más gap para cartas de upgrade más grandes; flechas más chicas liberan espacio. */
+	private static readonly MOMENTS_GRID_COLUMN_GAP = 220;
 	private static readonly GRID_ROW_GAP = 205;
 	private static readonly GRID_START_Y = 270;
+	private static readonly PAGE_ARROW_SCALE = 0.72;
+	private static readonly PAGE_ARROW_LEFT_X = 48;
+	private static readonly PAGE_ARROW_RIGHT_X = 1232;
 
-	private static readonly CARD_PREVIEW_SCALE = 1.6;
+	/**
+	 * Preview más moderado y un poco más arriba para que el texto
+	 * de la carta no se salga por abajo en mobile.
+	 */
+	private static readonly CARD_PREVIEW_SCALE = 1.12;
 	private static readonly CARD_PREVIEW_CENTER_X = 640;
-	private static readonly CARD_PREVIEW_CENTER_Y = 372;
+	private static readonly CARD_PREVIEW_CENTER_Y = 255;
 	private static readonly CARD_PREVIEW_DURATION = 280;
 	private static readonly CARD_PREVIEW_OVERLAY_ALPHA = 0.65;
 	private static readonly CARD_PREVIEW_DEPTH = 1000;
@@ -207,11 +216,40 @@ export default class SceneSelector extends Phaser.Scene {
 			momentCard.on("purchase-request", () => {
 				this.tryPurchaseCard(momentCard);
 			});
+			momentCard.on("purchase-blocked", () => {
+				this.handlePrerequisiteBlockedPurchase(momentCard);
+			});
+			momentCard.on("purchased", () => {
+				this.refreshMomentCardPrerequisiteLocks();
+				this.updatePlayerStats();
+			});
 			momentCard.on("preview-open", () => {
 				this.openCardPreview(momentCard);
 			});
 			this.add.existing(momentCard);
 			this.momentCards.push(momentCard);
+		}
+
+		this.refreshMomentCardPrerequisiteLocks();
+	}
+
+	private refreshMomentCardPrerequisiteLocks() {
+		for (const momentCard of this.momentCards) {
+			if (momentCard.buyed) {
+				momentCard.setPrerequisiteLocked(false);
+				continue;
+			}
+
+			momentCard.setPrerequisiteLocked(!isMomentCardPrerequisiteMet(momentCard.cardNumber));
+		}
+	}
+
+	private handlePrerequisiteBlockedPurchase(card: CardPrefab) {
+		void card;
+		this.cameras.main.shake(SceneSelector.CAMERA_SHAKE_DURATION, SceneSelector.CAMERA_SHAKE_INTENSITY);
+
+		if (this.cache.audio.exists("deny")) {
+			this.sound.play("deny");
 		}
 	}
 
@@ -260,6 +298,11 @@ export default class SceneSelector extends Phaser.Scene {
 
 	private tryPurchaseCard(card: CardPrefab) {
 		if (card.buyed) {
+			return;
+		}
+
+		if (!isMomentCardPrerequisiteMet(card.cardNumber)) {
+			this.handlePrerequisiteBlockedPurchase(card);
 			return;
 		}
 
@@ -487,6 +530,11 @@ export default class SceneSelector extends Phaser.Scene {
 	}
 
 	private initializePagination() {
+		this.prevPage.setScale(SceneSelector.PAGE_ARROW_SCALE);
+		this.nextPage.setScale(SceneSelector.PAGE_ARROW_SCALE);
+		this.prevPage.setX(SceneSelector.PAGE_ARROW_LEFT_X);
+		this.nextPage.setX(SceneSelector.PAGE_ARROW_RIGHT_X);
+
 		this.nextPage.setInteractive({ useHandCursor: true });
 		this.prevPage.setInteractive({ useHandCursor: true });
 		this.nextPage.on(Phaser.Input.Events.POINTER_DOWN, this.goToNextPage, this);

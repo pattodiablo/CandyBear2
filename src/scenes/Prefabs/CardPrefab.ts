@@ -25,22 +25,22 @@ export default class CardPrefab extends Phaser.GameObjects.Container {
 		const coinCost = scene.add.text(20, -4, "", {});
 		coinCost.setOrigin(0.5, 0.5);
 		coinCost.text = "0000";
-		coinCost.setStyle({ "color": "#F8ECDA", "fontFamily": "Klop", "fontSize": "54px" });
+		coinCost.setStyle({ "color": "#F8ECDA", "fontFamily": "Klop", "fontSize": "58px" });
 		anverso.add(coinCost);
 
 		// LikesCost
 		const likesCost = scene.add.text(20, 79, "", {});
 		likesCost.setOrigin(0.5, 0.5);
 		likesCost.text = "0000";
-		likesCost.setStyle({ "color": "#F8ECDA", "fontFamily": "Klop", "fontSize": "54px" });
+		likesCost.setStyle({ "color": "#F8ECDA", "fontFamily": "Klop", "fontSize": "58px" });
 		anverso.add(likesCost);
 
 		// UpgradeDescription
-		const upgradeDescription = scene.add.text(1, 361, "", {});
+		const upgradeDescription = scene.add.text(1, 340, "", {});
 		upgradeDescription.setOrigin(0.5, 0.5);
 		upgradeDescription.text = "Card upgrade description";
-		upgradeDescription.setStyle({ "align": "center", "color": "#FF5F7E", "fixedWidth": 250, "fixedHeight": 200, "fontFamily": "Klop", "fontSize": "25px" });
-		upgradeDescription.setWordWrapWidth(220);
+		upgradeDescription.setStyle({ "align": "center", "color": "#FF5F7E", "fixedWidth": 260, "fixedHeight": 200, "fontFamily": "Klop", "fontSize": "30px" });
+		upgradeDescription.setWordWrapWidth(240);
 		anverso.add(upgradeDescription);
 
 		this.coinCost = coinCost;
@@ -62,15 +62,20 @@ export default class CardPrefab extends Phaser.GameObjects.Container {
 	public cardNumber: number = 0;
 
 	/* START-USER-CODE */
-	private static readonly CARD_SCALE = 0.61;
+	/** Un poco más grande para legibilidad en mobile. */
+	private static readonly CARD_SCALE = 0.74;
 	private static readonly FLIP_HALF_DURATION = 160;
 	private static readonly ANVERSO_TEXTURE_KEY = "AnversoCard";
 	private static readonly UPGRADE_LOCKED_COLOR = "#FF5F7E";
 	private static readonly UPGRADE_UNLOCKED_COLOR = "#72D7C7";
+	private static readonly PREREQUISITE_LOCKED_ALPHA = 0.55;
+	private static readonly PREREQUISITE_LOCKED_COST_COLOR = "#B8A99A";
+	private static readonly DEFAULT_COST_COLOR = "#F8ECDA";
 	private cardImage!: Phaser.GameObjects.Image;
 	private isShowingAnverso = true;
 	private isFlipping = false;
 	private isInitialized = false;
+	private isPrerequisiteLocked = false;
 	private baseCardScaleX = 1;
 	private floatBaseX = 0;
 	private floatBaseY = 0;
@@ -198,12 +203,18 @@ export default class CardPrefab extends Phaser.GameObjects.Container {
 			return;
 		}
 
+		if (this.isPrerequisiteLocked) {
+			this.emit("purchase-blocked");
+			return;
+		}
+
 		this.emit("purchase-request");
 	}
 
 	public setCosts(coinCost: number, likeCost: number) {
 		this.coinCost.setText(String(coinCost));
 		this.likesCost.setText(String(likeCost));
+		this.applyCostPresentation();
 	}
 
 	public setUpgradeDescription(upgradeName: string, upgradeEffect = "") {
@@ -219,15 +230,43 @@ export default class CardPrefab extends Phaser.GameObjects.Container {
 		this.applyUpgradeDescriptionPresentation();
 	}
 
+	/**
+	 * Bloquea la compra visualmente hasta que se compre el nivel previo de la línea.
+	 */
+	public setPrerequisiteLocked(locked: boolean) {
+		this.isPrerequisiteLocked = locked && !this.buyed;
+		this.setAlpha(this.isPrerequisiteLocked ? CardPrefab.PREREQUISITE_LOCKED_ALPHA : 1);
+		this.applyCostPresentation();
+		this.applyUpgradeDescriptionPresentation();
+	}
+
+	public isPurchaseBlockedByPrerequisite() {
+		return this.isPrerequisiteLocked;
+	}
+
+	private applyCostPresentation() {
+		const costColor = this.isPrerequisiteLocked
+			? CardPrefab.PREREQUISITE_LOCKED_COST_COLOR
+			: CardPrefab.DEFAULT_COST_COLOR;
+
+		this.coinCost.setColor(costColor);
+		this.likesCost.setColor(costColor);
+	}
+
 	private applyUpgradeDescriptionPresentation() {
-		this.upgradeDescription.setColor(
-			this.buyed ? CardPrefab.UPGRADE_UNLOCKED_COLOR : CardPrefab.UPGRADE_LOCKED_COLOR
-		);
+		if (this.buyed) {
+			this.upgradeDescription.setColor(CardPrefab.UPGRADE_UNLOCKED_COLOR);
+		} else if (this.isPrerequisiteLocked) {
+			this.upgradeDescription.setColor(CardPrefab.PREREQUISITE_LOCKED_COST_COLOR);
+		} else {
+			this.upgradeDescription.setColor(CardPrefab.UPGRADE_LOCKED_COLOR);
+		}
+
 		this.upgradeDescription.setVisible(this.buyed || this.isShowingAnverso);
 	}
 
 	public beginPurchaseFlip() {
-		if (this.isFlipping || this.buyed) {
+		if (this.isFlipping || this.buyed || this.isPrerequisiteLocked) {
 			return;
 		}
 
@@ -309,13 +348,17 @@ export default class CardPrefab extends Phaser.GameObjects.Container {
 		}
 
 		this.buyed = true;
+		this.isPrerequisiteLocked = false;
+		this.setAlpha(1);
 
 		if (this.cardNumber > 0) {
 			storeMomentCardAsBought(this.cardNumber);
 		}
 
+		this.applyCostPresentation();
 		this.applyUpgradeDescriptionPresentation();
 		this.setupInteractivity();
+		this.emit("purchased", this.cardNumber);
 	}
 
 	private applySideVisibility() {

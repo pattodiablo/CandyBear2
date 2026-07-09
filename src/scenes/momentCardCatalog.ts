@@ -39,13 +39,26 @@ const MOMENT_CARD_UPGRADES: readonly MomentCardUpgradeDefinition[] = [
 export const TOTAL_MOMENT_CARDS = MOMENT_CARD_UPGRADES.length;
 export const MOMENT_CARDS_PER_PAGE = 5;
 
+/**
+ * Líneas de upgrade consecutivas (I → II → III).
+ * Cada nivel superior requiere haber comprado el anterior de la misma línea.
+ */
+export const MOMENT_UPGRADE_LINES: readonly (readonly number[])[] = [
+	[1, 2, 3],
+	[4, 5, 6],
+	[7, 8, 9],
+	[10, 11, 12],
+	[13, 14, 15],
+] as const;
+
+/** Costos de upgrades: piso de 10 monedas y ~5 likes; sube por página. */
 const MOMENT_CARD_PAGE_COSTS: ReadonlyArray<{
 	coinCosts: readonly [number, number, number, number, number];
 	likeCosts: readonly [number, number, number, number, number];
 }> = [
-	{ coinCosts: [5, 8, 10, 12, 15], likeCosts: [0, 1, 1, 2, 2] },
-	{ coinCosts: [18, 20, 22, 25, 28], likeCosts: [2, 3, 3, 4, 4] },
-	{ coinCosts: [30, 32, 35, 38, 40], likeCosts: [4, 5, 5, 6, 6] },
+	{ coinCosts: [10, 13, 16, 19, 22], likeCosts: [5, 5, 6, 6, 7] },
+	{ coinCosts: [25, 28, 32, 36, 40], likeCosts: [8, 9, 9, 10, 11] },
+	{ coinCosts: [45, 50, 55, 60, 65], likeCosts: [12, 13, 14, 15, 16] },
 ];
 
 const MOMENT_CARD_CATALOG: MomentCardCatalogEntry[] = MOMENT_CARD_PAGE_COSTS.flatMap((pageCosts, pageIndex) => {
@@ -90,13 +103,51 @@ export function getAllMomentCardCatalogEntries() {
 	return MOMENT_CARD_CATALOG;
 }
 
+/** Card number del nivel previo en la misma línea, o null si es el nivel I. */
+export function getMomentCardPrerequisite(cardNumber: number): number | null {
+	const normalizedCardNumber = Math.max(1, Math.floor(cardNumber));
+
+	for (const line of MOMENT_UPGRADE_LINES) {
+		const tierIndex = line.indexOf(normalizedCardNumber);
+
+		if (tierIndex < 0) {
+			continue;
+		}
+
+		return tierIndex === 0 ? null : line[tierIndex - 1];
+	}
+
+	return null;
+}
+
+export function isMomentCardPrerequisiteMet(cardNumber: number) {
+	const prerequisite = getMomentCardPrerequisite(cardNumber);
+
+	if (prerequisite === null) {
+		return true;
+	}
+
+	return isMomentCardBought(prerequisite);
+}
+
+export function canPurchaseMomentCard(
+	cardNumber: number,
+	totalCoins = getStoredTotalCoins(),
+	totalLikes = getTotalLikes(),
+) {
+	if (isMomentCardBought(cardNumber) || !isMomentCardPrerequisiteMet(cardNumber)) {
+		return false;
+	}
+
+	const entry = getMomentCardCatalogEntry(cardNumber);
+	return totalCoins >= entry.coinCost && totalLikes >= entry.likeCost;
+}
+
 export function canAffordAnyMomentCard(
 	totalCoins = getStoredTotalCoins(),
 	totalLikes = getTotalLikes(),
 ) {
 	return MOMENT_CARD_CATALOG.some((entry) => (
-		!isMomentCardBought(entry.cardNumber)
-		&& totalCoins >= entry.coinCost
-		&& totalLikes >= entry.likeCost
+		canPurchaseMomentCard(entry.cardNumber, totalCoins, totalLikes)
 	));
 }

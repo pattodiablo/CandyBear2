@@ -9,54 +9,69 @@ export interface UnlockCatalogEntry {
 	previewTextureKey: string;
 	previewFrame?: string | number;
 	coinCost: number;
+	/** Nivel mínimo de campaña en el que se puede comprar este unlock. */
+	unlockLevel: number;
 }
 
-// Product 1 (holder1) stays unlocked by default.
-// For now: Berry Dip 2, Second Fryer 3, Milk 3, Sandwich 4.
+/**
+ * Product 1 (holder1) se mantiene desbloqueado por defecto.
+ * Orden de aparición: Berry Dip → Second Fryer → Toaster/Sandwich → Milk → Workplace.
+ * El primer unlock aparece desde el nivel 3.
+ */
 export const UNLOCK_CATALOG: Record<UnlockId, UnlockCatalogEntry> = {
 	holder2: {
 		id: "holder2",
 		displayName: "Berry Dip",
 		previewTextureKey: "Product2Raw",
-		coinCost: 2,
+		coinCost: 4,
+		unlockLevel: 3,
 	},
 	fryer2: {
 		id: "fryer2",
 		displayName: "Second Fryer",
 		previewTextureKey: "Fryer",
-		coinCost: 3,
+		// Freidora un poco más cara que el resto del tramo temprano.
+		coinCost: 9,
+		unlockLevel: 4,
 	},
 	toaster: {
 		id: "toaster",
 		displayName: "Toaster",
 		previewTextureKey: "toaster",
-		coinCost: 22,
+		coinCost: 28,
+		unlockLevel: 5,
 	},
 	milkmachine: {
 		id: "milkmachine",
 		displayName: "Milk Machine",
 		previewTextureKey: "Milkmachine",
-		coinCost: 28,
+		coinCost: 35,
+		unlockLevel: 6,
 	},
 	workplace2: {
 		id: "workplace2",
 		displayName: "Second Workplace",
 		previewTextureKey: "workplace",
-		coinCost: 32,
+		coinCost: 40,
+		unlockLevel: 7,
 	},
 	holder3: {
 		id: "holder3",
 		displayName: "Sandwich",
 		previewTextureKey: "sandWichAnim",
 		previewFrame: "sandwich0001.png",
-		coinCost: 4,
+		coinCost: 7,
+		// Mismo tramo que la tostadora (se desbloquea en paquete).
+		unlockLevel: 5,
 	},
 	holder4: {
 		id: "holder4",
 		displayName: "Milk Glass",
 		previewTextureKey: "GlassAnim",
 		previewFrame: "Vaso0001.png",
-		coinCost: 3,
+		coinCost: 6,
+		// Mismo tramo que la milk machine (se desbloquea en paquete).
+		unlockLevel: 6,
 	},
 };
 
@@ -76,6 +91,11 @@ export function getUnlockCatalogEntry(unlockId: UnlockId) {
 
 export function getTotalUnlockCost() {
 	return UNLOCK_ORDER.reduce((total, unlockId) => total + UNLOCK_CATALOG[unlockId].coinCost, 0);
+}
+
+export function isUnlockAvailableAtLevel(unlockId: UnlockId, levelNumber: number) {
+	const normalizedLevel = Math.max(1, Math.floor(levelNumber));
+	return normalizedLevel >= UNLOCK_CATALOG[unlockId].unlockLevel;
 }
 
 export function isProductUnlockId(unlockId: UnlockId): unlockId is Exclude<ProductSlotId, "holder1"> {
