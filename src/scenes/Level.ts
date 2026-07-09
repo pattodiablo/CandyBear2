@@ -50,6 +50,7 @@ import {
 import { bindDeveloperCheatCode, DEVELOPER_CHEAT_COINS } from "./developerCheat";
 import { applySoftRainbowCameraFilter } from "../filters/softRainbowCameraFilter";
 import { getCookiesPerDayLimit } from "./momentUpgradeBonuses";
+import { canAffordAnyMomentCard } from "./momentCardCatalog";
 
 interface LevelPlan {
 	levelNumber: number;
@@ -2603,7 +2604,8 @@ export default class Level extends Phaser.Scene {
 					},
 					() => {
 						this.confirmExitToSceneSelector();
-					}
+					},
+					canAffordAnyMomentCard()
 				);
 			}
 		});
