@@ -2581,11 +2581,15 @@ export default class Level extends Phaser.Scene {
 			return undefined;
 		}
 
-		waitingClients.sort((left, right) => (
+		// Prioriza ositos cuyo secreto de like es la galleta (y aún no la recibieron).
+		const cookieSecretClients = waitingClients.filter((client) => client.wantsCookieForLike());
+		const candidates = cookieSecretClients.length > 0 ? cookieSecretClients : waitingClients;
+
+		candidates.sort((left, right) => (
 			left.getRemainingRequestTime() - right.getRemainingRequestTime()
 		));
 
-		return waitingClients[0];
+		return candidates[0];
 	}
 
 	public tryLaunchCookieReward(spawnX: number, spawnY: number) {

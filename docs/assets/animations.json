@@ -1,0 +1,422 @@
+{
+    "anims": [
+        {
+            "key": "MilkRefill",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0001.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0003.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0005.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0007.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0009.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0011.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0013.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0015.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0017.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0019.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0021.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0023.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0025.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0027.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0029.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0031.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0033.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0035.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0037.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0039.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0041.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0043.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0045.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0047.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0049.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0051.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0053.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0055.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0057.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0059.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0061.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0063.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0065.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0067.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0069.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0071.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0073.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0075.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0077.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0079.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0081.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0083.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0085.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0087.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "GlassAnim",
+                    "frame": "Vaso0089.png",
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 12,
+            "skipMissedFrames": true,
+            "randomFrame": false
+        },
+        {
+            "key": "sandwichRoast",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "sandWichAnim",
+                    "frame": "sandwich0001.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "sandWichAnim",
+                    "frame": "sandwich0002.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "sandWichAnim",
+                    "frame": "sandwich0003.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "sandWichAnim",
+                    "frame": "sandwich0004.png",
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "sandWichAnim",
+                    "frame": "sandwich0005.png",
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 1,
+            "skipMissedFrames": true,
+            "randomFrame": false
+        },
+        {
+            "key": "toasterAnimation",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "toasterAnim",
+                    "frame": 0,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "toasterAnim",
+                    "frame": 1,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "toasterAnim",
+                    "frame": 2,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "toasterAnim",
+                    "frame": 3,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "toasterAnim",
+                    "frame": 4,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "toasterAnim",
+                    "frame": 5,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "toasterAnim",
+                    "frame": 6,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "toasterAnim",
+                    "frame": 7,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 2,
+            "skipMissedFrames": true,
+            "randomFrame": false
+        },
+        {
+            "key": "fryerAnimation",
+            "type": "frame",
+            "frames": [
+                {
+                    "key": "FryerAnim",
+                    "frame": 0,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "FryerAnim",
+                    "frame": 1,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "FryerAnim",
+                    "frame": 2,
+                    "duration": 0,
+                    "keyframe": false
+                },
+                {
+                    "key": "FryerAnim",
+                    "frame": 3,
+                    "duration": 0,
+                    "keyframe": false
+                }
+            ],
+            "frameRate": 6,
+            "skipMissedFrames": true,
+            "randomFrame": false
+        }
+    ],
+    "globalTimeScale": 1,
+    "meta": {
+        "app": "Phaser Editor 2D v3",
+        "contentType": "Phaser v3 Animations"
+    },
+    "settings": {
+        "sourceLang": "JAVA_SCRIPT",
+        "esModule": false,
+        "generateCode": false
+    }
+}

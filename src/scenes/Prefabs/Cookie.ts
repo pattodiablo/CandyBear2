@@ -51,14 +51,19 @@ export default class Cookie extends Phaser.GameObjects.Image {
 					onComplete: () => {
 						this.angle = this.baseAngle;
 
-						if (client.active && client.extendRequestWaitTime(bonusWaitMs)) {
-							this.scene.sound.play(`eating${Phaser.Math.Between(1, 3)}`);
-							SmallHeartBurst.launchAt(
-								this.scene,
-								client.x,
-								client.y + Cookie.TARGET_Y_OFFSET,
-								client.depth + 2
-							);
+						if (client.active) {
+							// Marca el treat (secreto de like) aunque el wait ya haya terminado.
+							client.receiveCookieTreat();
+
+							if (client.extendRequestWaitTime(bonusWaitMs)) {
+								this.scene.sound.play(`eating${Phaser.Math.Between(1, 3)}`);
+								SmallHeartBurst.launchAt(
+									this.scene,
+									client.x,
+									client.y + Cookie.TARGET_Y_OFFSET,
+									client.depth + 2
+								);
+							}
 						}
 
 						this.scene.tweens.add({

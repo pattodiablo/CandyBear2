@@ -109,6 +109,8 @@ export default class AClient extends Phaser.GameObjects.Container {
 	private static readonly PARTIAL_DELIVERY_HEART_Y_OFFSET = -48;
 	/** Boost de like al servir muy rápido (multiplicador de la chance base del skin). */
 	private static readonly QUICK_SERVICE_LIKE_BOOST = 1.35;
+	/** Like casi seguro si el secreto era la galleta y se la dieron. */
+	private static readonly COOKIE_SECRET_LIKE_CHANCE = 0.95;
 	private static readonly QUICK_SERVICE_WINDOW_MS = 4000;
 	private static readonly QUESTION_FLOAT_START_REMAINING = 5000;
 	private static readonly URGENCY_UPDATE_INTERVAL = 100;
@@ -119,9 +121,16 @@ export default class AClient extends Phaser.GameObjects.Container {
 	private static readonly PRODUCT_SWAP_OUT_MS = 180;
 	private static readonly PRODUCT_SWAP_IN_MS = 220;
 	private static readonly ORDER_ICON_FALLBACK_SIZE = 36;
+	private static readonly COOKIE_HINT_Y = -175;
+	private static readonly COOKIE_HINT_SCALE = 1.15;
+	private static readonly COOKIE_HINT_POP_MS = 220;
+	private static readonly COOKIE_HINT_HOLD_MS = 750;
+	private static readonly COOKIE_HINT_FADE_MS = 380;
 
 	private readonly orderIconSlots: Phaser.GameObjects.Image[];
 	private readonly orderIconSlotSizes: Array<{ width: number; height: number }>;
+	private receivedCookieTreat = false;
+	private cookieHintIcon?: Phaser.GameObjects.Image;
 
 	private hasActiveRequest() {
 		return this.pendingProducts.length > 0;
@@ -178,6 +187,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 
 		const travelDuration = Math.max(0, ((AClient.TARGET_Y - this.y) / AClient.MOVE_SPEED) * 1000);
 		this.scheduleQuestionReveal(travelDuration);
+		this.maybeShowCookieLikeHint(travelDuration);
 
 		if (this.y >= AClient.TARGET_Y) {
 			this.y = AClient.TARGET_Y;
@@ -196,6 +206,83 @@ export default class AClient extends Phaser.GameObjects.Container {
 				this.clientBear.playAnimation("idle");
 			}
 		});
+	}
+
+	/**
+	 * Algunos ositos revelan por un momento el icono de galleta al caminar:
+	 * pista de que el secreto para el like es darles una de la cookie jar.
+	 */
+	private maybeShowCookieLikeHint(travelDuration: number) {
+		if (!this.clientBear.requiresCookieForLike()) {
+			return;
+		}
+
+		this.clearCookieHint();
+
+		const cookieHint = this.scene.add.image(0, AClient.COOKIE_HINT_Y, "cookie");
+		cookieHint.setScale(0);
+		cookieHint.setAlpha(0);
+		this.add(cookieHint);
+		this.cookieHintIcon = cookieHint;
+
+		const revealDelay = Math.min(280, Math.max(80, travelDuration * 0.12));
+
+		this.scene.time.delayedCall(revealDelay, () => {
+			if (!this.active || !cookieHint.active) {
+				return;
+			}
+
+			this.scene.tweens.add({
+				targets: cookieHint,
+				scaleX: AClient.COOKIE_HINT_SCALE,
+				scaleY: AClient.COOKIE_HINT_SCALE,
+				alpha: 1,
+				duration: AClient.COOKIE_HINT_POP_MS,
+				ease: "Back.Out",
+				onComplete: () => {
+					if (!cookieHint.active) {
+						return;
+					}
+
+					this.scene.tweens.add({
+						targets: cookieHint,
+						y: AClient.COOKIE_HINT_Y - 18,
+						scaleX: AClient.COOKIE_HINT_SCALE * 0.85,
+						scaleY: AClient.COOKIE_HINT_SCALE * 0.85,
+						alpha: 0,
+						delay: AClient.COOKIE_HINT_HOLD_MS,
+						duration: AClient.COOKIE_HINT_FADE_MS,
+						ease: "Cubic.In",
+						onComplete: () => {
+							this.clearCookieHint();
+						},
+					});
+				},
+			});
+		});
+	}
+
+	private clearCookieHint() {
+		if (!this.cookieHintIcon) {
+			return;
+		}
+
+		this.scene.tweens.killTweensOf(this.cookieHintIcon);
+
+		if (this.cookieHintIcon.active) {
+			this.cookieHintIcon.destroy();
+		}
+
+		this.cookieHintIcon = undefined;
+	}
+
+	/** Marca que este osito recibió galleta (wait bonus + secreto de like). */
+	public receiveCookieTreat() {
+		this.receivedCookieTreat = true;
+	}
+
+	public wantsCookieForLike() {
+		return this.clientBear.requiresCookieForLike() && !this.receivedCookieTreat;
 	}
 
 	private scheduleQuestionReveal(travelDuration: number) {
@@ -539,9 +626,22 @@ export default class AClient extends Phaser.GameObjects.Container {
 
 	/**
 	 * Chance de like según el skin del osito.
-	 * Skins bajos más propensos; servicio rápido da un boost leve.
+	 * Algunos tienen el secreto de la galleta: sin cookie jar treat no dan like.
+	 * Skins normales: más propensos los bajos; servicio rápido da un boost leve.
 	 */
 	private shouldGrantLike(wasQuickService: boolean) {
+		if (this.clientBear.requiresCookieForLike()) {
+			if (!this.receivedCookieTreat) {
+				return false;
+			}
+
+			const cookieSecretChance = wasQuickService
+				? 1
+				: AClient.COOKIE_SECRET_LIKE_CHANCE;
+
+			return Math.random() < cookieSecretChance;
+		}
+
 		let likeChance = this.clientBear.getLikeChance();
 
 		if (wasQuickService) {
@@ -618,6 +718,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 		this.questionRevealTimer = undefined;
 		this.stopRequestWaitTimer();
 		this.stopProductCarousel();
+		this.clearCookieHint();
 		this.scene.tweens.killTweensOf(this.productSample);
 		this.resetQuestionUrgencyAnimation();
 	}

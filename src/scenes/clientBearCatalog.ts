@@ -12,6 +12,11 @@ export interface ClientBearProfile {
 	waitMultiplier: number;
 	/** Probabilidad de dar like al completar el pedido con éxito (0–1). */
 	likeChance: number;
+	/**
+	 * Si es true, el "secreto" para obtener like es darles una galleta
+	 * de la cookie jar (además de completar el pedido).
+	 */
+	requiresCookieForLike: boolean;
 }
 
 /**
@@ -50,10 +55,13 @@ export function getMaxUnlockedBodySkinIndex(levelNumber: number) {
  * Perfil de paciencia y likes según el skin.
  * Skins bajos: más wait y más chance de like.
  * Skins altos: menos wait y menos chance de like.
+ * Algunos ositos (más a menudo los altos) exigen galleta para dar like.
  */
 export function getClientBearProfile(skinIndex: number): ClientBearProfile {
 	const normalizedIndex = Phaser.Math.Clamp(Math.floor(skinIndex), 0, BODY_SKIN_MAX_INDEX);
 	const progress = normalizedIndex / BODY_SKIN_MAX_INDEX;
+	// ~18% en skins bajos → ~45% en skins altos
+	const cookieSecretChance = Phaser.Math.Linear(0.18, 0.45, progress);
 
 	return {
 		skinIndex: normalizedIndex,
@@ -61,6 +69,7 @@ export function getClientBearProfile(skinIndex: number): ClientBearProfile {
 		waitMultiplier: Number(Phaser.Math.Linear(1.35, 0.6, progress).toFixed(3)),
 		// ~80% → ~10%
 		likeChance: Number(Phaser.Math.Linear(0.8, 0.1, progress).toFixed(3)),
+		requiresCookieForLike: Math.random() < cookieSecretChance,
 	};
 }
 

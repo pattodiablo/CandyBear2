@@ -112,6 +112,10 @@ export default class SpineClient extends SpineGameObject {
 		return this.bearProfile.likeChance;
 	}
 
+	public requiresCookieForLike() {
+		return this.bearProfile.requiresCookieForLike;
+	}
+
 	public playAnimation(animationName: string, loop = true) {
 
 		const currentTrack = this.animationState.getTrack(0);
