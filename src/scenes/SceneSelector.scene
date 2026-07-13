@@ -97,6 +97,38 @@
             },
             "x": 1235,
             "y": 118
+        },
+        {
+            "prefabId": "ff18d946-988b-45fb-8e0d-51213a5abc94",
+            "id": "1aee7d73-608d-407f-abb7-942e01f70d71",
+            "unlock": [
+                "x",
+                "y",
+                "btnText",
+                "initialState"
+            ],
+            "label": "InfiniteModeBtn",
+            "scope": "CLASS",
+            "btnText": "Infinite Mode",
+            "initialState": false,
+            "x": 303,
+            "y": 648
+        },
+        {
+            "prefabId": "ff18d946-988b-45fb-8e0d-51213a5abc94",
+            "id": "0a38a62f-6b10-4cf6-8f10-2c4211e7ec9e",
+            "unlock": [
+                "x",
+                "y",
+                "btnText",
+                "initialState"
+            ],
+            "label": "PlayBtn",
+            "scope": "CLASS",
+            "btnText": "Play",
+            "initialState": false,
+            "x": 988,
+            "y": 648
         }
     ],
     "plainObjects": [],

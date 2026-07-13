@@ -6,7 +6,11 @@
 /* START-USER-IMPORTS */
 import Phaser from "phaser";
 import assetPackUrl from "../../static/assets/asset-pack.json";
-import { hasOpenedGameBefore, markGameAsOpened } from "./levelProgress";
+import {
+	hasOpenedGameBefore,
+	markGameAsOpened,
+	shouldShowCampaignCredits,
+} from "./levelProgress";
 /* END-USER-IMPORTS */
 
 export default class Preload extends Phaser.Scene {
@@ -131,6 +135,12 @@ export default class Preload extends Phaser.Scene {
 		if (!hasOpenedGameBefore()) {
 			markGameAsOpened();
 			this.scene.start("Level", { levelNumber: 1 });
+			return;
+		}
+
+		// Si ya tiene la campaña perfecta y no vio los créditos, mostrarlos al arrancar.
+		if (shouldShowCampaignCredits()) {
+			this.scene.start("CredictsScene");
 			return;
 		}
 

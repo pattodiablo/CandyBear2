@@ -97,6 +97,8 @@ export default class AClient extends Phaser.GameObjects.Container {
 	private pendingProducts: ClientRequestAppearance[] = [];
 	private displayedProductIndex = 0;
 	private productCarouselTimer?: Phaser.Time.TimerEvent;
+	/** Pedidos fijos (p. ej. clientes de limpieza de bandeja al final del día). */
+	private forcedOrders?: ClientRequestAppearance[];
 
 	private static readonly TARGET_Y = 370;
 	private static readonly EXIT_Y = 470;
@@ -296,6 +298,16 @@ export default class AClient extends Phaser.GameObjects.Container {
 		});
 	}
 
+	/** Asigna un pedido concreto antes de revelar la pregunta (limpieza de bandejas). */
+	public assignForcedOrders(orders: ClientRequestAppearance[]) {
+		if (orders.length === 0) {
+			this.forcedOrders = undefined;
+			return;
+		}
+
+		this.forcedOrders = orders.map((order) => ({ ...order }));
+	}
+
 	private showClientQuestion() {
 
 		if (!this.active || this.hasActiveRequest()) {
@@ -306,12 +318,20 @@ export default class AClient extends Phaser.GameObjects.Container {
 		this.applyClientAppearance({ key: "ClientBear" });
 
 		const levelScene = this.scene as Level;
-		const orderCount = rollClientOrderCount(
-			levelScene.getCurrentLevelNumber(),
-			levelScene.getCurrentLevelDifficulty()
-		);
-		this.initialOrderCount = orderCount;
-		this.pendingProducts = pickClientOrders(orderCount);
+
+		if (this.forcedOrders && this.forcedOrders.length > 0) {
+			this.pendingProducts = this.forcedOrders.map((order) => ({ ...order }));
+			this.initialOrderCount = this.pendingProducts.length;
+			this.forcedOrders = undefined;
+		} else {
+			const orderCount = rollClientOrderCount(
+				levelScene.getCurrentLevelNumber(),
+				levelScene.getCurrentLevelDifficulty()
+			);
+			this.initialOrderCount = orderCount;
+			this.pendingProducts = pickClientOrders(orderCount);
+		}
+
 		this.displayedProductIndex = 0;
 		this.showDisplayedProduct(false);
 		this.productSample.setVisible(true);
@@ -682,10 +702,11 @@ export default class AClient extends Phaser.GameObjects.Container {
 				this.scene.sound.play(`eating${Phaser.Math.Between(1, 3)}`);
 
 				if (grantLike) {
+					const skinIndex = this.clientBear.getAppearanceVariantIndex();
 					levelScene.showLikeHeartAt(exitX, () => {
 						const yumPrefab = levelScene.showYumAt(exitX);
 						levelScene.respawnClient(this, yumPrefab);
-					});
+					}, skinIndex);
 					return;
 				}
 

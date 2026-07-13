@@ -4,6 +4,7 @@ import Level from "./scenes/Level";
 import SceneSelector from "./scenes/SceneSelector";
 import preloadAssetPackUrl from "../static/assets/preload-asset-pack.json";
 import Preload from "./scenes/Preload";
+import CredictsScene from "./scenes/CredictsScene";
 
 declare global {
 	interface Window {
@@ -59,7 +60,7 @@ function createGame() {
 			autoCenter: Phaser.Scale.Center.CENTER_BOTH,
 			resizeInterval: 250,
 		},
-		scene: [Boot, Preload, Level, SceneSelector]
+		scene: [Boot, Preload, Level, SceneSelector, CredictsScene]
 	});
 }
 

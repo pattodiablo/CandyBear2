@@ -6,6 +6,60 @@ export const BODY_SKIN_MAX_INDEX = 15;
 /** El último skin (bodySkin15) se desbloquea en este nivel. */
 export const LAST_BODY_SKIN_UNLOCK_LEVEL = 30;
 
+/**
+ * Nombre de cada osito según el head/skin.
+ * 0 = head (default), 1 = headSkin1, … 15 = headSkin15
+ */
+export const CLIENT_BEAR_NAMES = [
+	"Pepe",   // head
+	"Lulu",   // headSkin1
+	"Carl",   // headSkin2
+	"Fubu",   // headSkin3
+	"Mock",   // headSkin4
+	"Gommy",  // headSkin5
+	"Sussy",  // headSkin6
+	"Falck",  // headSkin7
+	"Shef",   // headSkin8
+	"Muly",   // headSkin9
+	"Spock",  // headSkin10
+	"Darky",  // headSkin11
+	"Fran",   // headSkin12
+	"Fuse",   // headSkin13
+	"Rut",    // headSkin14
+	"Som",    // headSkin15
+] as const;
+
+/** Frase de cada osito (mismo orden que CLIENT_BEAR_NAMES / head skins). */
+export const CLIENT_BEAR_QUOTES = [
+	"Just bear-y perfect!",   // Pepe
+	"Absolutely fabulous!",   // Lulu
+	"Champion flavor!",       // Carl
+	"Wise choice!",           // Fubu
+	"Don't touch my donut!",  // Mock
+	"Yummy in my tummy!",     // Gommy
+	"Sweetness overload!",    // Sussy
+	"Too cool for glaze!",    // Falck
+	"Baked with love!",       // Shef
+	"Ready, set, eat!",       // Muly
+	"Dreamy donuts!",         // Spock
+	"Devilishly delicious!",  // Darky
+	"Built to perfection!",   // Fran
+	"Magic in every bite!",   // Fuse
+	"Sweet & stylish!",       // Rut
+	"Simple but delicious!",  // Som
+] as const;
+
+export function getClientBearName(skinIndex: number) {
+	const normalizedIndex = Phaser.Math.Clamp(Math.floor(skinIndex), 0, BODY_SKIN_MAX_INDEX);
+	return CLIENT_BEAR_NAMES[normalizedIndex] ?? CLIENT_BEAR_NAMES[0];
+}
+
+export function getClientBearQuote(skinIndex: number) {
+	const normalizedIndex = Phaser.Math.Clamp(Math.floor(skinIndex), 0, BODY_SKIN_MAX_INDEX);
+	const quote = CLIENT_BEAR_QUOTES[normalizedIndex] ?? CLIENT_BEAR_QUOTES[0];
+	return `'${quote}'`;
+}
+
 export interface ClientBearProfile {
 	skinIndex: number;
 	/** Multiplicador del tiempo de espera base (más alto = más paciente). */

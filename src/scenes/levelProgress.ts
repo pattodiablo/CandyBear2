@@ -1,5 +1,12 @@
-import { LEVEL_LIKES_STORAGE_KEY, TOTAL_LIKES_STORAGE_KEY } from "./likeProgress";
-import { BOUGHT_MOMENT_CARDS_STORAGE_KEY } from "./momentProgress";
+import {
+	BEAR_LIKES_STORAGE_KEY,
+	LEVEL_LIKES_STORAGE_KEY,
+	TOTAL_LIKES_STORAGE_KEY,
+} from "./likeProgress";
+import {
+	BOUGHT_MOMENT_CARDS_STORAGE_KEY,
+	LEVELS_WITHOUT_UPGRADE_STORAGE_KEY,
+} from "./momentProgress";
 import { ACQUIRED_PRODUCTS_STORAGE_KEY } from "./productProgress";
 import { ACQUIRED_WORKSTATIONS_STORAGE_KEY } from "./workstationProgress";
 
@@ -7,6 +14,12 @@ const STORAGE_KEY = "candybear2-highest-completed-level";
 const TOTAL_COINS_STORAGE_KEY = "candybear2-total-coins";
 const LEVEL_STARS_STORAGE_KEY = "candybear2-level-stars";
 const FIRST_SESSION_STORAGE_KEY = "candybear2-has-opened-before";
+const INFINITE_MODE_UNLOCKED_STORAGE_KEY = "candybear2-infinite-mode-unlocked";
+const CAMPAIGN_CREDITS_SEEN_STORAGE_KEY = "candybear2-campaign-credits-seen";
+
+/** Niveles de campaña que deben estar perfectos para la pantalla de créditos. */
+export const CAMPAIGN_LEVEL_COUNT = 40;
+export const CAMPAIGN_MAX_STARS = 3;
 
 export const GAME_STORAGE_KEYS = [
 	STORAGE_KEY,
@@ -14,10 +27,14 @@ export const GAME_STORAGE_KEYS = [
 	LEVEL_STARS_STORAGE_KEY,
 	LEVEL_LIKES_STORAGE_KEY,
 	TOTAL_LIKES_STORAGE_KEY,
+	BEAR_LIKES_STORAGE_KEY,
 	FIRST_SESSION_STORAGE_KEY,
 	ACQUIRED_PRODUCTS_STORAGE_KEY,
 	ACQUIRED_WORKSTATIONS_STORAGE_KEY,
 	BOUGHT_MOMENT_CARDS_STORAGE_KEY,
+	LEVELS_WITHOUT_UPGRADE_STORAGE_KEY,
+	INFINITE_MODE_UNLOCKED_STORAGE_KEY,
+	CAMPAIGN_CREDITS_SEEN_STORAGE_KEY,
 ] as const;
 
 export function clearAllStoredProgress() {
@@ -99,6 +116,72 @@ export function markGameAsOpened() {
 	}
 
 	window.localStorage.setItem(FIRST_SESSION_STORAGE_KEY, "1");
+}
+
+/** True si el jugador ya desbloqueó Infinite Mode (p. ej. desde la pantalla de créditos). */
+export function isInfiniteModeUnlocked() {
+	if (typeof window === "undefined") {
+		return false;
+	}
+
+	return window.localStorage.getItem(INFINITE_MODE_UNLOCKED_STORAGE_KEY) === "1";
+}
+
+/** Marca Infinite Mode como desbloqueado de forma persistente. */
+export function unlockInfiniteMode() {
+	if (typeof window === "undefined") {
+		return;
+	}
+
+	window.localStorage.setItem(INFINITE_MODE_UNLOCKED_STORAGE_KEY, "1");
+}
+
+/** Los 40 niveles están desbloqueados (nivel 40 jugable o ya completado). */
+export function hasUnlockedAllCampaignLevels(levelCount = CAMPAIGN_LEVEL_COUNT) {
+	return getHighestUnlockedLevel(levelCount) >= levelCount;
+}
+
+/** Todos los niveles de campaña tienen 3 estrellas. */
+export function hasAllCampaignLevelsMaxStars(
+	levelCount = CAMPAIGN_LEVEL_COUNT,
+	maxStars = CAMPAIGN_MAX_STARS
+) {
+	for (let levelNumber = 1; levelNumber <= levelCount; levelNumber++) {
+		if (getLevelStars(levelNumber) < maxStars) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+/**
+ * Condición de la pantalla de créditos:
+ * 40 niveles desbloqueados y todos con 3 estrellas.
+ */
+export function isCampaignCreditsEligible(levelCount = CAMPAIGN_LEVEL_COUNT) {
+	return hasUnlockedAllCampaignLevels(levelCount) && hasAllCampaignLevelsMaxStars(levelCount);
+}
+
+export function hasSeenCampaignCredits() {
+	if (typeof window === "undefined") {
+		return false;
+	}
+
+	return window.localStorage.getItem(CAMPAIGN_CREDITS_SEEN_STORAGE_KEY) === "1";
+}
+
+export function markCampaignCreditsSeen() {
+	if (typeof window === "undefined") {
+		return;
+	}
+
+	window.localStorage.setItem(CAMPAIGN_CREDITS_SEEN_STORAGE_KEY, "1");
+}
+
+/** True si hay que mostrar CredictsScene (elegible y aún no vista). */
+export function shouldShowCampaignCredits() {
+	return isCampaignCreditsEligible() && !hasSeenCampaignCredits();
 }
 
 export function getHighestUnlockedLevel(maxLevel: number) {

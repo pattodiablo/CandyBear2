@@ -16,7 +16,13 @@ import {
 	TOTAL_MOMENT_CARDS,
 } from "./momentCardCatalog";
 import { getTotalLikes, spendTotalLikes } from "./likeProgress";
-import { getHighestUnlockedLevel, getLevelStars, getStoredTotalCoins, spendTotalCoins } from "./levelProgress";
+import {
+	getHighestUnlockedLevel,
+	getLevelStars,
+	getStoredTotalCoins,
+	isInfiniteModeUnlocked,
+	spendTotalCoins,
+} from "./levelProgress";
 import { isMomentCardBought } from "./momentProgress";
 import { applySoftRainbowCameraFilter } from "../filters/softRainbowCameraFilter";
 /* END-USER-IMPORTS */
@@ -59,9 +65,25 @@ export default class SceneSelector extends Phaser.Scene {
 		// likeHeart
 		const likeHeart = this.add.image(1235, 118, "likeHeart");
 
+		// InfiniteModeBtn
+		const infiniteModeBtn = new SceneSelectorBtn(this, 303, 648);
+		this.add.existing(infiniteModeBtn);
+
+		// PlayBtn
+		const playBtn = new SceneSelectorBtn(this, 988, 648);
+		this.add.existing(playBtn);
+
 		// momentsBtnPrefab (prefab fields)
 		momentsBtnPrefab.btnText = "Upgrades";
 		momentsBtnPrefab.initialState = false;
+
+		// infiniteModeBtn (prefab fields)
+		infiniteModeBtn.btnText = "Infinite Mode";
+		infiniteModeBtn.initialState = false;
+
+		// playBtn (prefab fields)
+		playBtn.btnText = "Play";
+		playBtn.initialState = false;
 
 		this.nextPage = nextPage;
 		this.prevPage = prevPage;
@@ -70,6 +92,8 @@ export default class SceneSelector extends Phaser.Scene {
 		this.momentsBtnPrefab = momentsBtnPrefab;
 		this.bigCoin = bigCoin;
 		this.likeHeart = likeHeart;
+		this.infiniteModeBtn = infiniteModeBtn;
+		this.playBtn = playBtn;
 
 		this.events.emit("scene-awake");
 	}
@@ -81,6 +105,8 @@ export default class SceneSelector extends Phaser.Scene {
 	private momentsBtnPrefab!: SceneSelectorBtn;
 	private bigCoin!: Phaser.GameObjects.Image;
 	private likeHeart!: Phaser.GameObjects.Image;
+	private infiniteModeBtn!: SceneSelectorBtn;
+	private playBtn!: SceneSelectorBtn;
 
 	/* START-USER-CODE */
 	private static readonly TOTAL_DAY_HOLDERS = 40;
@@ -136,9 +162,9 @@ export default class SceneSelector extends Phaser.Scene {
 	private hudHighlightTween?: Phaser.Tweens.Tween;
 	private backgroundMusic?: Phaser.Sound.BaseSound;
 
-	init() {
+	init(data: { openTab?: "levels" | "moments" } = {}) {
 
-		this.activeTab = "levels";
+		this.activeTab = data.openTab === "moments" ? "moments" : "levels";
 		this.levelsPageIndex = 0;
 		this.momentsPageIndex = 0;
 	}
@@ -153,6 +179,9 @@ export default class SceneSelector extends Phaser.Scene {
 		this.createMomentCards();
 		this.initializeCardPreview();
 		this.initializeTabButtons();
+		// Respeta openTab (p. ej. "moments" desde el CTA Buy upgrades del fin de nivel).
+		this.levelsBtnPrefab.setTabActive(this.activeTab === "levels");
+		this.momentsBtnPrefab.setTabActive(this.activeTab === "moments");
 		this.initializePagination();
 		this.refreshPage();
 		this.updateMomentsButtonAttention();
@@ -498,6 +527,22 @@ export default class SceneSelector extends Phaser.Scene {
 		this.momentsBtnPrefab.on("selected", () => {
 			this.switchTab("moments");
 		});
+		this.infiniteModeBtn.on("selected", () => {
+			this.startInfiniteMode();
+		});
+		this.playBtn.on("selected", () => {
+			this.startPlayFromProgress();
+		});
+		// Visible solo si ya se desbloqueó (p. ej. desde CredictsScene).
+		this.setInfiniteModeAvailable(isInfiniteModeUnlocked());
+		// Play como CTA principal (estado "on").
+		this.playBtn.setTabActive(true);
+	}
+
+	/** Muestra u oculta el botón de Infinite Mode según progreso desbloqueado. */
+	public setInfiniteModeAvailable(available: boolean) {
+		this.infiniteModeBtn.setVisible(available);
+		this.infiniteModeBtn.setActive(available);
 	}
 
 	private switchTab(tab: "levels" | "moments") {
@@ -517,6 +562,16 @@ export default class SceneSelector extends Phaser.Scene {
 	private startLevel(levelNumber: number) {
 		this.backgroundMusic?.stop();
 		this.scene.start("Level", { levelNumber });
+	}
+
+	/** Continúa en el nivel más alto desbloqueado. */
+	private startPlayFromProgress() {
+		this.startLevel(this.highestUnlockedLevel);
+	}
+
+	private startInfiniteMode() {
+		this.backgroundMusic?.stop();
+		this.scene.start("Level", { infiniteMode: true });
 	}
 
 	private startBackgroundMusic() {

@@ -20,8 +20,15 @@ import AClient from "./Prefabs/AClient";
 import YumPrefab from "./Prefabs/YumPrefab";
 import Coin from "./Prefabs/Coin";
 import ConfettiPrefab from "./Prefabs/ConfettiPrefab";
-import { getTotalLikes, recordLike, storeLevelLikes } from "./likeProgress";
-import { getStoredTotalCoins, storeCompletedLevel, storeLevelStars, storeTotalCoins } from "./levelProgress";
+import { getTotalLikes, recordBearLike, recordLike, storeLevelLikes } from "./likeProgress";
+import {
+	getHighestUnlockedLevel,
+	getStoredTotalCoins,
+	shouldShowCampaignCredits,
+	storeCompletedLevel,
+	storeLevelStars,
+	storeTotalCoins,
+} from "./levelProgress";
 import { SkinsAndAnimationBoundsProvider } from "@esotericsoftware/spine-phaser-v4";
 import type { MilkSlotId } from "./Prefabs/milkMachine";
 import type { ToasterSlotId } from "./Prefabs/ToasterPrefab";
@@ -52,6 +59,11 @@ import { bindDeveloperCheatCode, DEVELOPER_CHEAT_COINS } from "./developerCheat"
 import { applySoftRainbowCameraFilter } from "../filters/softRainbowCameraFilter";
 import { getCookiesPerDayLimit } from "./momentUpgradeBonuses";
 import { canAffordAnyMomentCard } from "./momentCardCatalog";
+import type { ClientRequestAppearance } from "./clientOrderPool";
+import {
+	recordLevelClearedWithoutUpgradePurchase,
+	shouldPromptBuyUpgrades,
+} from "./momentProgress";
 
 interface LevelPlan {
 	levelNumber: number;
@@ -63,6 +75,7 @@ interface LevelPlan {
 
 interface LevelSceneData {
 	levelNumber?: number;
+	infiniteMode?: boolean;
 }
 
 interface HelpHandHint {
@@ -279,7 +292,8 @@ export default class Level extends Phaser.Scene {
 	private static readonly WAVE_SIZE_GROWTH_FACTOR = 0.4;
 	private static readonly WAVE_SIZE_OSCILLATION_BOOST = 0.5;
 	private static readonly TRAY_CAPACITY = 3;
-	private static readonly TRAY_SLOT_OFFSET = 42;
+	/** Separación horizontal entre productos en la bandeja (más espacio = más fácil click). */
+	private static readonly TRAY_SLOT_OFFSET = 72;
 	private static readonly CAMPAIGN_LEVEL_PLANS = Array.from(
 		{ length: Level.CAMPAIGN_LEVEL_COUNT },
 		(_, index) => Level.createLevelPlan(index + 1)
@@ -342,8 +356,8 @@ export default class Level extends Phaser.Scene {
 	private milkRefill1Occupied = false;
 	private milkRefill2Occupied = false;
 	private toasterSlotOccupied = false;
-	private charola1Products: AProduct[] = [];
-	private charola2Products: AProduct[] = [];
+	private charola1Products: Array<AProduct | sandwichPrefab> = [];
+	private charola2Products: Array<AProduct | sandwichPrefab> = [];
 	private selectedDipProduct?: AProduct;
 	private selectedFlavorBottle?: FlavorBottle;
 	private selectedDeliveryProduct?: AProduct | milkglass | sandwichPrefab;
@@ -371,6 +385,8 @@ export default class Level extends Phaser.Scene {
 	private clientsRemainingInLevel = 0;
 	private backgroundMusic?: Phaser.Sound.BaseSound;
 	private selectedLevelNumber = 1;
+	private isInfiniteMode = false;
+	private infiniteBaseLevel = 1;
 	private currentLevelPlan: LevelPlan = Level.getLevelPlan(1);
 	private currentWaveIndex = 0;
 	private hasCelebratedLevelCompletion = false;
@@ -380,6 +396,10 @@ export default class Level extends Phaser.Scene {
 	private discardedProductLosses = 0;
 	private scheduledWaveClients = 0;
 	private queuedClientEntries = 0;
+	/** Clientes extra por productos listos en bandeja al final de las oleadas. */
+	private extraClientsSpawned = 0;
+	/** Cola de pedidos forzados (uno por cliente) para la limpieza de bandejas. */
+	private forcedClientOrderQueue: ClientRequestAppearance[][] = [];
 	private waveSpawnTimers: Phaser.Time.TimerEvent[] = [];
 	private levelPrepTimer?: Phaser.Time.TimerEvent;
 	private clientSpawnRetryTimer?: Phaser.Time.TimerEvent;
@@ -467,12 +487,18 @@ export default class Level extends Phaser.Scene {
 		this.coinCount = getStoredTotalCoins();
 		this.earnedCoinsToday = 0;
 
-		this.selectedLevelNumber = Phaser.Math.Clamp(
-			Math.floor(data.levelNumber ?? 1),
-			1,
-			Level.CAMPAIGN_LEVEL_COUNT
-		);
-		this.currentLevelPlan = Level.getLevelPlan(this.selectedLevelNumber);
+		this.isInfiniteMode = data.infiniteMode === true;
+		this.infiniteBaseLevel = getHighestUnlockedLevel(Level.CAMPAIGN_LEVEL_COUNT);
+		this.selectedLevelNumber = this.isInfiniteMode
+			? this.infiniteBaseLevel
+			: Phaser.Math.Clamp(
+				Math.floor(data.levelNumber ?? 1),
+				1,
+				Level.CAMPAIGN_LEVEL_COUNT
+			);
+		this.currentLevelPlan = this.isInfiniteMode
+			? Level.createInfiniteLevelPlan(this.infiniteBaseLevel)
+			: Level.getLevelPlan(this.selectedLevelNumber);
 		this.currentWaveIndex = 0;
 		this.hasCelebratedLevelCompletion = false;
 		this.isGameplayPaused = false;
@@ -511,6 +537,8 @@ export default class Level extends Phaser.Scene {
 		this.discardedProductLosses = 0;
 		this.scheduledWaveClients = 0;
 		this.queuedClientEntries = 0;
+		this.extraClientsSpawned = 0;
+		this.forcedClientOrderQueue = [];
 		this.isExitConfirmVisible = false;
 		this.isUnlockPanelVisible = false;
 		this.currentUnlockId = undefined;
@@ -605,9 +633,14 @@ export default class Level extends Phaser.Scene {
 		return getCookiesPerDayLimit();
 	}
 
-	public recordQuickServiceLike() {
+	public recordQuickServiceLike(skinIndex?: number) {
 		this.quickServiceLikesThisLevel++;
 		recordLike();
+
+		if (skinIndex !== undefined) {
+			recordBearLike(skinIndex);
+		}
+
 		this.updateLikesCounter();
 	}
 
@@ -621,7 +654,11 @@ export default class Level extends Phaser.Scene {
 	}
 
 	private getLevelClientCount() {
-		return this.currentLevelPlan.waveSizes.reduce((total, waveSize) => total + waveSize, 0);
+		const plannedClients = this.currentLevelPlan.waveSizes.reduce(
+			(total, waveSize) => total + waveSize,
+			0
+		);
+		return plannedClients + this.extraClientsSpawned;
 	}
 
 	private getStarPerformance(): LevelStarPerformance {
@@ -732,7 +769,53 @@ export default class Level extends Phaser.Scene {
 		};
 	}
 
+	/** Plan inicial del modo infinito: una sola oleada; las siguientes se generan al volar. */
+	private static createInfiniteLevelPlan(baseLevel: number): LevelPlan {
+		const normalizedBase = Math.max(1, Math.floor(baseLevel));
+		const waveNumber = 1;
+
+		return {
+			levelNumber: Level.getInfiniteEffectiveLevel(waveNumber, normalizedBase),
+			difficulty: Level.getInfiniteDifficulty(waveNumber, normalizedBase),
+			oscillation: 0,
+			waveSizes: [Level.getInfiniteWaveSize(waveNumber, normalizedBase)],
+			isTutorial: false,
+		};
+	}
+
+	private static getInfiniteEffectiveLevel(waveNumber: number, baseLevel: number) {
+		const normalizedWave = Math.max(1, Math.floor(waveNumber));
+		const normalizedBase = Math.max(1, Math.floor(baseLevel));
+		// Crece con las oleadas para pedidos/skins más exigentes, sin techo de campaña.
+		return normalizedBase + Math.floor((normalizedWave - 1) / 2);
+	}
+
+	private static getInfiniteDifficulty(waveNumber: number, baseLevel: number) {
+		const effectiveLevel = Math.min(
+			Level.CAMPAIGN_LEVEL_COUNT,
+			Level.getInfiniteEffectiveLevel(waveNumber, baseLevel)
+		);
+		const baseDifficulty = Level.createLevelPlan(effectiveLevel).difficulty;
+		const extraWaves = Math.max(0, Math.floor(waveNumber) - 1);
+
+		return Number((baseDifficulty + (extraWaves * 0.12)).toFixed(2));
+	}
+
+	private static getInfiniteWaveSize(waveNumber: number, baseLevel: number) {
+		const normalizedWave = Math.max(1, Math.floor(waveNumber));
+		const normalizedBase = Math.max(1, Math.floor(baseLevel));
+		const startingSize = Phaser.Math.Clamp(2 + Math.floor(normalizedBase / 12), 2, 4);
+		const growth = Math.floor((normalizedWave - 1) / 2);
+
+		return Phaser.Math.Clamp(startingSize + growth, 1, Level.MAX_WAVE_SIZE);
+	}
+
 	private applyLevelPlanToIntroPanel() {
+
+		if (this.isInfiniteMode) {
+			this.panel.setDayLabel("Infinite Mode");
+			return;
+		}
 
 		this.panel.setDayLabel(`Day ${this.currentLevelPlan.levelNumber}`);
 	}
@@ -782,8 +865,13 @@ export default class Level extends Phaser.Scene {
 
 	private initializeDayIndicator() {
 
-		this.dayIndicatorLabel = this.add.text(0, Level.DAY_INDICATOR_Y, "Day ", this.getHudTextStyle("#FD7CB6"));
-		this.dayIndicatorNumber = this.add.text(0, Level.DAY_INDICATOR_Y, String(this.currentLevelPlan.levelNumber), this.getHudTextStyle("#2D120B"));
+		const dayLabel = this.isInfiniteMode ? "Wave " : "Day ";
+		const dayValue = this.isInfiniteMode
+			? String(this.currentWaveIndex + 1)
+			: String(this.currentLevelPlan.levelNumber);
+
+		this.dayIndicatorLabel = this.add.text(0, Level.DAY_INDICATOR_Y, dayLabel, this.getHudTextStyle("#FD7CB6"));
+		this.dayIndicatorNumber = this.add.text(0, Level.DAY_INDICATOR_Y, dayValue, this.getHudTextStyle("#2D120B"));
 		this.dayIndicatorLabel.setOrigin(0, 0.5);
 		this.dayIndicatorNumber.setOrigin(0, 0.5);
 		this.layoutHudLabelPair(
@@ -796,6 +884,21 @@ export default class Level extends Phaser.Scene {
 			dayText.setScrollFactor(0);
 			dayText.setDepth(this.workstation.depth + 10);
 		}
+	}
+
+	private updateInfiniteWaveIndicator() {
+
+		if (!this.isInfiniteMode || !this.dayIndicatorLabel?.scene || !this.dayIndicatorNumber?.scene) {
+			return;
+		}
+
+		this.dayIndicatorLabel.setText("Wave ");
+		this.dayIndicatorNumber.setText(String(this.currentWaveIndex + 1));
+		this.layoutHudLabelPair(
+			this.dayIndicatorLabel,
+			this.dayIndicatorNumber,
+			(this.scale.width * 0.5) - Level.DAY_INDICATOR_CENTER_OFFSET_X
+		);
 	}
 
 	private initializeClientsLeftIndicator() {
@@ -815,7 +918,13 @@ export default class Level extends Phaser.Scene {
 
 	private syncClientsRemainingInLevel() {
 
-		this.clientsRemainingInLevel = this.getLevelClientCount();
+		if (this.isInfiniteMode) {
+			// En infinito solo contamos los clientes de la oleada actual.
+			this.clientsRemainingInLevel = this.currentLevelPlan.waveSizes[this.currentWaveIndex] ?? 0;
+		} else {
+			this.clientsRemainingInLevel = this.getLevelClientCount();
+		}
+
 		this.updateClientsLeftIndicator();
 	}
 
@@ -1959,10 +2068,19 @@ export default class Level extends Phaser.Scene {
 		this.hideUnlockPanel();
 	}
 
-	private confirmExitToSceneSelector() {
+	private confirmExitToSceneSelector(options?: { openTab?: "levels" | "moments" }) {
 
 		this.backgroundMusic?.stop();
-		this.scene.start("SceneSelector");
+
+		// Campaña perfecta (40 niveles, todos 3★): pantalla de créditos una vez.
+		if (shouldShowCampaignCredits()) {
+			this.scene.start("CredictsScene");
+			return;
+		}
+
+		this.scene.start("SceneSelector", {
+			openTab: options?.openTab ?? "levels",
+		});
 	}
 
 	private setupIntroOverlay() {
@@ -2263,7 +2381,7 @@ export default class Level extends Phaser.Scene {
 		}
 	}
 
-	public reserveTraySlot(trayId: "charola1" | "charola2", product: AProduct) {
+	public reserveTraySlot(trayId: "charola1" | "charola2", product: AProduct | sandwichPrefab) {
 		const arr = trayId === "charola1" ? this.charola1Products : this.charola2Products;
 		if (arr.includes(product)) {
 			return;
@@ -2275,7 +2393,7 @@ export default class Level extends Phaser.Scene {
 		this.reflowTrayProducts(trayId);
 	}
 
-	public releaseTraySlot(trayId: "charola1" | "charola2", product: AProduct) {
+	public releaseTraySlot(trayId: "charola1" | "charola2", product: AProduct | sandwichPrefab) {
 		const arr = trayId === "charola1" ? this.charola1Products : this.charola2Products;
 		const idx = arr.indexOf(product);
 		if (idx === -1) {
@@ -2306,6 +2424,7 @@ export default class Level extends Phaser.Scene {
 			const prod = arr[i];
 			const x = baseX + (offsets[i] ?? 0);
 			const y = baseY;
+			prod.setDepth(tray.depth + 2 + i);
 			prod.snapToTraySlot(trayId, x, y);
 		}
 	}
@@ -2653,9 +2772,9 @@ export default class Level extends Phaser.Scene {
 		return matchingProducts[0];
 	}
 
-	public showLikeHeartAt(x: number, onPopInComplete?: () => void) {
+	public showLikeHeartAt(x: number, onPopInComplete?: () => void, skinIndex?: number) {
 
-		this.recordQuickServiceLike();
+		this.recordQuickServiceLike(skinIndex);
 		this.sound.play("likeSound");
 		const heart = new LikeHeart(this, x, Level.LIKE_HEART_Y, "likeHeart", undefined, onPopInComplete);
 		this.add.existing(heart);
@@ -2785,15 +2904,74 @@ export default class Level extends Phaser.Scene {
 				return;
 			}
 
+			// Última oleada: si hay productos listos en bandeja, vienen clientes a pedirlos.
+			if (this.trySpawnLeftoverTrayOrderClients()) {
+				return;
+			}
+
 			this.handleLevelCleared(finalYum);
 		}
 	}
 
+	/**
+	 * Cuando ya no hay más oleadas y quedan productos listos en las bandejas,
+	 * spawnea un cliente por producto pidiendo exactamente ese item.
+	 */
+	private trySpawnLeftoverTrayOrderClients() {
+		if (this.isInfiniteMode || this.hasCelebratedLevelCompletion) {
+			return false;
+		}
+
+		const readyTrayProducts = this.getReadyTrayProductsForOrders();
+
+		if (readyTrayProducts.length === 0) {
+			return false;
+		}
+
+		for (const product of readyTrayProducts) {
+			const appearance = this.getRequestAppearanceFromTrayProduct(product);
+			this.forcedClientOrderQueue.push([appearance]);
+			this.extraClientsSpawned++;
+			this.clientsRemainingInLevel++;
+			this.queuedClientEntries++;
+		}
+
+		this.updateClientsLeftIndicator();
+		this.processClientEntryQueue();
+		return true;
+	}
+
+	private getReadyTrayProductsForOrders() {
+		return this.getProductsOnTrays().filter((product) => product.canReceiveDirectDelivery());
+	}
+
+	private getRequestAppearanceFromTrayProduct(
+		product: AProduct | sandwichPrefab
+	): ClientRequestAppearance {
+		const frameName = product.frame?.name;
+
+		if (frameName !== undefined && frameName !== "") {
+			return { key: product.texture.key, frame: frameName };
+		}
+
+		return { key: product.texture.key };
+	}
+
 	private hasMoreClientWaves() {
+		if (this.isInfiniteMode) {
+			return true;
+		}
+
 		return this.currentWaveIndex < this.currentLevelPlan.waveSizes.length - 1;
 	}
 
 	private handleLevelCleared(finalYum?: YumPrefab) {
+		if (this.isInfiniteMode) {
+			// El modo infinito no termina por limpiar oleadas.
+			this.spawnNextClientWave();
+			return;
+		}
+
 		if (this.hasCelebratedLevelCompletion) {
 			return;
 		}
@@ -2806,6 +2984,8 @@ export default class Level extends Phaser.Scene {
 			PanelPrefab.calculateEarnedStars(this.getStarPerformance())
 		);
 		storeLevelLikes(this.currentLevelPlan.levelNumber, this.quickServiceLikesThisLevel);
+		// Cuenta días seguidos sin comprar upgrades (para el CTA "Buy upgrades").
+		recordLevelClearedWithoutUpgradePurchase();
 		if (finalYum) {
 			finalYum.once(Phaser.GameObjects.Events.DESTROY, () => {
 				this.time.delayedCall(Level.LEVEL_COMPLETE_CONFETTI_DELAY, () => {
@@ -2855,9 +3035,24 @@ export default class Level extends Phaser.Scene {
 			duration: Level.INTRO_PANEL_DROP_DURATION,
 			ease: "Bounce.Out",
 			onComplete: () => {
+				const canAffordUpgrade = canAffordAnyMomentCard(this.coinCount, getTotalLikes());
+				const promptBuyUpgrades = shouldPromptBuyUpgrades(canAffordUpgrade);
+
 				this.panel.showFinalState(
 					this.getStarPerformance(),
 					() => {
+						// Si acaba de completar la campaña perfecta, créditos antes de seguir.
+						if (shouldShowCampaignCredits()) {
+							this.confirmExitToSceneSelector();
+							return;
+						}
+
+						// Tras varios niveles sin upgradear pudiendo comprar → tienda de upgrades.
+						if (promptBuyUpgrades) {
+							this.confirmExitToSceneSelector({ openTab: "moments" });
+							return;
+						}
+
 						if (this.currentLevelPlan.levelNumber >= Level.CAMPAIGN_LEVEL_COUNT) {
 							this.confirmExitToSceneSelector();
 							return;
@@ -2868,7 +3063,8 @@ export default class Level extends Phaser.Scene {
 					() => {
 						this.confirmExitToSceneSelector();
 					},
-					canAffordAnyMomentCard(this.coinCount, getTotalLikes())
+					canAffordUpgrade,
+					promptBuyUpgrades ? "buyUpgrades" : "nextDay"
 				);
 			}
 		});
@@ -2877,6 +3073,12 @@ export default class Level extends Phaser.Scene {
 	private spawnClient(spawnX: number) {
 
 		const client = new AClient(this, spawnX, this.clientSpawnY);
+		const forcedOrders = this.forcedClientOrderQueue.shift();
+
+		if (forcedOrders && forcedOrders.length > 0) {
+			client.assignForcedOrders(forcedOrders);
+		}
+
 		this.add.existing(client);
 		this.activeClients.push(client);
 		this.placeClientBehindWorkstation(client);
@@ -2907,12 +3109,32 @@ export default class Level extends Phaser.Scene {
 	}
 
 	private spawnNextClientWave() {
+		if (this.isInfiniteMode) {
+			this.currentWaveIndex++;
+			this.prepareNextInfiniteWave();
+			this.spawnCurrentWave();
+			return;
+		}
+
 		if (this.currentWaveIndex >= this.currentLevelPlan.waveSizes.length - 1) {
 			return;
 		}
 
 		this.currentWaveIndex++;
 		this.spawnCurrentWave();
+	}
+
+	/** Genera la siguiente oleada y sube dificultad/nivel efectivo del modo infinito. */
+	private prepareNextInfiniteWave() {
+		const waveNumber = this.currentWaveIndex + 1;
+		const effectiveLevel = Level.getInfiniteEffectiveLevel(waveNumber, this.infiniteBaseLevel);
+		const difficulty = Level.getInfiniteDifficulty(waveNumber, this.infiniteBaseLevel);
+		const waveSize = Level.getInfiniteWaveSize(waveNumber, this.infiniteBaseLevel);
+
+		this.currentLevelPlan.levelNumber = effectiveLevel;
+		this.currentLevelPlan.difficulty = difficulty;
+		this.currentLevelPlan.waveSizes.push(waveSize);
+		this.updateInfiniteWaveIndicator();
 	}
 
 	private spawnCurrentWave() {
@@ -2922,6 +3144,12 @@ export default class Level extends Phaser.Scene {
 
 		if (clientCount <= 0) {
 			return;
+		}
+
+		if (this.isInfiniteMode) {
+			this.clientsRemainingInLevel = clientCount;
+			this.updateClientsLeftIndicator();
+			this.updateInfiniteWaveIndicator();
 		}
 
 		const shuffledIndices = Phaser.Utils.Array.Shuffle(Array.from({ length: clientCount }, (_, index) => index));
@@ -3134,23 +3362,37 @@ export default class Level extends Phaser.Scene {
 			return;
 		}
 
-		// If the player has a selected delivery product, place it
-		if (this.selectedDeliveryProduct && this.selectedDeliveryProduct instanceof AProduct) {
-			(this.selectedDeliveryProduct as AProduct).placeInTray(trayId, slot.x, slot.y);
+		// Producto seleccionado (donas o sándwich listo para entregar).
+		if (this.selectedDeliveryProduct instanceof AProduct) {
+			this.selectedDeliveryProduct.placeInTray(trayId, slot.x, slot.y);
 			return;
 		}
 
-		// Otherwise, auto-assign first eligible workplace product
-		const candidates = this.children.list
+		if (this.selectedDeliveryProduct instanceof sandwichPrefab) {
+			this.selectedDeliveryProduct.placeInTray(trayId, slot.x, slot.y);
+			return;
+		}
+
+		// Auto: primero donas en workplace, luego sándwiches listos en toaster.
+		const donutCandidates = this.children.list
 			.filter((child): child is AProduct => child instanceof AProduct)
 			.filter((p) => p.canAutoPlaceInTray());
 
-		if (candidates.length === 0) {
+		if (donutCandidates.length > 0) {
+			donutCandidates[0].autoPlaceInTray(trayId, slot.x, slot.y);
+			return;
+		}
+
+		const sandwichCandidates = this.children.list
+			.filter((child): child is sandwichPrefab => child instanceof sandwichPrefab)
+			.filter((p) => p.canAutoPlaceInTray());
+
+		if (sandwichCandidates.length === 0) {
 			this.sound.play("looseMoney");
 			return;
 		}
 
-		candidates[0].autoPlaceInTray(trayId, slot.x, slot.y);
+		sandwichCandidates[0].autoPlaceInTray(trayId, slot.x, slot.y);
 	}
 
 	private setupHelpHand() {
@@ -3564,14 +3806,19 @@ export default class Level extends Phaser.Scene {
 	private getTrayDeliveryHint(tutorialFocus: boolean, pipelineProducts: AProduct[] = []): HelpHandHint | undefined {
 
 		const restrictToPipeline = pipelineProducts.length > 0;
-		const matches: Array<{ product: AProduct; client: AClient }> = [];
+		const matches: Array<{ product: AProduct | sandwichPrefab; client: AClient }> = [];
 
 		for (const product of this.getProductsOnTrays()) {
 			if (!product.canReceiveDirectDelivery()) {
 				continue;
 			}
 
-			if (restrictToPipeline && !pipelineProducts.includes(product)) {
+			// El pipeline tutorial solo filtra donas AProduct; sándwiches en bandeja siempre cuentan.
+			if (
+				restrictToPipeline
+				&& product instanceof AProduct
+				&& !pipelineProducts.includes(product)
+			) {
 				continue;
 			}
 

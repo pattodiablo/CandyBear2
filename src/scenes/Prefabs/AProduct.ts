@@ -56,7 +56,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 	private static readonly FRYER_OFFSET_Y = 20;
 	private static readonly FRY_FLOAT_OFFSET_Y = 10;
 	private static readonly SPIN_ANGLE = 360;
-	private static readonly HIT_AREA_SCALE = 1.5;
+	private static readonly HIT_AREA_SCALE = 1.75;
 	private static readonly WORKPLACE_DELAY = 200;
 	private static readonly WORKPLACE_LIFT_OFFSET_Y = 35;
 	private static readonly WORKPLACE_SELECTION_SCALE = 1.3;

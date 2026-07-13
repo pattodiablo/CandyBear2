@@ -1,0 +1,37 @@
+{
+    "id": "ffee1b81-0b99-44c9-89a9-2f4ed06bd512",
+    "sceneType": "SCENE",
+    "settings": {
+        "exportClass": true,
+        "autoImport": true,
+        "preloadPackFiles": [],
+        "createMethodName": "editorCreate",
+        "sceneKey": "CredictsScene",
+        "compilerOutputLanguage": "TYPE_SCRIPT",
+        "borderWidth": 1280,
+        "borderHeight": 720
+    },
+    "displayList": [
+        {
+            "type": "Text",
+            "id": "5a61eaab-fe8e-4ad3-a6f6-3f22dec45ed6",
+            "label": "Thankstext",
+            "scope": "CLASS",
+            "x": 640,
+            "y": 92,
+            "originX": 0.5,
+            "originY": 0.5,
+            "text": "Thanks for playing",
+            "fontFamily": "Klop",
+            "fontSize": "54pt",
+            "color": "#EEA1A7"
+        }
+    ],
+    "plainObjects": [],
+    "meta": {
+        "app": "Phaser Editor - Scene Editor",
+        "url": "https://phaser.io/editor",
+        "contentType": "phasereditor2d.core.scene.SceneContentType",
+        "version": 5
+    }
+}

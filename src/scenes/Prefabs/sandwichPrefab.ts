@@ -41,7 +41,7 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 	private static readonly RAISED_OFFSET_Y = 50;
 	private static readonly HOLDER_ACTIVE_DURATION = 100;
 	private static readonly SPIN_ANGLE = 360;
-	private static readonly HIT_AREA_SCALE = 1.5;
+	private static readonly HIT_AREA_SCALE = 1.75;
 	private static readonly FILLED_FRAME = "sandwich0005.png";
 	private static readonly MACHINE_SELECTION_SCALE = 1.2;
 	private static readonly SELECTION_TIMEOUT = 2500;
@@ -69,6 +69,9 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 	private selectionTimeout?: Phaser.Time.TimerEvent;
 	private burnProgress = 0;
 	private currentSlotId?: ToasterSlotId;
+	private currentTrayId?: "charola1" | "charola2";
+	private traySlotX?: number;
+	private traySlotY?: number;
 
 	private handlePointerOver() {
 		if (this.isLaunching || this.isRaised || this.isSelectingDelivery) {
@@ -85,6 +88,21 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 
 		const levelScene = this.scene as Level;
 
+		if (this.currentTrayId) {
+			if (this.isReadyForDelivery) {
+				const directDeliveryTarget = levelScene.getDirectDeliveryTarget(this);
+
+				if (directDeliveryTarget) {
+					this.directDeliverToClient(directDeliveryTarget);
+					return;
+				}
+
+				this.startDeliverySelection();
+			}
+
+			return;
+		}
+
 		if (this.isBurned && this.isAtToaster) {
 			this.discardBurnedSandwich();
 			return;
@@ -98,7 +116,8 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 				return;
 			}
 
-			this.discardUnrequestedSandwich();
+			// Sin cliente: selección de entrega (bandeja o cliente).
+			this.startDeliverySelection();
 			return;
 		}
 
@@ -301,11 +320,22 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 	public canReceiveDirectDelivery() {
 
 		return this.active
-			&& this.isAtToaster
+			&& (this.isAtToaster || !!this.currentTrayId)
 			&& this.isReadyForDelivery
 			&& !this.isBurned
 			&& !this.isLaunching
 			&& !this.isSelectingDelivery;
+	}
+
+	public canAutoPlaceInTray() {
+
+		return this.active
+			&& this.isAtToaster
+			&& this.isReadyForDelivery
+			&& !this.isBurned
+			&& !this.isLaunching
+			&& !this.isSelectingDelivery
+			&& !!this.currentSlotId;
 	}
 
 	public isIdleOnHolder() {
@@ -316,6 +346,7 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 			&& !this.isLaunching
 			&& !this.isRaised
 			&& !this.isAtToaster
+			&& !this.currentTrayId
 			&& !this.isSelectingDelivery;
 	}
 
@@ -369,9 +400,13 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 		});
 	}
 
-	public deliverToClient(client: { x: number; y: number; matchesProduct(product: sandwichPrefab): boolean; canReceiveDelivery(): boolean; receiveProductDelivery(product: sandwichPrefab): boolean; consumeRequestAndExit(showYum?: boolean): void; }) {
+	public canPlaceInTray() {
+		return this.isSelectingDelivery;
+	}
 
-		if (!this.isSelectingDelivery || !this.currentSlotId) {
+	public placeInTray(trayId: "charola1" | "charola2", targetX: number, targetY: number) {
+
+		if (!this.isSelectingDelivery) {
 			return;
 		}
 
@@ -379,8 +414,120 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 		this.clearBurnState();
 		this.clearSelectionTimeout();
 		levelScene.clearDeliverySelection(this);
-		levelScene.releaseToasterSlot(this.currentSlotId);
-		this.currentSlotId = undefined;
+
+		if (this.currentSlotId) {
+			levelScene.releaseToasterSlot(this.currentSlotId);
+			this.currentSlotId = undefined;
+		}
+
+		this.isSelectingDelivery = false;
+		this.isLaunching = true;
+		this.isAtToaster = false;
+		this.currentTrayId = trayId;
+		this.traySlotX = targetX;
+		this.traySlotY = targetY;
+		this.playSwooshSound();
+		this.scene.tweens.killTweensOf(this);
+
+		this.scene.tweens.add({
+			targets: this,
+			x: targetX,
+			y: targetY,
+			scaleX: this.baseScaleX,
+			scaleY: this.baseScaleY,
+			duration: 320,
+			ease: "Cubic.InOut",
+			onComplete: () => {
+				this.setScale(this.baseScaleX, this.baseScaleY);
+				this.isLaunching = false;
+				this.isReadyForDelivery = true;
+				this.isBurned = false;
+				this.clearTint();
+				levelScene.reserveTraySlot(trayId, this);
+			}
+		});
+	}
+
+	public autoPlaceInTray(trayId: "charola1" | "charola2", targetX: number, targetY: number) {
+
+		if (!this.canAutoPlaceInTray()) {
+			return;
+		}
+
+		const levelScene = this.scene as Level;
+		this.clearBurnState();
+		this.isAtToaster = false;
+		this.isReadyForDelivery = false;
+		this.isLaunching = true;
+
+		if (this.currentSlotId) {
+			levelScene.releaseToasterSlot(this.currentSlotId);
+			this.currentSlotId = undefined;
+		}
+
+		this.currentTrayId = trayId;
+		this.traySlotX = targetX;
+		this.traySlotY = targetY;
+		this.playSwooshSound();
+		this.setScale(this.baseScaleX, this.baseScaleY);
+
+		this.scene.tweens.add({
+			targets: this,
+			x: targetX,
+			y: targetY,
+			scaleX: this.baseScaleX,
+			scaleY: this.baseScaleY,
+			duration: 320,
+			ease: "Cubic.InOut",
+			onComplete: () => {
+				this.setScale(this.baseScaleX, this.baseScaleY);
+				this.isLaunching = false;
+				this.isReadyForDelivery = true;
+				this.isBurned = false;
+				this.clearTint();
+				levelScene.reserveTraySlot(trayId, this);
+			}
+		});
+	}
+
+	public snapToTraySlot(trayId: "charola1" | "charola2", x: number, y: number) {
+
+		if (!this.active) {
+			return;
+		}
+
+		this.currentTrayId = trayId;
+		this.traySlotX = x;
+		this.traySlotY = y;
+		this.isAtToaster = false;
+		this.setPosition(x, y);
+		this.setScale(this.baseScaleX, this.baseScaleY);
+	}
+
+	public deliverToClient(client: { x: number; y: number; matchesProduct(product: sandwichPrefab): boolean; canReceiveDelivery(): boolean; receiveProductDelivery(product: sandwichPrefab): boolean; consumeRequestAndExit(showYum?: boolean): void; }) {
+
+		if (!this.isSelectingDelivery) {
+			return;
+		}
+
+		const levelScene = this.scene as Level;
+		const trayId = this.currentTrayId;
+		this.clearBurnState();
+		this.clearSelectionTimeout();
+		levelScene.clearDeliverySelection(this);
+
+		if (this.currentSlotId) {
+			levelScene.releaseToasterSlot(this.currentSlotId);
+			this.currentSlotId = undefined;
+		}
+
+		if (trayId) {
+			levelScene.releaseTraySlot(trayId, this);
+		}
+
+		this.currentTrayId = undefined;
+		this.traySlotX = undefined;
+		this.traySlotY = undefined;
 		this.isSelectingDelivery = false;
 		this.isLaunching = true;
 		this.playSwooshSound();
@@ -432,12 +579,18 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 
 	public cancelDeliverySelection() {
 
-		if (!this.isSelectingDelivery || !this.currentSlotId) {
+		if (!this.isSelectingDelivery) {
 			return;
 		}
 
 		const levelScene = this.scene as Level;
-		const slotTarget = levelScene.toaster.getSlotTarget(this.currentSlotId);
+		const hasTraySlot = this.currentTrayId && this.traySlotX !== undefined && this.traySlotY !== undefined;
+		const fallbackX = hasTraySlot
+			? this.traySlotX
+			: (this.currentSlotId ? levelScene.toaster.getSlotTarget(this.currentSlotId).x : this.x);
+		const fallbackY = hasTraySlot
+			? this.traySlotY
+			: (this.currentSlotId ? levelScene.toaster.getSlotTarget(this.currentSlotId).y : this.y);
 
 		this.clearSelectionTimeout();
 		levelScene.clearDeliverySelection(this);
@@ -446,18 +599,24 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 
 		this.scene.tweens.add({
 			targets: this,
-			x: slotTarget.x,
-			y: slotTarget.y,
+			x: fallbackX,
+			y: fallbackY,
 			scaleX: this.baseScaleX,
 			scaleY: this.baseScaleY,
 			duration: 220,
 			ease: "Cubic.Out",
 			onComplete: () => {
 				this.isLaunching = false;
-				this.isAtToaster = true;
 				this.isReadyForDelivery = true;
 				this.isBurned = false;
 				this.clearTint();
+
+				if (hasTraySlot) {
+					this.isAtToaster = false;
+					return;
+				}
+
+				this.isAtToaster = true;
 				this.startBurnCountdown();
 			}
 		});

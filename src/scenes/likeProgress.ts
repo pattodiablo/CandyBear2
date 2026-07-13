@@ -1,13 +1,15 @@
 export const LEVEL_LIKES_STORAGE_KEY = "candybear2-level-likes";
 export const TOTAL_LIKES_STORAGE_KEY = "candybear2-total-likes";
+/** Likes dados por cada skin de osito (índice 0 = head/Pepe, 1 = headSkin1, …). */
+export const BEAR_LIKES_STORAGE_KEY = "candybear2-bear-likes";
 
-function readLevelLikesRecord() {
+function readNumberRecord(storageKey: string) {
 	if (typeof window === "undefined") {
 		return {} as Record<string, number>;
 	}
 
 	try {
-		const storedValue = window.localStorage.getItem(LEVEL_LIKES_STORAGE_KEY);
+		const storedValue = window.localStorage.getItem(storageKey);
 		if (!storedValue) {
 			return {} as Record<string, number>;
 		}
@@ -15,12 +17,20 @@ function readLevelLikesRecord() {
 		const parsedValue = JSON.parse(storedValue) as Record<string, unknown>;
 		return Object.fromEntries(
 			Object.entries(parsedValue)
-				.map(([levelKey, likes]) => [levelKey, Number(likes)] as const)
+				.map(([key, likes]) => [key, Number(likes)] as const)
 				.filter(([, likes]) => Number.isFinite(likes) && likes >= 0)
 		) as Record<string, number>;
 	} catch {
 		return {} as Record<string, number>;
 	}
+}
+
+function readLevelLikesRecord() {
+	return readNumberRecord(LEVEL_LIKES_STORAGE_KEY);
+}
+
+function readBearLikesRecord() {
+	return readNumberRecord(BEAR_LIKES_STORAGE_KEY);
 }
 
 export function getLevelLikes(levelNumber: number) {
@@ -61,6 +71,25 @@ export function recordLike() {
 	window.localStorage.setItem(TOTAL_LIKES_STORAGE_KEY, String(nextTotalLikes));
 }
 
+/** Likes que ha dado un osito concreto (por skinIndex). */
+export function getBearLikes(skinIndex: number) {
+	const normalizedIndex = Math.max(0, Math.floor(skinIndex));
+	return readBearLikesRecord()[String(normalizedIndex)] ?? 0;
+}
+
+/** Suma 1 like al contador del osito con ese skin. */
+export function recordBearLike(skinIndex: number) {
+	if (typeof window === "undefined") {
+		return;
+	}
+
+	const normalizedIndex = Math.max(0, Math.floor(skinIndex));
+	const bearLikes = readBearLikesRecord();
+	const key = String(normalizedIndex);
+	bearLikes[key] = (bearLikes[key] ?? 0) + 1;
+	window.localStorage.setItem(BEAR_LIKES_STORAGE_KEY, JSON.stringify(bearLikes));
+}
+
 export function spendTotalLikes(amount: number) {
 	if (typeof window === "undefined") {
 		return false;
@@ -84,4 +113,5 @@ export function clearStoredLikes() {
 
 	window.localStorage.removeItem(LEVEL_LIKES_STORAGE_KEY);
 	window.localStorage.removeItem(TOTAL_LIKES_STORAGE_KEY);
+	window.localStorage.removeItem(BEAR_LIKES_STORAGE_KEY);
 }
