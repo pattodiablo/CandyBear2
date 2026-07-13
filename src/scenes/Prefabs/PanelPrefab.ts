@@ -114,7 +114,7 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		this.upgradeAvailableMessage = scene.add.text(
 			levelsBtn.x,
 			0,
-			"Upgrades disponibles",
+			"Upgrades available",
 			{
 				color: "#DF3D7A",
 				fontFamily: "Klop",
