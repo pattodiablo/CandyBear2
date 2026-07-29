@@ -57,7 +57,15 @@ import {
 } from "./unlockCatalog";
 import { bindDeveloperCheatCode, DEVELOPER_CHEAT_COINS } from "./developerCheat";
 import { applySoftRainbowCameraFilter } from "../filters/softRainbowCameraFilter";
-import { getCookiesPerDayLimit } from "./momentUpgradeBonuses";
+import {
+	addCookies,
+	calculateCookiesEarnedFromLevel,
+	getCookieStock,
+	MAX_COOKIE_STOCK,
+	shouldLikeGrantCookie,
+	spendCookie,
+} from "./cookieProgress";
+import { getExtraCookiesBonus } from "./momentUpgradeBonuses";
 import { canAffordAnyMomentCard } from "./momentCardCatalog";
 import type { ClientRequestAppearance } from "./clientOrderPool";
 import {
@@ -363,14 +371,10 @@ export default class Level extends Phaser.Scene {
 	private selectedDeliveryProduct?: AProduct | milkglass | sandwichPrefab;
 	private activeWorkplaceId?: "workplace1" | "workplace2";
 	private isCookieLaunching = false;
-	private cookiesUsedThisDay = 0;
-	private isCookieJarDepleted = false;
-	private cookieJarRefillTimer?: Phaser.Time.TimerEvent;
+	/** Stock en memoria del tarro (sincronizado con localStorage). */
+	private cookieStock = 0;
 	private static readonly COOKIE_JAR_TEXTURE = "cookieJar";
 	private static readonly EMPTY_COOKIE_JAR_TEXTURE = "emptyCookieJar";
-	private static readonly COOKIE_JAR_REFILL_BASE_MS = 50000;
-	private static readonly COOKIE_JAR_REFILL_MIN_MS = 10000;
-	private static readonly COOKIE_JAR_REFILL_MS_PER_LIKE = 350;
 	private static readonly WORKPLACE_ACTIVE_TINT = 0xfff4df;
 	private static readonly WORKPLACE_ACTIVE_SCALE = 1.03;
 	private coinCount = 0;
@@ -629,8 +633,8 @@ export default class Level extends Phaser.Scene {
 		return this.currentLevelPlan.difficulty;
 	}
 
-	public getCookiesPerDayLimit() {
-		return getCookiesPerDayLimit();
+	public getCookieStock() {
+		return this.cookieStock;
 	}
 
 	public recordQuickServiceLike(skinIndex?: number) {
@@ -2617,39 +2621,29 @@ export default class Level extends Phaser.Scene {
 			&& !this.isUnlockPanelVisible
 			&& !this.panel.visible
 			&& !this.isCookieLaunching
-			&& !this.isCookieJarDepleted
-			&& this.cookiesUsedThisDay < this.getCookiesPerDayLimit()
+			&& this.cookieStock > 0
 			&& this.getMostDesperateClient() !== undefined;
-	}
-
-	private getCookieJarRefillDurationMs() {
-
-		const totalLikeReduction = getTotalLikes() * Level.COOKIE_JAR_REFILL_MS_PER_LIKE;
-		const todayLikeReduction = this.quickServiceLikesThisLevel * Level.COOKIE_JAR_REFILL_MS_PER_LIKE;
-		return Math.max(
-			Level.COOKIE_JAR_REFILL_MIN_MS,
-			Level.COOKIE_JAR_REFILL_BASE_MS - totalLikeReduction - todayLikeReduction
-		);
-	}
-
-	private clearCookieJarRefillTimer() {
-
-		if (this.cookieJarRefillTimer) {
-			this.cookieJarRefillTimer.remove(false);
-			this.cookieJarRefillTimer = undefined;
-		}
 	}
 
 	private resetCookieJarState() {
 
-		this.cookiesUsedThisDay = 0;
-		this.isCookieJarDepleted = false;
-		this.clearCookieJarRefillTimer();
+		this.cookieStock = getCookieStock();
+		this.refreshCookieJarVisuals();
+	}
 
-		if (this.cookieJar?.active) {
-			this.cookieJar.setTexture(Level.COOKIE_JAR_TEXTURE);
-			this.updateCookieJarBadge();
+	private refreshCookieJarVisuals() {
+
+		if (!this.cookieJar?.active) {
+			return;
 		}
+
+		this.cookieJar.setAttentionPulse(false);
+		this.cookieJar.setTexture(
+			this.cookieStock > 0
+				? Level.COOKIE_JAR_TEXTURE
+				: Level.EMPTY_COOKIE_JAR_TEXTURE
+		);
+		this.updateCookieJarBadge();
 	}
 
 	private updateCookieJarBadge() {
@@ -2658,36 +2652,45 @@ export default class Level extends Phaser.Scene {
 			return;
 		}
 
-		const remainingCookies = Math.max(0, this.getCookiesPerDayLimit() - this.cookiesUsedThisDay);
-		this.cookieJar.setRemainingCookies(remainingCookies);
+		this.cookieJar.setRemainingCookies(this.cookieStock);
 	}
 
-	private depleteCookieJar() {
+	/** Cliente impaciente o con secreto de like por galleta: conviene usar el tarro. */
+	private hasClientThatNeedsCookie() {
 
-		this.isCookieJarDepleted = true;
-		this.cookieJar.setTexture(Level.EMPTY_COOKIE_JAR_TEXTURE);
-		this.updateCookieJarBadge();
-		this.clearCookieJarRefillTimer();
-		this.cookieJarRefillTimer = this.time.delayedCall(
-			this.getCookieJarRefillDurationMs(),
-			this.refillCookieJar,
-			[],
-			this
-		);
+		return this.activeClients.some((client) => (
+			client.active
+			&& client.canReceiveDelivery()
+			&& (client.isImpatient() || client.wantsCookieForLike())
+		));
 	}
 
-	private refillCookieJar() {
+	private updateCookieJarAttention() {
 
-		this.cookieJarRefillTimer = undefined;
-
-		if (!this.sys.isActive() || this.hasCelebratedLevelCompletion) {
+		if (!this.cookieJar?.active) {
 			return;
 		}
 
-		this.isCookieJarDepleted = false;
-		this.cookiesUsedThisDay = 0;
-		this.cookieJar.setTexture(Level.COOKIE_JAR_TEXTURE);
-		this.updateCookieJarBadge();
+		const shouldPulse = this.canUseCookieJar() && this.hasClientThatNeedsCookie();
+		this.cookieJar.setAttentionPulse(shouldPulse);
+	}
+
+	/** Suma galletas al stock por estrellas, likes y bonus de upgrades del nivel. */
+	private awardCookiesForLevelClear() {
+		const earnedStars = PanelPrefab.calculateEarnedStars(this.getStarPerformance());
+		const cookiesEarned = calculateCookiesEarnedFromLevel(
+			earnedStars,
+			this.quickServiceLikesThisLevel,
+			getExtraCookiesBonus()
+		);
+
+		if (cookiesEarned <= 0) {
+			return;
+		}
+
+		addCookies(cookiesEarned);
+		this.cookieStock = getCookieStock();
+		this.refreshCookieJarVisuals();
 	}
 
 	public getMostDesperateClient() {
@@ -2723,6 +2726,13 @@ export default class Level extends Phaser.Scene {
 			return false;
 		}
 
+		if (!spendCookie()) {
+			this.cookieStock = 0;
+			this.refreshCookieJarVisuals();
+			return false;
+		}
+
+		this.cookieStock = getCookieStock();
 		this.isCookieLaunching = true;
 
 		const cookie = new Cookie(this, spawnX, spawnY);
@@ -2732,12 +2742,8 @@ export default class Level extends Phaser.Scene {
 			this.isCookieLaunching = false;
 		});
 
-		this.cookiesUsedThisDay++;
-		this.updateCookieJarBadge();
-
-		if (this.cookiesUsedThisDay >= this.getCookiesPerDayLimit()) {
-			this.depleteCookieJar();
-		}
+		this.refreshCookieJarVisuals();
+		this.updateCookieJarAttention();
 
 		return true;
 	}
@@ -2779,7 +2785,70 @@ export default class Level extends Phaser.Scene {
 		const heart = new LikeHeart(this, x, Level.LIKE_HEART_Y, "likeHeart", undefined, onPopInComplete);
 		this.add.existing(heart);
 		heart.setDepth(this.workstation.depth - 1);
+
+		// A veces el like llena el tarro: estela de confeti → tarro → +1 galleta.
+		this.maybeLaunchLikeCookieTrail(x, Level.LIKE_HEART_Y, skinIndex ?? 0);
+
 		return heart;
+	}
+
+	/**
+	 * Con probabilidad según el tier del osito, lanza confeti hacia el tarro
+	 * y al llegar suma 1 galleta con un pulso de feedback.
+	 */
+	private maybeLaunchLikeCookieTrail(fromX: number, fromY: number, skinIndex: number) {
+
+		if (this.cookieStock >= MAX_COOKIE_STOCK) {
+			return;
+		}
+
+		if (!this.cookieJar?.active) {
+			return;
+		}
+
+		if (!shouldLikeGrantCookie(skinIndex)) {
+			return;
+		}
+
+		const trailDepth = this.workstation.depth + 2;
+		const targetX = this.cookieJar.x;
+		const targetY = this.cookieJar.y;
+
+		ConfettiPrefab.launchTravelTrail(
+			this,
+			fromX,
+			fromY,
+			targetX,
+			targetY,
+			() => {
+				if (!this.sys.isActive()) {
+					return;
+				}
+
+				this.receiveCookieFromLikeTrail();
+			},
+			trailDepth
+		);
+	}
+
+	private receiveCookieFromLikeTrail() {
+
+		if (this.cookieStock >= MAX_COOKIE_STOCK) {
+			return;
+		}
+
+		const added = addCookies(1);
+
+		if (added <= 0) {
+			return;
+		}
+
+		this.cookieStock = getCookieStock();
+		this.refreshCookieJarVisuals();
+		this.cookieJar?.playFillPulse(() => {
+			this.updateCookieJarAttention();
+		});
+		this.sound.play("pop1", { volume: 0.45 });
 	}
 
 	public showYumAt(x: number) {
@@ -2984,6 +3053,7 @@ export default class Level extends Phaser.Scene {
 			PanelPrefab.calculateEarnedStars(this.getStarPerformance())
 		);
 		storeLevelLikes(this.currentLevelPlan.levelNumber, this.quickServiceLikesThisLevel);
+		this.awardCookiesForLevelClear();
 		// Cuenta días seguidos sin comprar upgrades (para el CTA "Buy upgrades").
 		recordLevelClearedWithoutUpgradePurchase();
 		if (finalYum) {
@@ -3355,6 +3425,76 @@ export default class Level extends Phaser.Scene {
 		return { x, y };
 	}
 
+	/**
+	 * Coloca un producto listo en la primera bandeja con hueco (charola1 → charola2).
+	 * Usado cuando no hay cliente pidiendo ese producto.
+	 */
+	public tryAutoPlaceOnAnyTray(product: AProduct | sandwichPrefab) {
+		if (!product?.active || !product.canAutoPlaceInTray()) {
+			return false;
+		}
+
+		const trayIds: Array<"charola1" | "charola2"> = ["charola1", "charola2"];
+
+		for (const trayId of trayIds) {
+			const slot = this.claimAvailableTraySlot(trayId);
+
+			if (!slot) {
+				continue;
+			}
+
+			product.autoPlaceInTray(trayId, slot.x, slot.y);
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Estela de confeti (solo feedback) desde un producto listo hacia una bandeja con hueco,
+	 * para enseñar que se puede guardar ahí si hace falta.
+	 */
+	public launchTrayHintTrailFrom(fromX: number, fromY: number) {
+		if (this.isGameplayPaused || this.isExitConfirmVisible || this.isUnlockPanelVisible || this.panel.visible) {
+			return;
+		}
+
+		const trayTarget = this.getFirstAvailableTrayImage();
+
+		if (!trayTarget) {
+			return;
+		}
+
+		ConfettiPrefab.launchTravelTrail(
+			this,
+			fromX,
+			fromY,
+			trayTarget.x,
+			trayTarget.y,
+			undefined,
+			this.workstation.depth + 2
+		);
+	}
+
+	private getFirstAvailableTrayImage() {
+		const trays: Array<{ id: "charola1" | "charola2"; image: Phaser.GameObjects.Image }> = [
+			{ id: "charola1", image: this.charola1 },
+			{ id: "charola2", image: this.charola2 },
+		];
+
+		for (const { id, image } of trays) {
+			if (!image?.active) {
+				continue;
+			}
+
+			if (this.claimAvailableTraySlot(id)) {
+				return image;
+			}
+		}
+
+		return undefined;
+	}
+
 	private resolveTrayPlacement(trayId: "charola1" | "charola2") {
 		const slot = this.claimAvailableTraySlot(trayId);
 		if (!slot) {
@@ -3499,6 +3639,8 @@ export default class Level extends Phaser.Scene {
 	}
 
 	private updateHelpHand() {
+
+		this.updateCookieJarAttention();
 
 		if (!this.canShowHelpHand() || !this.shouldShowHelpHandForIdle()) {
 			this.lastHelpHandPhase = undefined;
@@ -4197,7 +4339,8 @@ export default class Level extends Phaser.Scene {
 
 		this.flushLoadedContent();
 		this.editorCreate();
-		this.updateCookieJarBadge();
+		// init() ya cargó el stock; al existir el prefab se pinta el tarro vacío/lleno.
+		this.resetCookieJarState();
 		this.applyLevelProgression();
 		this.panelRestY = this.panel.y;
 		this.applyLevelPlanToIntroPanel();

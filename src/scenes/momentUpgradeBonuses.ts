@@ -13,7 +13,8 @@ export const MOMENT_UPGRADE_BONUSES = {
 	FRY_MS_REDUCTION_PER_LEVEL: 600,
 	FRY_MIN_DURATION_MS: 1200,
 	MACHINE_ANIM_SPEED_PER_LEVEL: 0.25,
-	COOKIES_PER_DAY_BASE: 5,
+	/** Bonus de galletas al completar un nivel (cartas Galletas Extra I–III). */
+	COOKIES_ON_CLEAR_BONUS_PER_TIER: 1,
 	CLIENT_WAIT_BASE_MS: 20000,
 	CLIENT_WAIT_BONUS_MS_PER_LEVEL: 4000,
 } as const;
@@ -45,16 +46,14 @@ export function getToasterSpeedBonus() {
 	return getMaxBoughtTier(TOASTER_SPEED_CARD_NUMBERS);
 }
 
+/** Galletas extra al completar nivel por cartas Galletas Extra (tier I/II/III → +1/+2/+3). */
 export function getExtraCookiesBonus() {
-	return getMaxBoughtTier(EXTRA_COOKIE_CARD_NUMBERS);
+	return getMaxBoughtTier(EXTRA_COOKIE_CARD_NUMBERS)
+		* MOMENT_UPGRADE_BONUSES.COOKIES_ON_CLEAR_BONUS_PER_TIER;
 }
 
 export function getClientPatienceBonus() {
 	return getMaxBoughtTier(CLIENT_PATIENCE_CARD_NUMBERS);
-}
-
-export function getCookiesPerDayLimit() {
-	return MOMENT_UPGRADE_BONUSES.COOKIES_PER_DAY_BASE + getExtraCookiesBonus();
 }
 
 export function getClientRequestWaitDurationMs() {

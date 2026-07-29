@@ -116,7 +116,12 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 				return;
 			}
 
-			// Sin cliente: selección de entrega (bandeja o cliente).
+			// Sin cliente que lo pida: va a una bandeja con hueco (como donas product 1/2).
+			if (levelScene.tryAutoPlaceOnAnyTray(this)) {
+				return;
+			}
+
+			// Bandejas llenas: selección manual de entrega.
 			this.startDeliverySelection();
 			return;
 		}
@@ -247,7 +252,12 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 			this.clearTint();
 			this.scene.sound.play(`pop${Phaser.Math.Between(1, 3)}`);
 			this.startBurnCountdown();
-			this.playReadyForDeliveryPop();
+			this.playReadyForDeliveryPop(() => {
+				// Feedback: estela hacia bandeja (click sin cliente → se guarda ahí).
+				if (this.active && this.isReadyForDelivery && this.isAtToaster) {
+					levelScene.launchTrayHintTrailFrom(this.x, this.y);
+				}
+			});
 		});
 	}
 
@@ -753,7 +763,7 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 		});
 	}
 
-	private playReadyForDeliveryPop() {
+	private playReadyForDeliveryPop(onComplete?: () => void) {
 
 		this.scene.tweens.killTweensOf(this);
 		this.setScale(0, 0);
@@ -771,6 +781,9 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 					scaleY: this.baseScaleY,
 					duration: sandwichPrefab.READY_POP_SETTLE_DURATION,
 					ease: "Bounce.Out",
+					onComplete: () => {
+						onComplete?.();
+					},
 				});
 			}
 		});

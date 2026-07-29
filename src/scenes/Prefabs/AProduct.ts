@@ -756,6 +756,8 @@ export default class AProduct extends Phaser.GameObjects.Image {
 				this.isLaunching = false;
 				this.isAtWorkplace = true;
 				this.isReadyForDelivery = true;
+				// Feedback: estela hacia bandeja (se puede guardar si no hay cliente).
+				levelScene.launchTrayHintTrailFrom(this.x, this.y);
 			}
 		});
 	}

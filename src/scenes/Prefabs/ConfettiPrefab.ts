@@ -82,6 +82,26 @@ export default class ConfettiPrefab extends Phaser.GameObjects.Image {
 		return confetti;
 	}
 
+	/**
+	 * Estela de confeti que viaja de un punto a otro (p. ej. like → tarro de galletas).
+	 * Deja migas de confeti en el camino y un pequeño burst al llegar.
+	 */
+	public static launchTravelTrail(
+		scene: Phaser.Scene,
+		fromX: number,
+		fromY: number,
+		toX: number,
+		toY: number,
+		onArrive?: () => void,
+		depth = ConfettiPrefab.DISPLAY_DEPTH
+	) {
+		const confetti = new ConfettiPrefab(scene, fromX, fromY);
+		scene.add.existing(confetti);
+		confetti.setDepth(depth);
+		confetti.playTravelTrail(fromX, fromY, toX, toY, onArrive);
+		return confetti;
+	}
+
 	private playBurst() {
 		const emitterX = this.scene.scale.width * 0.5;
 		const emitterY = ConfettiPrefab.EMITTER_Y_OFFSET;
@@ -160,6 +180,103 @@ export default class ConfettiPrefab extends Phaser.GameObjects.Image {
 			ConfettiPrefab.SMALL_BURST_LIFESPAN + ConfettiPrefab.SMALL_BURST_DESTROY_BUFFER_MS,
 			() => this.destroy()
 		);
+	}
+
+	private static readonly TRAIL_DURATION = 620;
+	private static readonly TRAIL_CRUMB_INTERVAL = 45;
+	private static readonly TRAIL_LEAD_SCALE = 0.55;
+	private static readonly TRAIL_CRUMB_SCALE = 0.28;
+	private static readonly TRAIL_ARC_HEIGHT_MIN = 50;
+	private static readonly TRAIL_ARC_HEIGHT_MAX = 110;
+	private static readonly TRAIL_SPIN = 420;
+
+	private playTravelTrail(
+		fromX: number,
+		fromY: number,
+		toX: number,
+		toY: number,
+		onArrive?: () => void
+	) {
+		const textureKey = Phaser.Utils.Array.GetRandom([...ConfettiPrefab.PARTICLE_TEXTURE_KEYS]);
+		const lead = this.scene.add.image(fromX, fromY, textureKey);
+		lead.setDepth(this.depth);
+		lead.setScale(ConfettiPrefab.TRAIL_LEAD_SCALE);
+		lead.setAlpha(1);
+
+		const controlX = (fromX + toX) * 0.5 + Phaser.Math.Between(-48, 48);
+		const controlY = Math.min(fromY, toY)
+			- Phaser.Math.Between(
+				ConfettiPrefab.TRAIL_ARC_HEIGHT_MIN,
+				ConfettiPrefab.TRAIL_ARC_HEIGHT_MAX
+			);
+
+		const pathState = { t: 0 };
+		let lastCrumbAt = -ConfettiPrefab.TRAIL_CRUMB_INTERVAL;
+
+		this.scene.tweens.add({
+			targets: pathState,
+			t: 1,
+			duration: ConfettiPrefab.TRAIL_DURATION,
+			ease: "Sine.InOut",
+			onUpdate: () => {
+				if (!lead.active) {
+					return;
+				}
+
+				const t = pathState.t;
+				const inv = 1 - t;
+				// Curva cuadrática: arco suave hacia el tarro.
+				lead.x = inv * inv * fromX + 2 * inv * t * controlX + t * t * toX;
+				lead.y = inv * inv * fromY + 2 * inv * t * controlY + t * t * toY;
+				lead.angle = t * ConfettiPrefab.TRAIL_SPIN;
+				lead.setScale(Phaser.Math.Linear(
+					ConfettiPrefab.TRAIL_LEAD_SCALE,
+					ConfettiPrefab.TRAIL_CRUMB_SCALE,
+					t
+				));
+
+				const elapsed = t * ConfettiPrefab.TRAIL_DURATION;
+
+				if (elapsed - lastCrumbAt >= ConfettiPrefab.TRAIL_CRUMB_INTERVAL) {
+					lastCrumbAt = elapsed;
+					this.spawnTrailCrumb(lead.x, lead.y);
+				}
+			},
+			onComplete: () => {
+				if (lead.active) {
+					lead.destroy();
+				}
+
+				ConfettiPrefab.launchSmallBurstAt(this.scene, toX, toY, this.depth);
+				onArrive?.();
+				this.destroy();
+			},
+		});
+	}
+
+	private spawnTrailCrumb(x: number, y: number) {
+		const textureKey = Phaser.Utils.Array.GetRandom([...ConfettiPrefab.PARTICLE_TEXTURE_KEYS]);
+		const crumb = this.scene.add.image(x, y, textureKey);
+		crumb.setDepth(this.depth - 1);
+		crumb.setScale(ConfettiPrefab.TRAIL_CRUMB_SCALE * Phaser.Math.FloatBetween(0.7, 1.1));
+		crumb.setAngle(Phaser.Math.Between(0, 360));
+		crumb.setAlpha(0.9);
+
+		this.scene.tweens.add({
+			targets: crumb,
+			alpha: 0,
+			scaleX: 0.05,
+			scaleY: 0.05,
+			angle: crumb.angle + Phaser.Math.Between(-80, 80),
+			y: y + Phaser.Math.Between(8, 22),
+			duration: 280,
+			ease: "Quad.In",
+			onComplete: () => {
+				if (crumb.active) {
+					crumb.destroy();
+				}
+			},
+		});
 	}
 
 	override destroy(fromScene?: boolean) {

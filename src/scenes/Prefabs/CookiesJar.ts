@@ -36,6 +36,10 @@ export default class CookiesJar extends Phaser.GameObjects.Container {
 	private static readonly HOVER_SCALE = 1.08;
 	private static readonly PRESSED_SCALE = 0.94;
 	private static readonly TWEEN_DURATION = 100;
+	private static readonly ATTENTION_PULSE_SCALE = 1.12;
+	private static readonly ATTENTION_PULSE_DURATION = 520;
+	private static readonly FILL_PULSE_SCALE = 1.22;
+	private static readonly FILL_PULSE_DURATION = 160;
 	private static readonly BADGE_OFFSET_X = 30;
 	private static readonly BADGE_OFFSET_Y = -36;
 	private static readonly BADGE_RADIUS = 20;
@@ -48,6 +52,8 @@ export default class CookiesJar extends Phaser.GameObjects.Container {
 	private readonly baseScaleX: number;
 	private readonly baseScaleY: number;
 	private isPressed = false;
+	private isAttentionPulsing = false;
+	private attentionPulseTween?: Phaser.Tweens.Tween;
 	private badgeBackground?: Phaser.GameObjects.Graphics;
 	private badgeText?: Phaser.GameObjects.Text;
 
@@ -62,6 +68,81 @@ export default class CookiesJar extends Phaser.GameObjects.Container {
 		this.badgeText?.setText(String(normalizedRemaining));
 		this.badgeBackground?.setVisible(true);
 		this.badgeText?.setVisible(true);
+	}
+
+	/**
+	 * Hace latir el tarro para invitar a usarlo cuando un cliente necesita galleta.
+	 * Anima la imagen interna para no interferir con hover/press del contenedor.
+	 */
+	public setAttentionPulse(active: boolean) {
+		if (active) {
+			this.startAttentionPulse();
+			return;
+		}
+
+		this.stopAttentionPulse();
+	}
+
+	private startAttentionPulse() {
+		if (this.isAttentionPulsing) {
+			return;
+		}
+
+		this.isAttentionPulsing = true;
+		this.attentionPulseTween?.stop();
+		this.jarImage.setScale(1);
+
+		this.attentionPulseTween = this.scene.tweens.add({
+			targets: this.jarImage,
+			scaleX: CookiesJar.ATTENTION_PULSE_SCALE,
+			scaleY: CookiesJar.ATTENTION_PULSE_SCALE,
+			duration: CookiesJar.ATTENTION_PULSE_DURATION,
+			yoyo: true,
+			repeat: -1,
+			ease: "Sine.InOut",
+		});
+	}
+
+	private stopAttentionPulse() {
+		if (!this.isAttentionPulsing && !this.attentionPulseTween) {
+			return;
+		}
+
+		this.isAttentionPulsing = false;
+		this.attentionPulseTween?.stop();
+		this.attentionPulseTween = undefined;
+		this.jarImage.setScale(1);
+	}
+
+	/**
+	 * Pulso corto al recibir una galleta (estela de like).
+	 * Pausa el latido de atención y lo reanuda si seguía activo.
+	 */
+	public playFillPulse(onComplete?: () => void) {
+		const resumeAttention = this.isAttentionPulsing;
+		this.stopAttentionPulse();
+		this.scene.tweens.killTweensOf(this.jarImage);
+		this.jarImage.setScale(1);
+
+		this.scene.tweens.add({
+			targets: this.jarImage,
+			scaleX: CookiesJar.FILL_PULSE_SCALE,
+			scaleY: CookiesJar.FILL_PULSE_SCALE,
+			duration: CookiesJar.FILL_PULSE_DURATION,
+			yoyo: true,
+			ease: "Back.Out",
+			onComplete: () => {
+				if (this.jarImage.active) {
+					this.jarImage.setScale(1);
+				}
+
+				if (resumeAttention) {
+					this.startAttentionPulse();
+				}
+
+				onComplete?.();
+			},
+		});
 	}
 
 	private createCookieCountBadge() {
