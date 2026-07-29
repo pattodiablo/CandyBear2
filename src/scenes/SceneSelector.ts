@@ -10,6 +10,7 @@ import CardPrefab from "./Prefabs/CardPrefab";
 import dayHolderPrefab from "./Prefabs/dayHolderPrefab";
 import {
 	canAffordAnyMomentCard,
+	canPurchaseMomentCard,
 	getMomentCardCatalogEntry,
 	isMomentCardPrerequisiteMet,
 	MOMENT_CARDS_PER_PAGE,
@@ -250,6 +251,7 @@ export default class SceneSelector extends Phaser.Scene {
 			});
 			momentCard.on("purchased", () => {
 				this.refreshMomentCardPrerequisiteLocks();
+				this.refreshMomentCardPurchaseAttention();
 				this.updatePlayerStats();
 			});
 			momentCard.on("preview-open", () => {
@@ -260,6 +262,7 @@ export default class SceneSelector extends Phaser.Scene {
 		}
 
 		this.refreshMomentCardPrerequisiteLocks();
+		this.refreshMomentCardPurchaseAttention();
 	}
 
 	private refreshMomentCardPrerequisiteLocks() {
@@ -270,6 +273,14 @@ export default class SceneSelector extends Phaser.Scene {
 			}
 
 			momentCard.setPrerequisiteLocked(!isMomentCardPrerequisiteMet(momentCard.cardNumber));
+		}
+	}
+
+	/** Latido de escala en cartas que se pueden comprar ahora (recursos + prerequisito). */
+	private refreshMomentCardPurchaseAttention() {
+		for (const momentCard of this.momentCards) {
+			const canBuy = canPurchaseMomentCard(momentCard.cardNumber);
+			momentCard.setPurchaseAttention(canBuy);
 		}
 	}
 
@@ -318,6 +329,7 @@ export default class SceneSelector extends Phaser.Scene {
 		this.coinCounterText?.setText(String(getStoredTotalCoins()));
 		this.likesCounterText?.setText(String(getTotalLikes()));
 		this.updateMomentsButtonAttention();
+		this.refreshMomentCardPurchaseAttention();
 	}
 
 	private updateMomentsButtonAttention() {

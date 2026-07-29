@@ -64,6 +64,8 @@ export default class CardPrefab extends Phaser.GameObjects.Container {
 	/* START-USER-CODE */
 	/** Un poco más grande para legibilidad en mobile. */
 	private static readonly CARD_SCALE = 0.74;
+	private static readonly PURCHASE_ATTENTION_SCALE = 1.07;
+	private static readonly PURCHASE_ATTENTION_DURATION = 720;
 	private static readonly FLIP_HALF_DURATION = 160;
 	private static readonly ANVERSO_TEXTURE_KEY = "AnversoCard";
 	private static readonly UPGRADE_LOCKED_COLOR = "#FF5F7E";
@@ -76,6 +78,8 @@ export default class CardPrefab extends Phaser.GameObjects.Container {
 	private isFlipping = false;
 	private isInitialized = false;
 	private isPrerequisiteLocked = false;
+	private isPurchaseAttentionActive = false;
+	private purchaseAttentionTween?: Phaser.Tweens.Tween;
 	private baseCardScaleX = 1;
 	private floatBaseX = 0;
 	private floatBaseY = 0;
@@ -238,10 +242,46 @@ export default class CardPrefab extends Phaser.GameObjects.Container {
 		this.setAlpha(this.isPrerequisiteLocked ? CardPrefab.PREREQUISITE_LOCKED_ALPHA : 1);
 		this.applyCostPresentation();
 		this.applyUpgradeDescriptionPresentation();
+
+		if (this.isPrerequisiteLocked) {
+			this.setPurchaseAttention(false);
+		}
 	}
 
 	public isPurchaseBlockedByPrerequisite() {
 		return this.isPrerequisiteLocked;
+	}
+
+	/**
+	 * Latido de escala para cartas que el jugador puede comprar ahora
+	 * (prerequisito cumplido + recursos suficientes).
+	 */
+	public setPurchaseAttention(active: boolean) {
+		const shouldPulse = active && !this.buyed && !this.isPrerequisiteLocked && this.isInitialized;
+
+		if (shouldPulse === this.isPurchaseAttentionActive) {
+			return;
+		}
+
+		this.isPurchaseAttentionActive = shouldPulse;
+		this.purchaseAttentionTween?.stop();
+		this.purchaseAttentionTween = undefined;
+
+		if (!shouldPulse) {
+			this.setScale(CardPrefab.CARD_SCALE);
+			return;
+		}
+
+		this.setScale(CardPrefab.CARD_SCALE);
+		this.purchaseAttentionTween = this.scene.tweens.add({
+			targets: this,
+			scaleX: CardPrefab.CARD_SCALE * CardPrefab.PURCHASE_ATTENTION_SCALE,
+			scaleY: CardPrefab.CARD_SCALE * CardPrefab.PURCHASE_ATTENTION_SCALE,
+			duration: CardPrefab.PURCHASE_ATTENTION_DURATION,
+			yoyo: true,
+			repeat: -1,
+			ease: "Sine.InOut",
+		});
 	}
 
 	private applyCostPresentation() {
@@ -270,12 +310,14 @@ export default class CardPrefab extends Phaser.GameObjects.Container {
 			return;
 		}
 
+		this.setPurchaseAttention(false);
 		this.flipCard();
 	}
 
 	private flipCard() {
 		this.isFlipping = true;
 		this.pauseFloatAnimation();
+		this.setScale(CardPrefab.CARD_SCALE);
 
 		this.scene.tweens.add({
 			targets: this.cardImage,
@@ -349,6 +391,7 @@ export default class CardPrefab extends Phaser.GameObjects.Container {
 
 		this.buyed = true;
 		this.isPrerequisiteLocked = false;
+		this.setPurchaseAttention(false);
 		this.setAlpha(1);
 
 		if (this.cardNumber > 0) {
