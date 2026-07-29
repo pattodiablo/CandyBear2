@@ -53,6 +53,7 @@ import {
 	isProductUnlockId,
 	isUnlockAvailableAtLevel,
 	shouldShowWorkstationLockIcon,
+	UNLOCK_ORDER,
 	type UnlockId,
 } from "./unlockCatalog";
 import { bindDeveloperCheatCode, DEVELOPER_CHEAT_COINS } from "./developerCheat";
@@ -425,6 +426,12 @@ export default class Level extends Phaser.Scene {
 	private unlockCancelButton?: Phaser.GameObjects.Container;
 	private unlockPanelRestY = 0;
 	private currentUnlockId?: UnlockId;
+	/** Panel obligatorio pre-nivel: elegir un upgrade de cocina. */
+	private mandatoryUpgradeContainer?: Phaser.GameObjects.Container;
+	private mandatoryUpgradeCardsRoot?: Phaser.GameObjects.Container;
+	private mandatoryUpgradeRestY = 0;
+	private isMandatoryUpgradeSelectVisible = false;
+	private onMandatoryUpgradeComplete?: () => void;
 	private isExitConfirmVisible = false;
 	private isUnlockPanelVisible = false;
 	private isGameplayPaused = false;
@@ -462,6 +469,23 @@ export default class Level extends Phaser.Scene {
 	private static readonly UNLOCK_COST_Y = 24;
 	private static readonly UNLOCK_BUY_Y = 88;
 	private static readonly UNLOCK_CANCEL_Y = 168;
+	/** Mismo tamaño de panel que el menú del día (PanelPrefab). */
+	private static readonly MANDATORY_UPGRADE_PANEL_SCALE = 0.7;
+	private static readonly MANDATORY_UPGRADE_TITLE_Y = -152;
+	private static readonly MANDATORY_UPGRADE_CARD_Y = 6;
+	private static readonly MANDATORY_UPGRADE_CARD_SPACING = 158;
+	private static readonly MANDATORY_UPGRADE_HOLDER_SCALE = 0.4;
+	private static readonly MANDATORY_UPGRADE_PREVIEW_SCALE = 0.5;
+	private static readonly MANDATORY_UPGRADE_BUY_SCALE = 0.4;
+	private static readonly MANDATORY_UPGRADE_COIN_SCALE = 0.42;
+	private static readonly MANDATORY_UPGRADE_NAME_Y = -84;
+	private static readonly MANDATORY_UPGRADE_PREVIEW_Y = -4;
+	/** Costo/moneda un poco más abajo del dayHolder. */
+	private static readonly MANDATORY_UPGRADE_COST_Y = 69;
+	private static readonly MANDATORY_UPGRADE_BUY_Y = 108;
+	/** Textos del panel de upgrade: sin stroke, color #B3605E. */
+	private static readonly MANDATORY_UPGRADE_TEXT_COLOR = "#B3605E";
+	private static readonly MANDATORY_UPGRADE_BUY_COLOR = "#FFFFFF";
 	private static readonly PROGRESSION_LOCK_TEXTURE_KEY = "lock";
 	private static readonly PROGRESSION_LOCK_SCALE = 0.72;
 	private static readonly PROGRESSION_LOCK_DEPTH_OFFSET = 8;
@@ -545,7 +569,9 @@ export default class Level extends Phaser.Scene {
 		this.forcedClientOrderQueue = [];
 		this.isExitConfirmVisible = false;
 		this.isUnlockPanelVisible = false;
+		this.isMandatoryUpgradeSelectVisible = false;
 		this.currentUnlockId = undefined;
+		this.onMandatoryUpgradeComplete = undefined;
 		this.isGameplayPaused = false;
 		this.savedGameplayTimeScale = 1;
 		this.clientsRemainingInLevel = this.getLevelClientCount();
@@ -570,6 +596,9 @@ export default class Level extends Phaser.Scene {
 		this.unlockCostText = undefined;
 		this.unlockBuyButton = undefined;
 		this.unlockCancelButton = undefined;
+		this.mandatoryUpgradeContainer = undefined;
+		this.mandatoryUpgradeCardsRoot = undefined;
+		this.onMandatoryUpgradeComplete = undefined;
 	}
 
 	private flushLoadedContent() {
@@ -616,7 +645,9 @@ export default class Level extends Phaser.Scene {
 		this.resetCookieJarState();
 		this.isExitConfirmVisible = false;
 		this.isUnlockPanelVisible = false;
+		this.isMandatoryUpgradeSelectVisible = false;
 		this.currentUnlockId = undefined;
+		this.onMandatoryUpgradeComplete = undefined;
 		this.isGameplayPaused = false;
 		this.progressionLockIcons = [];
 	}
@@ -1810,7 +1841,12 @@ export default class Level extends Phaser.Scene {
 
 	private hideModalOverlayIfIdle() {
 
-		if (this.panel.visible || this.isExitConfirmVisible || this.isUnlockPanelVisible) {
+		if (
+			this.panel.visible
+			|| this.isExitConfirmVisible
+			|| this.isUnlockPanelVisible
+			|| this.isMandatoryUpgradeSelectVisible
+		) {
 			return;
 		}
 
@@ -1967,7 +2003,12 @@ export default class Level extends Phaser.Scene {
 
 	private showUnlockPanel(unlockId: UnlockId) {
 
-		if (this.isUnlockPanelVisible || this.isExitConfirmVisible || this.panel.visible) {
+		if (
+			this.isUnlockPanelVisible
+			|| this.isExitConfirmVisible
+			|| this.isMandatoryUpgradeSelectVisible
+			|| this.panel.visible
+		) {
 			return;
 		}
 
@@ -2042,34 +2083,285 @@ export default class Level extends Phaser.Scene {
 			return;
 		}
 
-		const entry = getUnlockCatalogEntry(this.currentUnlockId);
-
-		if (!isUnlockAvailableAtLevel(this.currentUnlockId, this.getCurrentLevelNumber())) {
-			this.sound.play("deny");
+		if (!this.tryPurchaseKitchenUnlock(this.currentUnlockId)) {
 			return;
 		}
 
+		this.applyLevelProgression();
+		this.hideUnlockPanel();
+	}
+
+	/**
+	 * Upgrades de cocina disponibles en este día, no comprados y que el jugador puede pagar.
+	 * Omite estaciones que solo se desbloquean en paquete con un producto (toaster/milk).
+	 */
+	private getAffordableKitchenUpgrades(): UnlockId[] {
+		const levelNumber = this.getCurrentLevelNumber();
+
+		return UNLOCK_ORDER.filter((unlockId) => {
+			if (!isProductUnlockId(unlockId) && !shouldShowWorkstationLockIcon(unlockId)) {
+				return false;
+			}
+
+			const isAcquired = isProductUnlockId(unlockId)
+				? isProductAcquired(unlockId)
+				: isWorkstationAcquired(unlockId);
+
+			if (isAcquired) {
+				return false;
+			}
+
+			if (!isUnlockAvailableAtLevel(unlockId, levelNumber)) {
+				return false;
+			}
+
+			return this.coinCount >= getUnlockCatalogEntry(unlockId).coinCost;
+		});
+	}
+
+	private tryPurchaseKitchenUnlock(unlockId: UnlockId, costFeedbackTarget?: Phaser.GameObjects.Text) {
+		const entry = getUnlockCatalogEntry(unlockId);
+
+		if (!isUnlockAvailableAtLevel(unlockId, this.getCurrentLevelNumber())) {
+			this.sound.play("deny");
+			return false;
+		}
+
 		if (this.coinCount < entry.coinCost) {
-			this.showInsufficientUnlockFundsFeedback();
-			return;
+			this.sound.play("deny");
+
+			if (costFeedbackTarget) {
+				this.tweens.add({
+					targets: costFeedbackTarget,
+					scaleX: 1.12,
+					scaleY: 1.12,
+					duration: 90,
+					yoyo: true,
+					ease: "Quad.Out",
+					onStart: () => {
+						costFeedbackTarget.setColor("#D62839");
+					},
+					onComplete: () => {
+						costFeedbackTarget.setColor("#A96625");
+					},
+				});
+			} else {
+				this.showInsufficientUnlockFundsFeedback();
+			}
+
+			return false;
 		}
 
 		this.coinCount = Math.max(0, this.coinCount - entry.coinCost);
 		storeTotalCoins(this.coinCount);
 		this.updateCoinCounter();
 
-		if (isProductUnlockId(this.currentUnlockId)) {
-			storeProductAcquired(this.currentUnlockId);
+		if (isProductUnlockId(unlockId)) {
+			storeProductAcquired(unlockId);
 
-			for (const workstationId of getBundledWorkstationsForProductUnlock(this.currentUnlockId)) {
+			for (const workstationId of getBundledWorkstationsForProductUnlock(unlockId)) {
 				storeWorkstationAcquired(workstationId);
 			}
 		} else {
-			storeWorkstationAcquired(this.currentUnlockId);
+			storeWorkstationAcquired(unlockId);
+		}
+
+		this.sound.play(`pop${Phaser.Math.Between(1, 3)}`);
+		return true;
+	}
+
+	private createMandatoryUpgradeSelectUi() {
+		const centerX = this.scale.width * 0.5;
+		const centerY = this.scale.height * 0.5;
+		const container = this.add.container(centerX, centerY);
+
+		// Mismo fondo y escala que el menú del día (no a pantalla completa).
+		const background = this.add.image(0, 0, "dayOneLabel");
+		background.setScale(Level.MANDATORY_UPGRADE_PANEL_SCALE);
+		container.add(background);
+
+		const titleText = this.add.text(0, Level.MANDATORY_UPGRADE_TITLE_Y, "SELECT NEW UPGRADE", {
+			color: Level.MANDATORY_UPGRADE_TEXT_COLOR,
+			fontFamily: "Klop",
+			fontSize: "28px",
+			fontStyle: "bold",
+			align: "center",
+		});
+		titleText.setOrigin(0.5);
+		container.add(titleText);
+
+		const cardsRoot = this.add.container(0, Level.MANDATORY_UPGRADE_CARD_Y);
+		container.add(cardsRoot);
+
+		container.setScrollFactor(0);
+		container.setDepth(Level.EXIT_CONFIRM_DEPTH + 1);
+		container.setVisible(false);
+		container.setAlpha(0);
+		this.mandatoryUpgradeContainer = container;
+		this.mandatoryUpgradeCardsRoot = cardsRoot;
+		this.mandatoryUpgradeRestY = centerY;
+	}
+
+	private rebuildMandatoryUpgradeCards(unlockIds: UnlockId[]) {
+		const cardsRoot = this.mandatoryUpgradeCardsRoot;
+
+		if (!cardsRoot) {
+			return;
+		}
+
+		cardsRoot.removeAll(true);
+
+		const count = unlockIds.length;
+		// Hasta 3 cards caben cómodas en el panel 0.7; con 4 se aprietan un poco.
+		const spacing = count >= 4
+			? Level.MANDATORY_UPGRADE_CARD_SPACING * 0.82
+			: Level.MANDATORY_UPGRADE_CARD_SPACING;
+		const startX = -((count - 1) * spacing) * 0.5;
+
+		unlockIds.forEach((unlockId, index) => {
+			const entry = getUnlockCatalogEntry(unlockId);
+			const cardX = startX + (index * spacing);
+			const card = this.add.container(cardX, 0);
+
+			// Fondo del display: dayHolder compacto dentro del menú.
+			const holderBg = this.add.image(0, -4, "dayHolder");
+			holderBg.setScale(Level.MANDATORY_UPGRADE_HOLDER_SCALE);
+			card.add(holderBg);
+
+			const nameText = this.add.text(0, Level.MANDATORY_UPGRADE_NAME_Y, entry.displayName.toUpperCase(), {
+				color: Level.MANDATORY_UPGRADE_TEXT_COLOR,
+				fontFamily: "Klop",
+				fontSize: "17px",
+				fontStyle: "bold",
+				align: "center",
+				wordWrap: { width: 130 },
+			});
+			nameText.setOrigin(0.5);
+			card.add(nameText);
+
+			const preview = entry.previewFrame !== undefined
+				? this.add.image(0, Level.MANDATORY_UPGRADE_PREVIEW_Y, entry.previewTextureKey, entry.previewFrame)
+				: this.add.image(0, Level.MANDATORY_UPGRADE_PREVIEW_Y, entry.previewTextureKey);
+			preview.setScale(Level.MANDATORY_UPGRADE_PREVIEW_SCALE);
+			card.add(preview);
+
+			// Moneda chica (asset "coin") + precio, centrados como pareja.
+			const costRow = this.add.container(0, Level.MANDATORY_UPGRADE_COST_Y);
+			const coinIcon = this.add.image(0, 0, "coin");
+			coinIcon.setScale(Level.MANDATORY_UPGRADE_COIN_SCALE);
+			const costText = this.add.text(0, 0, String(entry.coinCost), {
+				color: Level.MANDATORY_UPGRADE_TEXT_COLOR,
+				fontFamily: "Klop",
+				fontSize: "26px",
+				fontStyle: "bold",
+			});
+			costText.setOrigin(0, 0.5);
+			const costGap = 4;
+			const costPairWidth = coinIcon.displayWidth + costGap + costText.width;
+			coinIcon.setPosition(-costPairWidth * 0.5 + coinIcon.displayWidth * 0.5, 0);
+			costText.setPosition(coinIcon.x + coinIcon.displayWidth * 0.5 + costGap, 0);
+			costRow.add([coinIcon, costText]);
+			card.add(costRow);
+
+			// Botón BUY con asset onBtn.
+			const buyButton = this.add.container(0, Level.MANDATORY_UPGRADE_BUY_Y);
+			const buyBg = this.add.image(0, 0, "onBtn");
+			buyBg.setScale(Level.MANDATORY_UPGRADE_BUY_SCALE);
+			const buyLabel = this.add.text(0, -1, "BUY", {
+				color: Level.MANDATORY_UPGRADE_BUY_COLOR,
+				fontFamily: "Klop",
+				fontSize: "24px",
+				fontStyle: "bold",
+			});
+			buyLabel.setOrigin(0.5);
+			buyButton.add([buyBg, buyLabel]);
+			buyButton.setSize(buyBg.displayWidth, buyBg.displayHeight);
+			buyButton.setInteractive({ useHandCursor: true });
+			card.add(buyButton);
+
+			const buyBaseScale = 1;
+			buyButton.on(Phaser.Input.Events.POINTER_OVER, () => {
+				buyButton.setScale(buyBaseScale * 1.08);
+			});
+			buyButton.on(Phaser.Input.Events.POINTER_OUT, () => {
+				buyButton.setScale(buyBaseScale);
+			});
+			buyButton.on(Phaser.Input.Events.POINTER_DOWN, () => {
+				buyButton.setScale(buyBaseScale * 0.94);
+				this.confirmMandatoryUpgradePurchase(unlockId, costText);
+			});
+
+			cardsRoot.add(card);
+		});
+	}
+
+	private showMandatoryUpgradeSelect(unlockIds: UnlockId[], onComplete: () => void) {
+		if (unlockIds.length === 0) {
+			onComplete();
+			return;
+		}
+
+		if (!this.mandatoryUpgradeContainer) {
+			this.createMandatoryUpgradeSelectUi();
+		}
+
+		this.onMandatoryUpgradeComplete = onComplete;
+		this.isMandatoryUpgradeSelectVisible = true;
+		this.rebuildMandatoryUpgradeCards(unlockIds);
+
+		const panelStartY = -this.scale.height * 0.55;
+		this.mandatoryUpgradeContainer!.y = panelStartY;
+		this.mandatoryUpgradeContainer!.setVisible(true);
+		this.mandatoryUpgradeContainer!.setAlpha(1);
+
+		this.blurOverlay.setVisible(true);
+		this.blurOverlay.setAlpha(Math.max(this.blurOverlay.alpha, 1));
+		this.blurOverlay.setInteractive(
+			new Phaser.Geom.Rectangle(0, 0, this.scale.width, this.scale.height),
+			Phaser.Geom.Rectangle.Contains
+		);
+
+		// El panel de día se queda detrás; no se puede Ready hasta elegir upgrade.
+		this.panel.disableReadyButton();
+
+		this.tweens.add({
+			targets: this.mandatoryUpgradeContainer,
+			y: this.mandatoryUpgradeRestY,
+			duration: Level.INTRO_PANEL_DROP_DURATION,
+			ease: "Bounce.Out",
+		});
+	}
+
+	private hideMandatoryUpgradeSelect() {
+		if (!this.isMandatoryUpgradeSelectVisible || !this.mandatoryUpgradeContainer) {
+			return;
+		}
+
+		this.isMandatoryUpgradeSelectVisible = false;
+		this.mandatoryUpgradeContainer.setVisible(false);
+		this.mandatoryUpgradeContainer.setAlpha(0);
+		this.mandatoryUpgradeContainer.y = this.mandatoryUpgradeRestY;
+		this.mandatoryUpgradeCardsRoot?.removeAll(true);
+		this.onMandatoryUpgradeComplete = undefined;
+	}
+
+	private confirmMandatoryUpgradePurchase(
+		unlockId: UnlockId,
+		costFeedbackTarget?: Phaser.GameObjects.Text
+	) {
+		if (!this.isMandatoryUpgradeSelectVisible) {
+			return;
+		}
+
+		if (!this.tryPurchaseKitchenUnlock(unlockId, costFeedbackTarget)) {
+			return;
 		}
 
 		this.applyLevelProgression();
-		this.hideUnlockPanel();
+
+		const onComplete = this.onMandatoryUpgradeComplete;
+		this.hideMandatoryUpgradeSelect();
+		onComplete?.();
 	}
 
 	private confirmExitToSceneSelector(options?: { openTab?: "levels" | "moments" }) {
@@ -2158,16 +2450,40 @@ export default class Level extends Phaser.Scene {
 			duration: Level.INTRO_PANEL_DROP_DURATION,
 			ease: "Bounce.Out",
 			onComplete: () => {
-				this.panel.enableReadyButton(
-					() => {
-						this.startBackgroundMusic();
-						this.dismissSceneIntro(panelStartY);
-					},
-					() => {
-						this.confirmExitToSceneSelector();
-					}
-				);
+				this.presentIntroReadyOrMandatoryUpgrades(panelStartY);
 			}
+		});
+	}
+
+	/**
+	 * Si hay upgrades de cocina asequibles, obliga a comprar uno antes del Ready.
+	 */
+	private presentIntroReadyOrMandatoryUpgrades(panelStartY: number) {
+		const enableReady = () => {
+			this.panel.enableReadyButton(
+				() => {
+					this.startBackgroundMusic();
+					this.dismissSceneIntro(panelStartY);
+				},
+				() => {
+					this.confirmExitToSceneSelector();
+				}
+			);
+		};
+
+		const affordableUpgrades = this.getAffordableKitchenUpgrades();
+
+		if (affordableUpgrades.length === 0) {
+			enableReady();
+			return;
+		}
+
+		// Oculta el panel de día mientras se elige el upgrade (solo se ve el selector).
+		this.panel.setVisible(false);
+		this.showMandatoryUpgradeSelect(affordableUpgrades, () => {
+			this.panel.setVisible(true);
+			this.panel.setAlpha(1);
+			enableReady();
 		});
 	}
 

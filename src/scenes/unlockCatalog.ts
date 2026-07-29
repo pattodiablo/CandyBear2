@@ -15,8 +15,8 @@ export interface UnlockCatalogEntry {
 
 /**
  * Product 1 (holder1) se mantiene desbloqueado por defecto.
- * Orden de aparición: Berry Dip → Second Fryer → Toaster/Sandwich → Milk → Workplace.
- * El primer unlock aparece desde el nivel 3.
+ * Orden de aparición: Berry Dip → Second Workplace → Toaster/Sandwich → Milk → Second Fryer.
+ * Workplace2 va antes que las freidoras extras; el primer unlock aparece desde el nivel 3.
  */
 export const UNLOCK_CATALOG: Record<UnlockId, UnlockCatalogEntry> = {
 	holder2: {
@@ -26,11 +26,11 @@ export const UNLOCK_CATALOG: Record<UnlockId, UnlockCatalogEntry> = {
 		coinCost: 4,
 		unlockLevel: 3,
 	},
-	fryer2: {
-		id: "fryer2",
-		displayName: "Second Fryer",
-		previewTextureKey: "Fryer",
-		// Freidora un poco más cara que el resto del tramo temprano.
+	workplace2: {
+		id: "workplace2",
+		displayName: "Second Workplace",
+		previewTextureKey: "workplace",
+		// Expansión temprana de glaseado (antes que freidoras extras).
 		coinCost: 9,
 		unlockLevel: 4,
 	},
@@ -48,10 +48,11 @@ export const UNLOCK_CATALOG: Record<UnlockId, UnlockCatalogEntry> = {
 		coinCost: 35,
 		unlockLevel: 6,
 	},
-	workplace2: {
-		id: "workplace2",
-		displayName: "Second Workplace",
-		previewTextureKey: "workplace",
+	fryer2: {
+		id: "fryer2",
+		displayName: "Second Fryer",
+		previewTextureKey: "Fryer",
+		// Freidora extra más tarde y más cara que el workplace.
 		coinCost: 40,
 		unlockLevel: 7,
 	},
@@ -77,10 +78,10 @@ export const UNLOCK_CATALOG: Record<UnlockId, UnlockCatalogEntry> = {
 
 export const UNLOCK_ORDER: UnlockId[] = [
 	"holder2",
-	"fryer2",
+	"workplace2",
 	"toaster",
 	"milkmachine",
-	"workplace2",
+	"fryer2",
 	"holder3",
 	"holder4",
 ];

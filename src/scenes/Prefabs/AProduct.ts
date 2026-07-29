@@ -159,6 +159,12 @@ export default class AProduct extends Phaser.GameObjects.Image {
 					return;
 				}
 
+				// Sin cliente que lo pida: va a una bandeja con hueco (como sándwiches).
+				if (levelScene.tryAutoPlaceOnAnyTray(this)) {
+					return;
+				}
+
+				// Bandejas llenas: selección manual de entrega.
 				this.startDeliverySelection();
 				return;
 			}
