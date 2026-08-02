@@ -90,6 +90,73 @@
                     "y": 22,
                     "scaleX": 0.63,
                     "scaleY": 0.63
+                },
+                {
+                    "type": "Image",
+                    "id": "0004c6de-0910-4f60-ab85-69df4fcc8278",
+                    "label": "starneeded",
+                    "scope": "CLASS",
+                    "texture": {
+                        "key": "smallStarHolder"
+                    },
+                    "x": -15,
+                    "y": 22,
+                    "scaleX": 0.63,
+                    "scaleY": 0.63
+                },
+                {
+                    "type": "Image",
+                    "id": "ceac7c21-3d7b-4891-ac79-6dd55d46ffa8",
+                    "label": "likeHeartNeeded",
+                    "scope": "CLASS",
+                    "texture": {
+                        "key": "likeHeart"
+                    },
+                    "x": 48,
+                    "y": 22,
+                    "scaleX": 0.4,
+                    "scaleY": 0.4
+                },
+                {
+                    "type": "Text",
+                    "id": "9e966372-125e-4d34-a8a6-04d1cf19d25a",
+                    "label": "StarNumberNeeded",
+                    "scope": "CLASS",
+                    "x": -50,
+                    "y": 22,
+                    "originX": 0.5,
+                    "originY": 0.5,
+                    "text": "1",
+                    "fontFamily": "Klop",
+                    "fontSize": "26px",
+                    "color": "#A96625"
+                },
+                {
+                    "type": "Text",
+                    "id": "256e7bca-9115-4757-a6ad-202818c3a6d8",
+                    "label": "LikesNumberNeeded",
+                    "scope": "CLASS",
+                    "x": 13,
+                    "y": 22,
+                    "originX": 0.5,
+                    "originY": 0.5,
+                    "text": "1",
+                    "fontFamily": "Klop",
+                    "fontSize": "26px",
+                    "color": "#A96625"
+                },
+                {
+                    "type": "Image",
+                    "id": "678a5206-378c-428d-8cd9-197d48a33b0a",
+                    "label": "lock",
+                    "scope": "CLASS",
+                    "texture": {
+                        "key": "lock"
+                    },
+                    "x": 1,
+                    "y": -88,
+                    "scaleX": 0.5766341389296524,
+                    "scaleY": 0.5766341389296524
                 }
             ]
         }

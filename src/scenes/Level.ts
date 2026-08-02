@@ -73,6 +73,7 @@ import {
 	recordLevelClearedWithoutUpgradePurchase,
 	shouldPromptBuyUpgrades,
 } from "./momentProgress";
+import { t } from "./i18n";
 
 interface LevelPlan {
 	levelNumber: number;
@@ -322,7 +323,13 @@ export default class Level extends Phaser.Scene {
 	private static readonly DELAYED_CLIENT_MIN_DELAY = 4000;
 	private static readonly DELAYED_CLIENT_MAX_DELAY = 5000;
 	private static readonly DELAYED_CLIENT_STAGGER = 350;
-	private static readonly LEVEL_PREP_DURATION_MS = 8000;
+	/** Prep inicial al empezar el nivel (setear bandejas). */
+	private static readonly LEVEL_PREP_DURATION_MS = 14000;
+	/** Prep entre oleadas. */
+	private static readonly WAVE_PREP_DURATION_MS = 9000;
+	private static readonly PREP_MESSAGE_DEPTH = 1005;
+	private static readonly PREP_MESSAGE_Y = 120;
+	private static readonly PREP_MESSAGE_FONT_SIZE = "42px";
 	private static readonly HOLDER_PRODUCT_SPAWN_TOLERANCE = 48;
 	private static readonly HOLDER_PRODUCT_SPAWNS: Record<ProductSlotId, { x: number; y: number; textureKey?: string }> = {
 		holder1: { x: 78, y: 547 },
@@ -346,6 +353,9 @@ export default class Level extends Phaser.Scene {
 	private static readonly REWARD_COIN_FALL_DURATION_MAX = 360;
 	private static readonly REWARD_COIN_COLLECT_DELAY = 1600;
 	private static readonly LEVEL_COMPLETE_CONFETTI_DELAY = 0;
+	private static readonly PERFECT_MESSAGE_HOLD_MS = 1900;
+	private static readonly PERFECT_MESSAGE_DEPTH = 1006;
+	private static readonly PERFECT_MESSAGE_FONT_SIZE = "92px";
 	private static readonly SPENT_COIN_START_OFFSET = 48;
 	private static readonly SPENT_COIN_RISE = 100;
 	private static readonly SPENT_COIN_RISE_DURATION = 220;
@@ -407,6 +417,9 @@ export default class Level extends Phaser.Scene {
 	private forcedClientOrderQueue: ClientRequestAppearance[][] = [];
 	private waveSpawnTimers: Phaser.Time.TimerEvent[] = [];
 	private levelPrepTimer?: Phaser.Time.TimerEvent;
+	private prepMessageText?: Phaser.GameObjects.Text;
+	private prepMessagePulseTween?: Phaser.Tweens.Tween;
+	private perfectMessageText?: Phaser.GameObjects.Text;
 	private clientSpawnRetryTimer?: Phaser.Time.TimerEvent;
 	private exitConfirmContainer?: Phaser.GameObjects.Container;
 	private exitConfirmMessage?: Phaser.GameObjects.Text;
@@ -599,6 +612,9 @@ export default class Level extends Phaser.Scene {
 		this.mandatoryUpgradeContainer = undefined;
 		this.mandatoryUpgradeCardsRoot = undefined;
 		this.onMandatoryUpgradeComplete = undefined;
+		this.perfectMessageText = undefined;
+		this.prepMessageText = undefined;
+		this.prepMessagePulseTween = undefined;
 	}
 
 	private flushLoadedContent() {
@@ -606,6 +622,8 @@ export default class Level extends Phaser.Scene {
 		this.clearHelpHandTimer();
 		this.unbindDeveloperCheat?.();
 		this.unbindDeveloperCheat = undefined;
+		this.clearPerfectClearMessage();
+		this.hidePreparationMessage();
 		this.clearHudReferences();
 		this.clearWaveSpawnTimers();
 
@@ -2321,8 +2339,8 @@ export default class Level extends Phaser.Scene {
 			Phaser.Geom.Rectangle.Contains
 		);
 
-		// El panel de día se queda detrás; no se puede Ready hasta elegir upgrade.
 		this.panel.disableReadyButton();
+		this.panel.setVisible(false);
 
 		this.tweens.add({
 			targets: this.mandatoryUpgradeContainer,
@@ -2412,6 +2430,11 @@ export default class Level extends Phaser.Scene {
 			ease: "Back.In"
 		});
 
+		this.finishIntroAndStartLevel();
+	}
+
+	/** Cierra el blur del intro y arranca la prep del nivel. */
+	private finishIntroAndStartLevel() {
 		this.tweens.add({
 			targets: this.blurOverlay,
 			alpha: 0,
@@ -2421,6 +2444,7 @@ export default class Level extends Phaser.Scene {
 				this.blurOverlay.disableInteractive();
 				this.blurOverlay.setVisible(false);
 				this.panel.setVisible(false);
+				this.panel.setAlpha(0);
 				this.setupHelpHand();
 				this.startLevelPreparation();
 			}
@@ -2429,13 +2453,16 @@ export default class Level extends Phaser.Scene {
 
 	private playSceneIntro() {
 
-		const panelFinalY = this.panel.y;
+		const panelFinalY = this.panelRestY || this.panel.y;
 		const panelStartY = -this.panel.displayHeight - Level.INTRO_PANEL_START_OFFSET;
+		const affordableUpgrades = this.getAffordableKitchenUpgrades();
 
-		this.panel.y = panelStartY;
-		this.panel.setAlpha(1);
 		this.blurOverlay.setVisible(true);
-		this.panel.setVisible(true);
+		this.blurOverlay.setAlpha(0);
+		this.blurOverlay.setInteractive(
+			new Phaser.Geom.Rectangle(0, 0, this.scale.width, this.scale.height),
+			Phaser.Geom.Rectangle.Contains
+		);
 
 		this.tweens.add({
 			targets: this.blurOverlay,
@@ -2444,46 +2471,38 @@ export default class Level extends Phaser.Scene {
 			ease: "Quad.Out"
 		});
 
+		// Si hay desbloqueos de cocina asequibles: solo el panel de upgrade (sin Ready).
+		if (affordableUpgrades.length > 0) {
+			this.panel.setVisible(false);
+			this.panel.setAlpha(0);
+			this.showMandatoryUpgradeSelect(affordableUpgrades, () => {
+				this.startBackgroundMusic();
+				this.finishIntroAndStartLevel();
+			});
+			return;
+		}
+
+		// Intro normal con panel del día + Ready.
+		this.panel.y = panelStartY;
+		this.panel.setAlpha(1);
+		this.panel.setVisible(true);
+
 		this.tweens.add({
 			targets: this.panel,
 			y: panelFinalY,
 			duration: Level.INTRO_PANEL_DROP_DURATION,
 			ease: "Bounce.Out",
 			onComplete: () => {
-				this.presentIntroReadyOrMandatoryUpgrades(panelStartY);
+				this.panel.enableReadyButton(
+					() => {
+						this.startBackgroundMusic();
+						this.dismissSceneIntro(panelStartY);
+					},
+					() => {
+						this.confirmExitToSceneSelector();
+					}
+				);
 			}
-		});
-	}
-
-	/**
-	 * Si hay upgrades de cocina asequibles, obliga a comprar uno antes del Ready.
-	 */
-	private presentIntroReadyOrMandatoryUpgrades(panelStartY: number) {
-		const enableReady = () => {
-			this.panel.enableReadyButton(
-				() => {
-					this.startBackgroundMusic();
-					this.dismissSceneIntro(panelStartY);
-				},
-				() => {
-					this.confirmExitToSceneSelector();
-				}
-			);
-		};
-
-		const affordableUpgrades = this.getAffordableKitchenUpgrades();
-
-		if (affordableUpgrades.length === 0) {
-			enableReady();
-			return;
-		}
-
-		// Oculta el panel de día mientras se elige el upgrade (solo se ve el selector).
-		this.panel.setVisible(false);
-		this.showMandatoryUpgradeSelect(affordableUpgrades, () => {
-			this.panel.setVisible(true);
-			this.panel.setAlpha(1);
-			enableReady();
 		});
 	}
 
@@ -3285,7 +3304,7 @@ export default class Level extends Phaser.Scene {
 
 		if (this.activeClients.length === 0 && this.getPendingWaveSpawns() === 0) {
 			if (this.hasMoreClientWaves()) {
-				this.spawnNextClientWave();
+				this.startWavePreparation();
 				return;
 			}
 
@@ -3353,7 +3372,7 @@ export default class Level extends Phaser.Scene {
 	private handleLevelCleared(finalYum?: YumPrefab) {
 		if (this.isInfiniteMode) {
 			// El modo infinito no termina por limpiar oleadas.
-			this.spawnNextClientWave();
+			this.startWavePreparation();
 			return;
 		}
 
@@ -3379,16 +3398,121 @@ export default class Level extends Phaser.Scene {
 						return;
 					}
 
-					ConfettiPrefab.launch(this);
-					this.playLevelCompletePanel();
+					this.presentLevelCompleteCelebration();
 				});
 			});
 			return;
 		}
 
 		// No finalYum provided — complete level immediately
+		this.presentLevelCompleteCelebration();
+	}
+
+	/** Perfect (sin fallos): mensaje + confeti antes del panel. Si no, confeti y panel. */
+	private isPerfectLevelClear() {
+		const performance = this.getStarPerformance();
+		return performance.totalClients > 0
+			&& performance.successfulClients === performance.totalClients
+			&& performance.discardedProductLosses === 0;
+	}
+
+	private presentLevelCompleteCelebration() {
 		ConfettiPrefab.launch(this);
+
+		if (this.isPerfectLevelClear()) {
+			this.showPerfectClearMessage(() => {
+				if (!this.sys.isActive()) {
+					return;
+				}
+
+				this.playLevelCompletePanel();
+			});
+			return;
+		}
+
 		this.playLevelCompletePanel();
+	}
+
+	private showPerfectClearMessage(onComplete: () => void) {
+		this.clearPerfectClearMessage();
+
+		const message = this.add.text(
+			this.scale.width * 0.5,
+			this.scale.height * 0.42,
+			t("perfect"),
+			{
+				color: "#DF3D7A",
+				fontFamily: "Klop",
+				fontSize: Level.PERFECT_MESSAGE_FONT_SIZE,
+				fontStyle: "bold",
+				align: "center",
+				stroke: "#fff8f3",
+				strokeThickness: 12,
+			}
+		);
+		message.setOrigin(0.5);
+		message.setScrollFactor(0);
+		message.setDepth(Level.PERFECT_MESSAGE_DEPTH);
+		message.setAlpha(0);
+		message.setScale(0.4);
+		this.perfectMessageText = message;
+
+		this.tweens.add({
+			targets: message,
+			alpha: 1,
+			scaleX: 1.12,
+			scaleY: 1.12,
+			duration: 380,
+			ease: "Back.Out",
+			onComplete: () => {
+				this.tweens.add({
+					targets: message,
+					scaleX: 1,
+					scaleY: 1,
+					duration: 160,
+					ease: "Sine.Out",
+				});
+			},
+		});
+
+		this.time.delayedCall(Level.PERFECT_MESSAGE_HOLD_MS, () => {
+			if (!this.sys.isActive()) {
+				return;
+			}
+
+			if (message.active) {
+				this.tweens.add({
+					targets: message,
+					alpha: 0,
+					scaleX: 1.2,
+					scaleY: 1.2,
+					duration: 220,
+					ease: "Quad.In",
+					onComplete: () => {
+						this.clearPerfectClearMessage();
+						onComplete();
+					},
+				});
+				return;
+			}
+
+			this.clearPerfectClearMessage();
+			onComplete();
+		});
+	}
+
+	private clearPerfectClearMessage() {
+		if (!this.perfectMessageText) {
+			return;
+		}
+
+		this.tweens.killTweensOf(this.perfectMessageText);
+
+		if (this.perfectMessageText.active) {
+			this.perfectMessageText.destroy();
+		}
+
+		this.perfectMessageText = undefined;
 	}
 
 	private playLevelCompletePanel() {
@@ -3481,12 +3605,102 @@ export default class Level extends Phaser.Scene {
 	}
 
 	private startLevelPreparation() {
-
-		this.clearLevelPrepTimer();
-		this.levelPrepTimer = this.time.delayedCall(Level.LEVEL_PREP_DURATION_MS, () => {
-			this.levelPrepTimer = undefined;
+		this.beginPreparationPhase(Level.LEVEL_PREP_DURATION_MS, () => {
 			this.spawnInitialClients();
 		});
+	}
+
+	/** Tiempo entre oleadas para preparar productos en bandejas. */
+	private startWavePreparation() {
+		this.beginPreparationPhase(Level.WAVE_PREP_DURATION_MS, () => {
+			this.spawnNextClientWave();
+		});
+	}
+
+	private beginPreparationPhase(durationMs: number, onComplete: () => void) {
+		this.clearLevelPrepTimer();
+		this.showPreparationMessage();
+
+		this.levelPrepTimer = this.time.delayedCall(durationMs, () => {
+			this.levelPrepTimer = undefined;
+			this.hidePreparationMessage();
+			onComplete();
+		});
+	}
+
+	private showPreparationMessage() {
+		this.hidePreparationMessage();
+
+		const message = this.add.text(
+			this.scale.width * 0.5,
+			Level.PREP_MESSAGE_Y,
+			t("prepare"),
+			{
+				color: "#DF3D7A",
+				fontFamily: "Klop",
+				fontSize: Level.PREP_MESSAGE_FONT_SIZE,
+				fontStyle: "bold",
+				align: "center",
+				stroke: "#fff8f3",
+				strokeThickness: 6,
+			}
+		);
+		message.setOrigin(0.5);
+		message.setScrollFactor(0);
+		message.setDepth(Level.PREP_MESSAGE_DEPTH);
+		message.setAlpha(0);
+		message.setScale(0.85);
+
+		this.tweens.add({
+			targets: message,
+			alpha: 1,
+			scaleX: 1,
+			scaleY: 1,
+			duration: 320,
+			ease: "Back.Out",
+		});
+
+		this.prepMessagePulseTween = this.tweens.add({
+			targets: message,
+			scaleX: 1.06,
+			scaleY: 1.06,
+			duration: 700,
+			yoyo: true,
+			repeat: -1,
+			ease: "Sine.InOut",
+			delay: 320,
+		});
+
+		this.prepMessageText = message;
+	}
+
+	private hidePreparationMessage() {
+		this.prepMessagePulseTween?.stop();
+		this.prepMessagePulseTween = undefined;
+
+		if (!this.prepMessageText) {
+			return;
+		}
+
+		const message = this.prepMessageText;
+		this.prepMessageText = undefined;
+		this.tweens.killTweensOf(message);
+
+		if (message.active) {
+			this.tweens.add({
+				targets: message,
+				alpha: 0,
+				scaleX: 0.9,
+				scaleY: 0.9,
+				duration: 180,
+				ease: "Quad.In",
+				onComplete: () => {
+					if (message.active) {
+						message.destroy();
+					}
+				},
+			});
+		}
 	}
 
 	private spawnInitialClients() {
@@ -3632,6 +3846,7 @@ export default class Level extends Phaser.Scene {
 
 		this.levelPrepTimer?.remove(false);
 		this.levelPrepTimer = undefined;
+		this.hidePreparationMessage();
 	}
 
 	private clearWaveSpawnTimers() {

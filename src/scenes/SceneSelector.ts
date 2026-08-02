@@ -18,12 +18,18 @@ import {
 } from "./momentCardCatalog";
 import { getTotalLikes, spendTotalLikes } from "./likeProgress";
 import {
+	getHighestCompletedLevel,
 	getHighestUnlockedLevel,
 	getLevelStars,
 	getStoredTotalCoins,
 	isInfiniteModeUnlocked,
 	spendTotalCoins,
 } from "./levelProgress";
+import {
+	canEnterLevel,
+	getSpecialLevelRequirements,
+	isSpecialGateLevel,
+} from "./levelGateProgress";
 import { isMomentCardBought } from "./momentProgress";
 import { applySoftRainbowCameraFilter } from "../filters/softRainbowCameraFilter";
 /* END-USER-IMPORTS */
@@ -215,16 +221,65 @@ export default class SceneSelector extends Phaser.Scene {
 			const { x, y } = this.getGridPosition(index, SceneSelector.LEVELS_ITEMS_PER_PAGE, true);
 			const dayHolder = new dayHolderPrefab(this, x, y);
 			const levelNumber = index + 1;
+			const progressionUnlocked = levelNumber <= this.highestUnlockedLevel;
 
 			dayHolder.setDayNumber(levelNumber);
 			dayHolder.setEarnedStars(getLevelStars(levelNumber));
-			dayHolder.setUnlocked(levelNumber <= this.highestUnlockedLevel);
+			dayHolder.setUnlocked(progressionUnlocked);
+			this.applySpecialGateToDayHolder(dayHolder, levelNumber);
 			dayHolder.setVisible(false);
 			dayHolder.on("selected", () => {
-				this.startLevel(levelNumber);
+				this.tryStartLevel(levelNumber);
+			});
+			dayHolder.on("gate-blocked", () => {
+				this.handleSpecialGateBlocked(levelNumber);
 			});
 			this.add.existing(dayHolder);
 			this.dayHolders.push(dayHolder);
+		}
+	}
+
+	private applySpecialGateToDayHolder(
+		dayHolder: dayHolderPrefab,
+		levelNumber: number
+	) {
+		// Niveles 5, 10, 15…: candado + costo (★/likes) solo mientras no se pueda entrar.
+		// Una vez desbloqueado (o completado), se ve como un día normal con ★ ganadas.
+		if (!isSpecialGateLevel(levelNumber)) {
+			dayHolder.setSpecialGate(null, false);
+			return;
+		}
+
+		const levelCompleted = getHighestCompletedLevel() >= levelNumber;
+		const unlockedForEntry = canEnterLevel(levelNumber, this.highestUnlockedLevel);
+
+		if (levelCompleted || unlockedForEntry) {
+			// Ya se puede jugar / se completó: solo ★ ganadas, sin costo de entrada.
+			dayHolder.setSpecialGate(null, false);
+			return;
+		}
+
+		// Aún bloqueado: mostrar candado + ★/likes requeridos.
+		dayHolder.setSpecialGate(getSpecialLevelRequirements(levelNumber), true);
+	}
+
+	private tryStartLevel(levelNumber: number) {
+		if (!canEnterLevel(levelNumber, this.highestUnlockedLevel)) {
+			this.handleSpecialGateBlocked(levelNumber);
+			return;
+		}
+
+		this.startLevel(levelNumber);
+	}
+
+	private handleSpecialGateBlocked(levelNumber: number) {
+		const requirements = getSpecialLevelRequirements(levelNumber);
+		void requirements;
+
+		this.cameras.main.shake(SceneSelector.CAMERA_SHAKE_DURATION, SceneSelector.CAMERA_SHAKE_INTENSITY);
+
+		if (this.cache.audio.exists("deny")) {
+			this.sound.play("deny");
 		}
 	}
 
@@ -576,9 +631,16 @@ export default class SceneSelector extends Phaser.Scene {
 		this.scene.start("Level", { levelNumber });
 	}
 
-	/** Continúa en el nivel más alto desbloqueado. */
+	/** Continúa en el nivel más alto desbloqueado y jugable (respeta gates especiales). */
 	private startPlayFromProgress() {
-		this.startLevel(this.highestUnlockedLevel);
+		for (let levelNumber = this.highestUnlockedLevel; levelNumber >= 1; levelNumber--) {
+			if (canEnterLevel(levelNumber, this.highestUnlockedLevel)) {
+				this.startLevel(levelNumber);
+				return;
+			}
+		}
+
+		this.handleSpecialGateBlocked(this.highestUnlockedLevel);
 	}
 
 	private startInfiniteMode() {
