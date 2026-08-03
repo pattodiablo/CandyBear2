@@ -298,8 +298,7 @@
             "scaleX": 7,
             "scaleY": 4,
             "originX": 0,
-            "originY": 0,
-            "editorRender": false
+            "originY": 0
         },
         {
             "prefabId": "d22c95a1-a07a-4d36-acf8-819eb6f4423d",
@@ -314,8 +313,7 @@
             "scope": "CLASS",
             "x": 595,
             "y": 360,
-            "visible": true,
-            "editorRender": false
+            "visible": true
         },
         {
             "type": "Image",
