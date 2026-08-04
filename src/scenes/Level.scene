@@ -313,7 +313,8 @@
             "scope": "CLASS",
             "x": 595,
             "y": 360,
-            "visible": true
+            "visible": true,
+            "editorRender": true
         },
         {
             "type": "Image",

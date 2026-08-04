@@ -2,6 +2,11 @@
     "section1": {
         "files": [
             {
+                "url": "assets/almostIcon.png",
+                "type": "image",
+                "key": "almostIcon"
+            },
+            {
                 "url": [
                     "assets/audio/angry.mp3"
                 ],

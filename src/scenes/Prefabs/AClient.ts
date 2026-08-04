@@ -631,7 +631,34 @@ export default class AClient extends Phaser.GameObjects.Container {
 			return false;
 		}
 
-		return this.getRemainingRequestTime() <= AClient.QUESTION_FLOAT_START_REMAINING;
+		return this.getRequestPatienceRemainingMs() <= AClient.QUESTION_FLOAT_START_REMAINING;
+	}
+
+	/**
+	 * Tiempo de paciencia restante según el timer (no exige pedidos pendientes).
+	 * Importante: al entregar el último producto, pendingProducts ya está vacío
+	 * pero requestExpiresAt sigue vivo hasta clearRequestState.
+	 */
+	private getRequestPatienceRemainingMs() {
+
+		if (this.requestExpiresAt <= 0) {
+			return Number.POSITIVE_INFINITY;
+		}
+
+		return Math.max(0, this.requestExpiresAt - this.scene.time.now);
+	}
+
+	/**
+	 * true si el cliente estaba en la ventana de "casi se va" al servirle.
+	 * No usa hasActiveRequest(): receiveProductDelivery ya vació el pedido.
+	 */
+	private wasAlmostLeavingWhenServed() {
+
+		if (this.requestExpiresAt <= 0) {
+			return false;
+		}
+
+		return this.getRequestPatienceRemainingMs() <= AClient.QUESTION_FLOAT_START_REMAINING;
 	}
 
 	private wasServedQuickly() {
@@ -676,6 +703,9 @@ export default class AClient extends Phaser.GameObjects.Container {
 
 		const wasQuickService = showYum && this.wasServedQuickly();
 		const grantLike = showYum && this.shouldGrantLike(wasQuickService);
+		// Capturar ANTES de clearRequestState. No usar isImpatient(): al completar
+		// el pedido receiveProductDelivery ya vació pendingProducts.
+		const wasAlmostLeaving = showYum && this.wasAlmostLeavingWhenServed();
 
 		// Solo al irse sin su pedido (timeout o rechazo), no en entrega exitosa.
 		if (!showYum && this.scene.cache.audio.exists("angry")) {
@@ -688,6 +718,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 		this.applyClientAppearance(this.ClientBack);
 		this.clientBear.playAnimation("walk");
 		const exitX = this.x;
+		const levelScene = this.scene as Level;
 
 		const exitDuration = Math.max(0, ((AClient.EXIT_Y - this.y) / AClient.MOVE_SPEED) * 1000);
 
@@ -697,8 +728,6 @@ export default class AClient extends Phaser.GameObjects.Container {
 			duration: exitDuration,
 			ease: "Sine.In",
 			onComplete: () => {
-				const levelScene = this.scene as Level;
-
 				if (!showYum) {
 					levelScene.respawnClient(this);
 					return;
@@ -711,12 +740,14 @@ export default class AClient extends Phaser.GameObjects.Container {
 					const skinIndex = this.clientBear.getAppearanceVariantIndex();
 					levelScene.showLikeHeartAt(exitX, () => {
 						const yumPrefab = levelScene.showYumAt(exitX);
+						levelScene.queueAlmostAfterYum(yumPrefab, wasAlmostLeaving);
 						levelScene.respawnClient(this, yumPrefab);
 					}, skinIndex);
 					return;
 				}
 
 				const yumPrefab = levelScene.showYumAt(exitX);
+				levelScene.queueAlmostAfterYum(yumPrefab, wasAlmostLeaving);
 				levelScene.respawnClient(this, yumPrefab);
 			}
 		});

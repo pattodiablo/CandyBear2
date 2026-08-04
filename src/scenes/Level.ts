@@ -18,6 +18,7 @@ import Phaser from "phaser";
 import Cookie from "./Prefabs/Cookie";
 import AClient from "./Prefabs/AClient";
 import YumPrefab from "./Prefabs/YumPrefab";
+import AlmostPrefab from "./Prefabs/AlmostPrefab";
 import Coin from "./Prefabs/Coin";
 import ConfettiPrefab from "./Prefabs/ConfettiPrefab";
 import { getTotalLikes, recordBearLike, recordLike, storeLevelLikes } from "./likeProgress";
@@ -3465,6 +3466,42 @@ export default class Level extends Phaser.Scene {
 		this.add.existing(yum);
 		yum.setDepth(this.workstation.depth - 1);
 		return yum;
+	}
+
+	/**
+	 * Encola el Almost para cuando el Yum se destruye (solo si almost-leaving).
+	 * Vive en Level para no depender del cliente ya destruido por respawnClient.
+	 */
+	public queueAlmostAfterYum(yumPrefab: Phaser.GameObjects.Container, wasAlmostLeaving: boolean) {
+
+		if (!wasAlmostLeaving || !yumPrefab?.active) {
+			return;
+		}
+
+		yumPrefab.once(Phaser.GameObjects.Events.DESTROY, () => {
+			if (!this.sys.isActive()) {
+				return;
+			}
+
+			this.showAlmostAtCenter();
+		});
+	}
+
+	/** Feedback central cuando se atiende a un cliente que ya estaba impaciente (tras el Yum). */
+	public showAlmostAtCenter() {
+
+		const cam = this.cameras.main;
+		const almost = new AlmostPrefab(this, cam.centerX, cam.centerY);
+		this.add.existing(almost);
+		// Por encima del fondo / workstation / clientes; mismo rango que confetti de celebración.
+		almost.setDepth(Math.max(this.workstation.depth + 50, 1000));
+		almost.setScrollFactor(0);
+
+		if (this.cache.audio.exists("pop1")) {
+			this.sound.play("pop1", { volume: 0.5 });
+		}
+
+		return almost;
 	}
 
 	public showCoinsAt(x: number, amount: number) {
