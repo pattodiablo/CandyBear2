@@ -304,6 +304,9 @@ export default class Level extends Phaser.Scene {
 	private static readonly TRAY_CAPACITY = 3;
 	/** Separación horizontal entre productos en la bandeja (más espacio = más fácil click). */
 	private static readonly TRAY_SLOT_OFFSET = 72;
+	/** Latido de escala cuando conviene guardar un producto en la charola. */
+	private static readonly TRAY_INVITE_SCALE = 1.07;
+	private static readonly TRAY_INVITE_PULSE_DURATION = 620;
 	private static readonly CAMPAIGN_LEVEL_PLANS = Array.from(
 		{ length: Level.CAMPAIGN_LEVEL_COUNT },
 		(_, index) => Level.createLevelPlan(index + 1)
@@ -382,6 +385,14 @@ export default class Level extends Phaser.Scene {
 	private selectedDeliveryProduct?: AProduct | milkglass | sandwichPrefab;
 	private activeWorkplaceId?: "workplace1" | "workplace2";
 	private isCookieLaunching = false;
+	/** Escalas base de las charolas (para el pulso de “invita a usar”). */
+	private charola1BaseScaleX = 1;
+	private charola1BaseScaleY = 1;
+	private charola2BaseScaleX = 1;
+	private charola2BaseScaleY = 1;
+	private charola1InviteTween?: Phaser.Tweens.Tween;
+	private charola2InviteTween?: Phaser.Tweens.Tween;
+	private isTrayInviteActive = false;
 	/** Stock en memoria del tarro (sincronizado con localStorage). */
 	private cookieStock = 0;
 	private static readonly COOKIE_JAR_TEXTURE = "cookieJar";
@@ -571,6 +582,7 @@ export default class Level extends Phaser.Scene {
 		this.selectedDeliveryProduct = undefined;
 		this.setWorkplaceHighlighted(undefined);
 		this.isCookieLaunching = false;
+		this.stopAllTrayInvitePulses();
 		this.resetCookieJarState();
 		this.successfulClientsServed = 0;
 		this.quickServiceLikesThisLevel = 0;
@@ -660,6 +672,7 @@ export default class Level extends Phaser.Scene {
 		this.selectedDeliveryProduct = undefined;
 		this.setWorkplaceHighlighted(undefined);
 		this.isCookieLaunching = false;
+		this.stopAllTrayInvitePulses();
 		this.resetCookieJarState();
 		this.isExitConfirmVisible = false;
 		this.isUnlockPanelVisible = false;
@@ -701,8 +714,25 @@ export default class Level extends Phaser.Scene {
 		this.discardedProductLosses++;
 	}
 
+	/**
+	 * Audio de pedido cancelado / producto descartado
+	 * (quemado, vaso sin cliente, cliente se va, entrega incorrecta, etc.).
+	 */
+	public playCanceledOrderSound() {
+		if (this.cache.audio.exists("canceled")) {
+			this.sound.play("canceled");
+			return;
+		}
+
+		// Fallback por si el pack aún no tiene el asset en alguna build.
+		if (this.cache.audio.exists("looseMoney")) {
+			this.sound.play("looseMoney");
+		}
+	}
+
 	public showProductDiscardLossAt(x: number, y: number, amount = Level.COIN_OFFSETS.length) {
 		this.recordProductDiscardLoss();
+		this.playCanceledOrderSound();
 		this.showSpentCoinsAt(x, y, amount);
 	}
 
@@ -2101,12 +2131,16 @@ export default class Level extends Phaser.Scene {
 			return;
 		}
 
-		if (!this.tryPurchaseKitchenUnlock(this.currentUnlockId)) {
+		const purchasedUnlockId = this.currentUnlockId;
+
+		if (!this.tryPurchaseKitchenUnlock(purchasedUnlockId)) {
 			return;
 		}
 
 		this.applyLevelProgression();
 		this.hideUnlockPanel();
+		// Tras cerrar el panel se ve la cocina: burst sobre el objeto desbloqueado.
+		this.playKitchenUnlockCelebration(purchasedUnlockId);
 	}
 
 	/**
@@ -2379,7 +2413,120 @@ export default class Level extends Phaser.Scene {
 
 		const onComplete = this.onMandatoryUpgradeComplete;
 		this.hideMandatoryUpgradeSelect();
+		this.playKitchenUnlockCelebration(unlockId);
 		onComplete?.();
+	}
+
+	/**
+	 * Confeti local + pulso de escala en el/los objetos que acaban de desbloquearse
+	 * (estación y, si aplica, el producto en paquete).
+	 */
+	private playKitchenUnlockCelebration(unlockId: UnlockId) {
+		const targets = this.getKitchenUnlockCelebrationTargets(unlockId);
+
+		for (const target of targets) {
+			this.playUnlockBurstAtTarget(target);
+		}
+	}
+
+	private getKitchenUnlockCelebrationTargets(
+		unlockId: UnlockId
+	): Phaser.GameObjects.GameObject[] {
+		const targets: Phaser.GameObjects.GameObject[] = [];
+
+		const primary = this.getKitchenUnlockDisplayObject(unlockId);
+		if (primary) {
+			targets.push(primary);
+		}
+
+		// Producto + estación en paquete (sándwich→tostadora, leche→milk machine).
+		if (isProductUnlockId(unlockId)) {
+			for (const workstationId of getBundledWorkstationsForProductUnlock(unlockId)) {
+				const bundled = this.getKitchenUnlockDisplayObject(workstationId);
+				if (bundled && !targets.includes(bundled)) {
+					targets.push(bundled);
+				}
+			}
+		}
+
+		return targets;
+	}
+
+	private getKitchenUnlockDisplayObject(
+		unlockId: UnlockId
+	): Phaser.GameObjects.GameObject | undefined {
+		switch (unlockId) {
+			case "fryer2":
+				return this.fryer2;
+			case "milkmachine":
+				return this.milkmachine;
+			case "toaster":
+				return this.toaster;
+			case "workplace2":
+				return this.workplace2;
+			case "holder2":
+				return this.holder2;
+			case "holder3":
+				return this.holder3;
+			case "holder4":
+				return this.holder4;
+			default:
+				return undefined;
+		}
+	}
+
+	private playUnlockBurstAtTarget(target: Phaser.GameObjects.GameObject) {
+		const display = target as Phaser.GameObjects.GameObject & {
+			x: number;
+			y: number;
+			depth?: number;
+			scaleX: number;
+			scaleY: number;
+			active: boolean;
+			setScale: (x: number, y?: number) => unknown;
+		};
+
+		if (typeof display.x !== "number" || typeof display.y !== "number") {
+			return;
+		}
+
+		const depth = typeof display.depth === "number"
+			? display.depth + 4
+			: (this.workstation?.depth ?? 0) + 4;
+
+		ConfettiPrefab.launchUnlockBurstAt(this, display.x, display.y, depth);
+		this.playUnlockRevealPulse(display);
+	}
+
+	/** Pequeño “pop” de escala para que el objeto se sienta recién desbloqueado. */
+	private playUnlockRevealPulse(target: {
+		scaleX: number;
+		scaleY: number;
+		active: boolean;
+		setScale: (x: number, y?: number) => unknown;
+	}) {
+		const baseScaleX = target.scaleX;
+		const baseScaleY = target.scaleY;
+
+		this.tweens.killTweensOf(target);
+		target.setScale(baseScaleX * 0.88, baseScaleY * 0.88);
+
+		this.tweens.add({
+			targets: target,
+			scaleX: baseScaleX * 1.1,
+			scaleY: baseScaleY * 1.1,
+			duration: 160,
+			ease: "Back.Out",
+			yoyo: true,
+			hold: 40,
+			onComplete: () => {
+				if (!target.active) {
+					return;
+				}
+
+				target.setScale(baseScaleX, baseScaleY);
+			},
+		});
 	}
 
 	private confirmExitToSceneSelector(options?: { openTab?: "levels" | "moments" }) {
@@ -2730,6 +2877,7 @@ export default class Level extends Phaser.Scene {
 		}
 		arr.push(product);
 		this.reflowTrayProducts(trayId);
+		this.updateTrayInviteAttention();
 	}
 
 	public releaseTraySlot(trayId: "charola1" | "charola2", product: AProduct | sandwichPrefab) {
@@ -2740,6 +2888,7 @@ export default class Level extends Phaser.Scene {
 		}
 		arr.splice(idx, 1);
 		this.reflowTrayProducts(trayId);
+		this.updateTrayInviteAttention();
 	}
 
 	private reflowTrayProducts(trayId: "charola1" | "charola2") {
@@ -3008,6 +3157,130 @@ export default class Level extends Phaser.Scene {
 
 		const shouldPulse = this.canUseCookieJar() && this.hasClientThatNeedsCookie();
 		this.cookieJar.setAttentionPulse(shouldPulse);
+	}
+
+	/**
+	 * True si hay un producto listo que conviene guardar en charola:
+	 * se puede colocar y ningún cliente lo está pidiendo ahora.
+	 */
+	private hasProductReadyForTrayWithoutClient(): boolean {
+		const selected = this.selectedDeliveryProduct;
+
+		if (
+			(selected instanceof AProduct || selected instanceof sandwichPrefab)
+			&& selected.active
+			&& !this.getDirectDeliveryTarget(selected)
+		) {
+			return true;
+		}
+
+		const placeableDonuts = this.getSceneProducts().filter((product) => product.canAutoPlaceInTray());
+		const placeableSandwiches = this.getSceneSandwiches().filter((sandwich) => (
+			sandwich.canAutoPlaceInTray()
+		));
+
+		return [...placeableDonuts, ...placeableSandwiches].some((product) => (
+			!this.getDirectDeliveryTarget(product)
+		));
+	}
+
+	private trayHasFreeSlot(trayId: "charola1" | "charola2") {
+		const arr = trayId === "charola1" ? this.charola1Products : this.charola2Products;
+		return arr.length < Level.TRAY_CAPACITY;
+	}
+
+	private shouldInviteTrayPlacement() {
+		if (
+			this.isGameplayPaused
+			|| this.isExitConfirmVisible
+			|| this.isUnlockPanelVisible
+			|| this.isMandatoryUpgradeSelectVisible
+			|| this.panel.visible
+			|| this.hasCelebratedLevelCompletion
+		) {
+			return false;
+		}
+
+		if (!this.hasProductReadyForTrayWithoutClient()) {
+			return false;
+		}
+
+		return this.trayHasFreeSlot("charola1") || this.trayHasFreeSlot("charola2");
+	}
+
+	private updateTrayInviteAttention() {
+		const shouldInvite = this.shouldInviteTrayPlacement();
+
+		if (shouldInvite === this.isTrayInviteActive) {
+			if (shouldInvite) {
+				// Si una charola se llenó, apaga solo esa; la otra sigue latiendo.
+				this.syncTrayInvitePulse("charola1", this.trayHasFreeSlot("charola1"));
+				this.syncTrayInvitePulse("charola2", this.trayHasFreeSlot("charola2"));
+			}
+
+			return;
+		}
+
+		this.isTrayInviteActive = shouldInvite;
+
+		if (!shouldInvite) {
+			this.stopAllTrayInvitePulses();
+			return;
+		}
+
+		this.syncTrayInvitePulse("charola1", this.trayHasFreeSlot("charola1"));
+		this.syncTrayInvitePulse("charola2", this.trayHasFreeSlot("charola2"));
+	}
+
+	private syncTrayInvitePulse(trayId: "charola1" | "charola2", active: boolean) {
+		const tray = trayId === "charola1" ? this.charola1 : this.charola2;
+		const existingTween = trayId === "charola1" ? this.charola1InviteTween : this.charola2InviteTween;
+		const baseScaleX = trayId === "charola1" ? this.charola1BaseScaleX : this.charola2BaseScaleX;
+		const baseScaleY = trayId === "charola1" ? this.charola1BaseScaleY : this.charola2BaseScaleY;
+
+		if (!tray?.active) {
+			return;
+		}
+
+		if (!active) {
+			existingTween?.stop();
+
+			if (trayId === "charola1") {
+				this.charola1InviteTween = undefined;
+			} else {
+				this.charola2InviteTween = undefined;
+			}
+
+			tray.setScale(baseScaleX, baseScaleY);
+			return;
+		}
+
+		if (existingTween?.isPlaying()) {
+			return;
+		}
+
+		tray.setScale(baseScaleX, baseScaleY);
+		const tween = this.tweens.add({
+			targets: tray,
+			scaleX: baseScaleX * Level.TRAY_INVITE_SCALE,
+			scaleY: baseScaleY * Level.TRAY_INVITE_SCALE,
+			duration: Level.TRAY_INVITE_PULSE_DURATION,
+			yoyo: true,
+			repeat: -1,
+			ease: "Sine.InOut",
+		});
+
+		if (trayId === "charola1") {
+			this.charola1InviteTween = tween;
+		} else {
+			this.charola2InviteTween = tween;
+		}
+	}
+
+	private stopAllTrayInvitePulses() {
+		this.syncTrayInvitePulse("charola1", false);
+		this.syncTrayInvitePulse("charola2", false);
+		this.isTrayInviteActive = false;
 	}
 
 	/** Suma galletas al stock por estrellas, likes y bonus de upgrades del nivel. */
@@ -3913,6 +4186,8 @@ export default class Level extends Phaser.Scene {
 
 	private setupTrayInputs() {
 		if (this.charola1) {
+			this.charola1BaseScaleX = this.charola1.scaleX;
+			this.charola1BaseScaleY = this.charola1.scaleY;
 			this.charola1.setInteractive({ useHandCursor: true });
 			this.charola1.on(Phaser.Input.Events.POINTER_DOWN, () => {
 				this.resolveTrayPlacement("charola1");
@@ -3920,6 +4195,8 @@ export default class Level extends Phaser.Scene {
 		}
 
 		if (this.charola2) {
+			this.charola2BaseScaleX = this.charola2.scaleX;
+			this.charola2BaseScaleY = this.charola2.scaleY;
 			this.charola2.setInteractive({ useHandCursor: true });
 			this.charola2.on(Phaser.Input.Events.POINTER_DOWN, () => {
 				this.resolveTrayPlacement("charola2");
@@ -4172,6 +4449,7 @@ export default class Level extends Phaser.Scene {
 	private updateHelpHand() {
 
 		this.updateCookieJarAttention();
+		this.updateTrayInviteAttention();
 
 		if (!this.canShowHelpHand() || !this.shouldShowHelpHandForIdle()) {
 			this.lastHelpHandPhase = undefined;

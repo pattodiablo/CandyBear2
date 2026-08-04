@@ -401,9 +401,8 @@ export default class milkglass extends Phaser.GameObjects.Image {
 				this.angle = this.baseAngle;
 
 				if (!client.canReceiveDelivery()) {
-
+					// showProductDiscardLossAt ya reproduce "canceled".
 					levelScene.showProductDiscardLossAt(client.x, client.y - 64);
-					this.playCancelOrder();
 					this.fallOffscreen();
 					return;
 				}
@@ -428,12 +427,6 @@ export default class milkglass extends Phaser.GameObjects.Image {
 			}
 		});
 	}
-
-	private playCancelOrder() {
-	
-			const looseMoneySoundKey = "looseMoney";
-			this.scene.sound.play(looseMoneySoundKey);
-		}
 
 	public cancelDeliverySelection() {
 

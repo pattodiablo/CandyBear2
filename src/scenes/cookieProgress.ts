@@ -10,11 +10,12 @@ export const MAX_COOKIE_STOCK = 30;
 export const COOKIES_PER_STAR = 1;
 
 /**
- * Chance de que un like envíe galleta al tarro según el "nivel" del osito (skin).
- * Skins bajos (tempranos): más fiables. Skins altos: más exigentes / menos fiables.
+ * Chance de que un like envíe **1** galleta al tarro (nunca más de una por like).
+ * Skins bajos (tempranos): un poco más fiables. Skins altos: más raros.
+ * Valores bajos a propósito: el tarro debe llenarse lento.
  */
-export const LIKE_COOKIE_CHANCE_LOW_SKIN = 0.58;
-export const LIKE_COOKIE_CHANCE_HIGH_SKIN = 0.28;
+export const LIKE_COOKIE_CHANCE_LOW_SKIN = 0.18;
+export const LIKE_COOKIE_CHANCE_HIGH_SKIN = 0.08;
 
 function clampStock(value: number) {
 	return Math.min(MAX_COOKIE_STOCK, Math.max(0, Math.floor(value)));

@@ -801,6 +801,8 @@ export default class AProduct extends Phaser.GameObjects.Image {
 				this.angle = this.baseAngle;
 
 				if (!client.canReceiveDelivery()) {
+					// Cliente ya no acepta (se fue / timeout): se pierde el producto.
+					levelScene.playCanceledOrderSound();
 					this.fallOffscreen();
 					return;
 				}
@@ -819,6 +821,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 					return;
 				}
 
+				// Producto incorrecto: el cliente rechaza y se va.
 				levelScene.showProductDiscardLossAt(client.x, client.y - 64);
 				client.consumeRequestAndExit();
 

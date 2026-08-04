@@ -541,6 +541,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 		}
 
 		const levelScene = this.scene as Level;
+		// Pierde monedas; el audio "angry" suena en consumeRequestAndExit(false).
 		levelScene.showSpentCoinsAt(this.x, this.y - 64);
 		this.clearRequestState();
 		this.consumeRequestAndExit();
@@ -675,6 +676,11 @@ export default class AClient extends Phaser.GameObjects.Container {
 
 		const wasQuickService = showYum && this.wasServedQuickly();
 		const grantLike = showYum && this.shouldGrantLike(wasQuickService);
+
+		// Solo al irse sin su pedido (timeout o rechazo), no en entrega exitosa.
+		if (!showYum && this.scene.cache.audio.exists("angry")) {
+			this.scene.sound.play("angry");
+		}
 
 		this.questionRevealTimer?.remove(false);
 		this.questionRevealTimer = undefined;

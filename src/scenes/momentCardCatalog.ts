@@ -18,22 +18,26 @@ export interface MomentCardCatalogEntry {
 	upgrade: MomentCardUpgradeDefinition;
 }
 
+/**
+ * Textos cortos: se muestran como "nombre\nefecto" bajo la carta.
+ * Deben caber en ~2 líneas con wordWrap 240px / fontSize 30 (Klop).
+ */
 const MOMENT_CARD_UPGRADES: readonly MomentCardUpgradeDefinition[] = [
-	{ name: "Freidora Veloz I", effect: "Velocidad de freído +1", unlockLevel: 3, costTier: "Bajo" },
-	{ name: "Freidora Veloz II", effect: "Velocidad de freído +2", unlockLevel: 8, costTier: "Medio" },
-	{ name: "Freidora Veloz III", effect: "Velocidad de freído +3", unlockLevel: 15, costTier: "Alto" },
-	{ name: "Refill de Leche I", effect: "Velocidad de refill de leches +1", unlockLevel: 4, costTier: "Bajo" },
-	{ name: "Refill de Leche II", effect: "Velocidad de refill de leches +2", unlockLevel: 10, costTier: "Medio" },
-	{ name: "Refill de Leche III", effect: "Velocidad de refill de leches +3", unlockLevel: 18, costTier: "Alto" },
-	{ name: "Sanduchera Rápida I", effect: "Velocidad de sanduchera +1", unlockLevel: 6, costTier: "Bajo" },
-	{ name: "Sanduchera Rápida II", effect: "Velocidad de sanduchera +2", unlockLevel: 12, costTier: "Medio" },
-	{ name: "Sanduchera Rápida III", effect: "Velocidad de sanduchera +3", unlockLevel: 20, costTier: "Alto" },
-	{ name: "Galletas Extra I", effect: "+1 galleta al completar nivel", unlockLevel: 5, costTier: "Bajo" },
-	{ name: "Galletas Extra II", effect: "+2 galletas al completar nivel", unlockLevel: 11, costTier: "Medio" },
-	{ name: "Galletas Extra III", effect: "+3 galletas al completar nivel", unlockLevel: 17, costTier: "Alto" },
-	{ name: "Clientes Pacientes I", effect: "Tiempo de espera de clientes +1 (más tiempo)", unlockLevel: 7, costTier: "Bajo" },
-	{ name: "Clientes Pacientes II", effect: "Tiempo de espera de clientes +2", unlockLevel: 14, costTier: "Medio" },
-	{ name: "Clientes Pacientes III", effect: "Tiempo de espera de clientes +3", unlockLevel: 22, costTier: "Alto" },
+	{ name: "Freidora I", effect: "Freído +1", unlockLevel: 3, costTier: "Bajo" },
+	{ name: "Freidora II", effect: "Freído +2", unlockLevel: 8, costTier: "Medio" },
+	{ name: "Freidora III", effect: "Freído +3", unlockLevel: 15, costTier: "Alto" },
+	{ name: "Leche I", effect: "Refill +1", unlockLevel: 4, costTier: "Bajo" },
+	{ name: "Leche II", effect: "Refill +2", unlockLevel: 10, costTier: "Medio" },
+	{ name: "Leche III", effect: "Refill +3", unlockLevel: 18, costTier: "Alto" },
+	{ name: "Sanduchera I", effect: "Tostado +1", unlockLevel: 6, costTier: "Bajo" },
+	{ name: "Sanduchera II", effect: "Tostado +2", unlockLevel: 12, costTier: "Medio" },
+	{ name: "Sanduchera III", effect: "Tostado +3", unlockLevel: 20, costTier: "Alto" },
+	{ name: "Galletas I", effect: "+1 al final", unlockLevel: 5, costTier: "Bajo" },
+	{ name: "Galletas II", effect: "+2 al final", unlockLevel: 11, costTier: "Medio" },
+	{ name: "Galletas III", effect: "+3 al final", unlockLevel: 17, costTier: "Alto" },
+	{ name: "Pacientes I", effect: "Espera +1", unlockLevel: 7, costTier: "Bajo" },
+	{ name: "Pacientes II", effect: "Espera +2", unlockLevel: 14, costTier: "Medio" },
+	{ name: "Pacientes III", effect: "Espera +3", unlockLevel: 22, costTier: "Alto" },
 ];
 
 export const TOTAL_MOMENT_CARDS = MOMENT_CARD_UPGRADES.length;

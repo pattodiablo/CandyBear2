@@ -55,6 +55,17 @@ export default class ConfettiPrefab extends Phaser.GameObjects.Image {
 	private static readonly SMALL_BURST_SCALE_MIN = 0.3;
 	private static readonly SMALL_BURST_SCALE_MAX = 0.55;
 	private static readonly SMALL_BURST_DESTROY_BUFFER_MS = 200;
+	/** Burst de desbloqueo de estación/producto: un poco más grande y alegre. */
+	private static readonly UNLOCK_BURST_EMITTER_COUNT = 5;
+	private static readonly UNLOCK_BURST_PARTICLES_PER_EMITTER = 6;
+	private static readonly UNLOCK_BURST_LIFESPAN = 1100;
+	private static readonly UNLOCK_BURST_GRAVITY_Y = 380;
+	private static readonly UNLOCK_BURST_SPEED_MIN = 90;
+	private static readonly UNLOCK_BURST_SPEED_MAX = 220;
+	private static readonly UNLOCK_BURST_SCALE_MIN = 0.35;
+	private static readonly UNLOCK_BURST_SCALE_MAX = 0.7;
+	private static readonly UNLOCK_BURST_DESTROY_BUFFER_MS = 250;
+	private static readonly UNLOCK_CHEERS_VOLUME = 0.4;
 	private readonly emitters: Phaser.GameObjects.Particles.ParticleEmitter[] = [];
 
 	public burst() {
@@ -79,6 +90,23 @@ export default class ConfettiPrefab extends Phaser.GameObjects.Image {
 		scene.add.existing(confetti);
 		confetti.setDepth(depth);
 		confetti.playSmallBurst();
+		return confetti;
+	}
+
+	/**
+	 * Burst local al desbloquear un objeto de cocina (freidora, milk machine, etc.).
+	 * Más notorio que el burst de estela, sin ser el confeti a pantalla completa.
+	 */
+	public static launchUnlockBurstAt(
+		scene: Phaser.Scene,
+		x: number,
+		y: number,
+		depth = ConfettiPrefab.DISPLAY_DEPTH
+	) {
+		const confetti = new ConfettiPrefab(scene, x, y);
+		scene.add.existing(confetti);
+		confetti.setDepth(depth);
+		confetti.playUnlockBurst();
 		return confetti;
 	}
 
@@ -146,24 +174,63 @@ export default class ConfettiPrefab extends Phaser.GameObjects.Image {
 	}
 
 	private playSmallBurst() {
+		this.playLocalBurst({
+			emitterCount: ConfettiPrefab.SMALL_BURST_EMITTER_COUNT,
+			particlesPerEmitter: ConfettiPrefab.SMALL_BURST_PARTICLES_PER_EMITTER,
+			lifespan: ConfettiPrefab.SMALL_BURST_LIFESPAN,
+			gravityY: ConfettiPrefab.SMALL_BURST_GRAVITY_Y,
+			speedMin: ConfettiPrefab.SMALL_BURST_SPEED_MIN,
+			speedMax: ConfettiPrefab.SMALL_BURST_SPEED_MAX,
+			scaleMin: ConfettiPrefab.SMALL_BURST_SCALE_MIN,
+			scaleMax: ConfettiPrefab.SMALL_BURST_SCALE_MAX,
+			destroyBufferMs: ConfettiPrefab.SMALL_BURST_DESTROY_BUFFER_MS,
+		});
+	}
+
+	private playUnlockBurst() {
+		if (this.scene.cache.audio.exists("cheersSound")) {
+			this.scene.sound.play("cheersSound", { volume: ConfettiPrefab.UNLOCK_CHEERS_VOLUME });
+		}
+
+		this.playLocalBurst({
+			emitterCount: ConfettiPrefab.UNLOCK_BURST_EMITTER_COUNT,
+			particlesPerEmitter: ConfettiPrefab.UNLOCK_BURST_PARTICLES_PER_EMITTER,
+			lifespan: ConfettiPrefab.UNLOCK_BURST_LIFESPAN,
+			gravityY: ConfettiPrefab.UNLOCK_BURST_GRAVITY_Y,
+			speedMin: ConfettiPrefab.UNLOCK_BURST_SPEED_MIN,
+			speedMax: ConfettiPrefab.UNLOCK_BURST_SPEED_MAX,
+			scaleMin: ConfettiPrefab.UNLOCK_BURST_SCALE_MIN,
+			scaleMax: ConfettiPrefab.UNLOCK_BURST_SCALE_MAX,
+			destroyBufferMs: ConfettiPrefab.UNLOCK_BURST_DESTROY_BUFFER_MS,
+		});
+	}
+
+	private playLocalBurst(config: {
+		emitterCount: number;
+		particlesPerEmitter: number;
+		lifespan: number;
+		gravityY: number;
+		speedMin: number;
+		speedMax: number;
+		scaleMin: number;
+		scaleMax: number;
+		destroyBufferMs: number;
+	}) {
 		const textureKeys = Phaser.Utils.Array.Shuffle([...ConfettiPrefab.PARTICLE_TEXTURE_KEYS])
-			.slice(0, ConfettiPrefab.SMALL_BURST_EMITTER_COUNT);
+			.slice(0, config.emitterCount);
 
 		textureKeys.forEach((textureKey) => {
 			const emitter = this.scene.add.particles(this.x, this.y, textureKey, {
-				lifespan: ConfettiPrefab.SMALL_BURST_LIFESPAN,
-				gravityY: ConfettiPrefab.SMALL_BURST_GRAVITY_Y,
+				lifespan: config.lifespan,
+				gravityY: config.gravityY,
 				speed: {
-					min: ConfettiPrefab.SMALL_BURST_SPEED_MIN,
-					max: ConfettiPrefab.SMALL_BURST_SPEED_MAX,
+					min: config.speedMin,
+					max: config.speedMax,
 				},
 				angle: { min: 0, max: 360 },
 				rotate: { min: 0, max: 360 },
 				scale: {
-					start: Phaser.Math.FloatBetween(
-						ConfettiPrefab.SMALL_BURST_SCALE_MIN,
-						ConfettiPrefab.SMALL_BURST_SCALE_MAX
-					),
+					start: Phaser.Math.FloatBetween(config.scaleMin, config.scaleMax),
 					end: 0.1,
 				},
 				alpha: { start: 1, end: 0 },
@@ -172,12 +239,12 @@ export default class ConfettiPrefab extends Phaser.GameObjects.Image {
 			});
 
 			emitter.setDepth(this.depth);
-			emitter.explode(ConfettiPrefab.SMALL_BURST_PARTICLES_PER_EMITTER);
+			emitter.explode(config.particlesPerEmitter);
 			this.emitters.push(emitter);
 		});
 
 		this.scene.time.delayedCall(
-			ConfettiPrefab.SMALL_BURST_LIFESPAN + ConfettiPrefab.SMALL_BURST_DESTROY_BUFFER_MS,
+			config.lifespan + config.destroyBufferMs,
 			() => this.destroy()
 		);
 	}

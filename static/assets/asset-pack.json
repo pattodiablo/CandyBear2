@@ -2,6 +2,13 @@
     "section1": {
         "files": [
             {
+                "url": [
+                    "assets/audio/angry.mp3"
+                ],
+                "type": "audio",
+                "key": "angry"
+            },
+            {
                 "url": "assets/animations.json",
                 "type": "animation",
                 "key": "animations"
@@ -32,6 +39,13 @@
                 "url": "assets/blurOverlay.png",
                 "type": "image",
                 "key": "blurOverlay"
+            },
+            {
+                "url": [
+                    "assets/audio/canceled.mp3"
+                ],
+                "type": "audio",
+                "key": "canceled"
             },
             {
                 "url": "assets/CandyDip.png",
