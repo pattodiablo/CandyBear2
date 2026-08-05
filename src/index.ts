@@ -41,6 +41,40 @@ function refreshGameScale() {
 	game?.scale.refresh();
 }
 
+/** true solo si la pestaña está visible y la ventana tiene foco. */
+function isGameWindowActive() {
+	return !document.hidden && document.hasFocus();
+}
+
+/**
+ * Pausa el loop completo al perder foco / cambiar de pestaña.
+ * Phaser ya pausa audio con pauseOnBlur; esto congela timers, tweens y update.
+ */
+function syncGamePauseToFocus(target: Phaser.Game) {
+	if (isGameWindowActive()) {
+		if (target.isPaused) {
+			target.resume();
+		}
+		return;
+	}
+
+	if (!target.isPaused) {
+		target.pause();
+	}
+}
+
+function setupFocusPause(target: Phaser.Game) {
+	const sync = () => syncGamePauseToFocus(target);
+
+	target.events.on(Phaser.Core.Events.BLUR, sync);
+	target.events.on(Phaser.Core.Events.FOCUS, sync);
+	target.events.on(Phaser.Core.Events.HIDDEN, sync);
+	target.events.on(Phaser.Core.Events.VISIBLE, sync);
+
+	// Por si arranca en segundo plano (móvil / pestaña en background).
+	sync();
+}
+
 function createGame() {
 	return new Phaser.Game({
 		width: 1280,
@@ -67,6 +101,7 @@ function createGame() {
 function bootGame() {
 	if (!game) {
 		game = createGame();
+		setupFocusPause(game);
 		game.scene.start("Boot");
 
 		window.addEventListener("resize", refreshGameScale);
