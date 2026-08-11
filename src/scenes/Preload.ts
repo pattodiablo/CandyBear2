@@ -6,6 +6,7 @@
 /* START-USER-IMPORTS */
 import Phaser from "phaser";
 import assetPackUrl from "../../static/assets/asset-pack.json";
+import { notifyPokiGameLoadingFinished } from "../pokiHelpers";
 import {
 	hasOpenedGameBefore,
 	markGameAsOpened,
@@ -118,6 +119,9 @@ export default class Preload extends Phaser.Scene {
 	}
 
 	create() {
+		// Safety: also fire manually in case constructor.name matching fails in some builds.
+		// The plugin may fire this automatically when Preload becomes inactive.
+		notifyPokiGameLoadingFinished(this);
 
 		if (process.env.NODE_ENV === "development") {
 

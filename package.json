@@ -11,11 +11,12 @@
   "author": "Phaser Editor 2D <developers@phasereditor2d.com> (https://phasereditor2d.com/)",
   "license": "MIT",
   "dependencies": {
-    "@phaserjs/editor-scripts-base": "^2.0.1",
     "@esotericsoftware/spine-phaser-v4": "~4.3.5",
+    "@phaserjs/editor-scripts-base": "^2.0.1",
     "phaser": "^4.0.0-rc.6"
   },
   "devDependencies": {
+    "@poki/phaser-3": "^0.0.6",
     "clean-webpack-plugin": "^4.0.0",
     "copy-webpack-plugin": "^13.0.1",
     "html-webpack-plugin": "^5.6.6",

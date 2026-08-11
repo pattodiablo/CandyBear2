@@ -75,6 +75,11 @@ import {
 	shouldPromptBuyUpgrades,
 } from "./momentProgress";
 import { t } from "./i18n";
+import {
+	notifyPokiGameplayStart,
+	notifyPokiGameplayStop,
+	runPokiCommercialBreak,
+} from "../pokiHelpers";
 
 interface LevelPlan {
 	levelNumber: number;
@@ -631,6 +636,8 @@ export default class Level extends Phaser.Scene {
 	}
 
 	private flushLoadedContent() {
+		// Safety: leaving Level always ends Poki gameplay tracking.
+		notifyPokiGameplayStop(this);
 
 		this.clearHelpHandTimer();
 		this.unbindDeveloperCheat?.();
@@ -1764,6 +1771,9 @@ export default class Level extends Phaser.Scene {
 		if (this.backgroundMusic?.isPlaying) {
 			this.backgroundMusic.pause();
 		}
+
+		// Poki: pause / modal = not playing.
+		notifyPokiGameplayStop(this);
 	}
 
 	private resumeGameplay() {
@@ -1777,6 +1787,11 @@ export default class Level extends Phaser.Scene {
 
 		if (this.backgroundMusic && !this.backgroundMusic.isPlaying) {
 			this.backgroundMusic.resume();
+		}
+
+		// Poki: only resume tracking if the day is actually in play (not intro/results).
+		if (!this.panel.visible && !this.isExitConfirmVisible) {
+			notifyPokiGameplayStart(this);
 		}
 	}
 
@@ -2533,6 +2548,8 @@ export default class Level extends Phaser.Scene {
 	private confirmExitToSceneSelector(options?: { openTab?: "levels" | "moments" }) {
 
 		this.backgroundMusic?.stop();
+		// Poki: leaving the level (menu / credits) ends gameplay.
+		notifyPokiGameplayStop(this);
 
 		// Campaña perfecta (40 niveles, todos 3★): pantalla de créditos una vez.
 		if (shouldShowCampaignCredits()) {
@@ -2593,10 +2610,33 @@ export default class Level extends Phaser.Scene {
 				this.blurOverlay.setVisible(false);
 				this.panel.setVisible(false);
 				this.panel.setAlpha(0);
-				this.setupHelpHand();
-				this.startLevelPreparation();
+				// Intent to play: commercial break (if any), then mark gameplay active.
+				void this.beginGameplayWithPokiBreak();
 			}
 		});
+	}
+
+	/**
+	 * After the player presses Ready / finishes the intro (level was selected to play):
+	 * commercialBreak (if any) → gameplayStart → start the day.
+	 */
+	private async beginGameplayWithPokiBreak() {
+		if (!this.sys.isActive()) {
+			return;
+		}
+
+		// Ensure we are not counted as playing during the ad.
+		notifyPokiGameplayStop(this);
+		await runPokiCommercialBreak(this);
+
+		if (!this.sys.isActive()) {
+			return;
+		}
+
+		// Poki: player chose to play this level / day.
+		notifyPokiGameplayStart(this);
+		this.setupHelpHand();
+		this.startLevelPreparation();
 	}
 
 	private playSceneIntro() {
@@ -3832,6 +3872,9 @@ export default class Level extends Phaser.Scene {
 			1,
 			Level.CAMPAIGN_LEVEL_COUNT
 		);
+
+		// Poki: end-of-day results = not playing (stop before next-day / menu choice).
+		notifyPokiGameplayStop(this);
 
 		this.blurOverlay.setVisible(true);
 		this.blurOverlay.setAlpha(0);
