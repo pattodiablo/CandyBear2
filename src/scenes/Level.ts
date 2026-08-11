@@ -767,7 +767,7 @@ export default class Level extends Phaser.Scene {
 				levelNumber: 1,
 				difficulty: 0.85,
 				oscillation: 0,
-				waveSizes: [1],
+				waveSizes: [3],
 				isTutorial: true
 			};
 		}
