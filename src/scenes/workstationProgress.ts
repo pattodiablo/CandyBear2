@@ -23,7 +23,7 @@ const LOCKED_TEXTURE_BY_WORKSTATION: Record<WorkstationId, string> = {
 	workplace2: "lockedWorkplace",
 };
 
-const DEFAULT_ACQUIRED_WORKSTATIONS: WorkstationId[] = [];
+const DEFAULT_ACQUIRED_WORKSTATIONS: WorkstationId[] = ["workplace2"];
 
 function normalizeAcquiredWorkstations(value: unknown): WorkstationId[] {
 	if (!Array.isArray(value)) {

@@ -10,6 +10,24 @@ declare global {
 	interface Window {
 		bootCandyBearGame?: () => void;
 		refreshCandyBearGameScale?: () => void;
+		CrazyGames?: {
+			SDK: {
+				environment: string;
+				init: () => Promise<void>;
+				game: {
+					settings?: { muteAudio?: boolean; disableChat?: boolean };
+					loadingStart: () => void;
+					loadingStop: () => void;
+					gameplayStart: () => void;
+					gameplayStop: () => void;
+					addSettingsChangeListener?: (listener: (settings: { muteAudio?: boolean; disableChat?: boolean }) => void) => void;
+					removeSettingsChangeListener?: (listener: (settings: { muteAudio?: boolean; disableChat?: boolean }) => void) => void;
+					reportGameCompletedPercentage?: (percentage: number) => void;
+					setGameContext?: (context: Record<string, unknown>) => void;
+					clearGameContext?: () => void;
+				};
+			};
+		};
 	}
 }
 
@@ -63,8 +81,71 @@ function syncGamePauseToFocus(target: Phaser.Game) {
 	}
 }
 
+function isCrazyGamesAvailable() {
+	return typeof window !== "undefined"
+		&& !!window.CrazyGames
+		&& !!window.CrazyGames.SDK
+		&& (window.CrazyGames.SDK.environment === "crazygames" || window.CrazyGames.SDK.environment === "local");
+}
+
+async function initCrazyGamesSdk() {
+	if (!isCrazyGamesAvailable()) {
+		return;
+	}
+
+	try {
+		await window.CrazyGames!.SDK.init();
+		console.info("CrazyGames SDK initialized", window.CrazyGames!.SDK.environment);
+	} catch (error) {
+		console.warn("CrazyGames SDK init failed", error);
+	}
+}
+
+function applyCrazyGamesAudioSettings(target?: Phaser.Game) {
+	if (!isCrazyGamesAvailable()) {
+		return;
+	}
+
+	const muteAudio = window.CrazyGames!.SDK.game.settings?.muteAudio === true;
+	const soundManager = target?.sound ?? game?.sound;
+	if (soundManager) {
+		soundManager.mute = muteAudio;
+	}
+}
+
+function watchCrazyGamesAudioSettings() {
+	if (!isCrazyGamesAvailable() || !window.CrazyGames!.SDK.game.addSettingsChangeListener) {
+		return;
+	}
+
+	const settingsListener = (newSettings: { muteAudio?: boolean; disableChat?: boolean }) => {
+		const muteAudio = newSettings.muteAudio === true;
+		if (game) {
+			game.sound.mute = muteAudio;
+		}
+	};
+
+	window.CrazyGames!.SDK.game.addSettingsChangeListener(settingsListener);
+}
+
+function syncCrazyGamesGameplayState(isPlaying: boolean) {
+	if (!isCrazyGamesAvailable()) {
+		return;
+	}
+
+	if (isPlaying) {
+		window.CrazyGames!.SDK.game.gameplayStart();
+		return;
+	}
+
+	window.CrazyGames!.SDK.game.gameplayStop();
+}
+
 function setupFocusPause(target: Phaser.Game) {
-	const sync = () => syncGamePauseToFocus(target);
+	const sync = () => {
+		syncGamePauseToFocus(target);
+		syncCrazyGamesGameplayState(isGameWindowActive());
+	};
 
 	target.events.on(Phaser.Core.Events.BLUR, sync);
 	target.events.on(Phaser.Core.Events.FOCUS, sync);
@@ -99,9 +180,14 @@ function createGame() {
 }
 
 function bootGame() {
+	if (isCrazyGamesAvailable()) {
+		window.CrazyGames!.SDK.game.loadingStart();
+	}
+
 	if (!game) {
 		game = createGame();
 		setupFocusPause(game);
+		applyCrazyGamesAudioSettings(game);
 		game.scene.start("Boot");
 
 		window.addEventListener("resize", refreshGameScale);
@@ -111,14 +197,22 @@ function bootGame() {
 		});
 	}
 
+	if (isCrazyGamesAvailable()) {
+		syncCrazyGamesGameplayState(true);
+		window.CrazyGames!.SDK.game.loadingStop();
+	}
+
 	refreshGameScale();
 }
 
 window.bootCandyBearGame = bootGame;
 window.refreshCandyBearGameScale = refreshGameScale;
 
-window.addEventListener("load", () => {
+window.addEventListener("load", async () => {
 	window.dispatchEvent(new Event("candybear-game-ready"));
+	await initCrazyGamesSdk();
+	watchCrazyGamesAudioSettings();
+	applyCrazyGamesAudioSettings();
 
 	if (!isMobileDevice()) {
 		bootGame();
