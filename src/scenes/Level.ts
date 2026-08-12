@@ -4183,15 +4183,28 @@ export default class Level extends Phaser.Scene {
 		return Phaser.Math.Between(1, maxDelayed);
 	}
 
-	private getImmediateClientSpawnDelay(order: number) {
+	private getClientArrivalTimingScale() {
+		const difficulty = this.currentLevelPlan.difficulty;
+		return Phaser.Math.Clamp(
+			0.5 + ((difficulty - 0.85) * 0.35),
+			0.5,
+			1
+		);
+	}
 
-		return (order * Level.IMMEDIATE_CLIENT_STAGGER)
-			+ Phaser.Math.Between(0, Level.IMMEDIATE_CLIENT_JITTER_MAX);
+	private getImmediateClientSpawnDelay(order: number) {
+		const timingScale = this.getClientArrivalTimingScale();
+
+		return (order * Level.IMMEDIATE_CLIENT_STAGGER * timingScale)
+			+ Phaser.Math.Between(0, Math.round(Level.IMMEDIATE_CLIENT_JITTER_MAX * timingScale));
 	}
 
 	private getDelayedClientSpawnDelay(index: number) {
+		const timingScale = this.getClientArrivalTimingScale();
+		const minDelay = Math.max(1200, Math.round(Level.DELAYED_CLIENT_MIN_DELAY * timingScale));
+		const maxDelay = Math.max(minDelay + 400, Math.round(Level.DELAYED_CLIENT_MAX_DELAY * timingScale));
 
-		return Phaser.Math.Between(Level.DELAYED_CLIENT_MIN_DELAY, Level.DELAYED_CLIENT_MAX_DELAY)
+		return Phaser.Math.Between(minDelay, maxDelay)
 			+ (index * Level.DELAYED_CLIENT_STAGGER);
 	}
 
