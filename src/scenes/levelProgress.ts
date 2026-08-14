@@ -18,7 +18,7 @@ const FIRST_SESSION_STORAGE_KEY = "candybear2-has-opened-before";
 const INFINITE_MODE_UNLOCKED_STORAGE_KEY = "candybear2-infinite-mode-unlocked";
 const CAMPAIGN_CREDITS_SEEN_STORAGE_KEY = "candybear2-campaign-credits-seen";
 
-/** Niveles de campaña que deben estar perfectos para la pantalla de créditos. */
+/** La campaña termina al completar el nivel 40; los créditos se muestran una vez. */
 export const CAMPAIGN_LEVEL_COUNT = 40;
 export const CAMPAIGN_MAX_STARS = 3;
 
@@ -158,11 +158,13 @@ export function hasAllCampaignLevelsMaxStars(
 }
 
 /**
- * Condición de la pantalla de créditos:
- * 40 niveles desbloqueados y todos con 3 estrellas.
+ * La pantalla de créditos se activa al completar la campaña (nivel 40),
+ * aunque no sea una run perfecta con 3★ en cada nivel.
  */
 export function isCampaignCreditsEligible(levelCount = CAMPAIGN_LEVEL_COUNT) {
-	return hasUnlockedAllCampaignLevels(levelCount) && hasAllCampaignLevelsMaxStars(levelCount);
+	return getHighestCompletedLevel() >= levelCount || (
+		hasUnlockedAllCampaignLevels(levelCount) && hasAllCampaignLevelsMaxStars(levelCount)
+	);
 }
 
 export function hasSeenCampaignCredits() {
