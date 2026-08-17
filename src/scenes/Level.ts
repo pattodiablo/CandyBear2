@@ -2551,7 +2551,7 @@ export default class Level extends Phaser.Scene {
 		// Poki: leaving the level (menu / credits) ends gameplay.
 		notifyPokiGameplayStop(this);
 
-		// Campaña perfecta (40 niveles, todos 3★): pantalla de créditos una vez.
+		// Final de campaña al completar el nivel 40: pantalla de créditos una vez.
 		if (shouldShowCampaignCredits()) {
 			this.scene.start("CredictsScene");
 			return;
@@ -3904,7 +3904,7 @@ export default class Level extends Phaser.Scene {
 				this.panel.showFinalState(
 					this.getStarPerformance(),
 					() => {
-						// Si acaba de completar la campaña perfecta, créditos antes de seguir.
+						// Si acaba de completar la campaña, créditos antes de seguir.
 						if (shouldShowCampaignCredits()) {
 							this.confirmExitToSceneSelector();
 							return;

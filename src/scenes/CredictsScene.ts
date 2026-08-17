@@ -116,7 +116,8 @@ export default class CredictsScene extends Phaser.Scene {
 
 	create() {
 
-		// Marca la celebración de campaña perfecta como ya vista (no se repite).
+		// Al llegar al final del nivel 40, desbloquea Infinite Mode para la sesión siguiente.
+		unlockInfiniteMode();
 		markCampaignCreditsSeen();
 
 		this.editorCreate();
