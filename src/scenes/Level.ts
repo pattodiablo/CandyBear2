@@ -94,6 +94,9 @@ interface HelpHandHint {
 	y: number;
 	phase: string;
 }
+
+const MUSIC_MUTED_STORAGE_KEY = "candybear2-music-muted";
+const FX_MUTED_STORAGE_KEY = "candybear2-fx-muted";
 /* END-USER-IMPORTS */
 
 export default class Level extends Phaser.Scene {
@@ -206,7 +209,7 @@ export default class Level extends Phaser.Scene {
 		this.add.image(52, 58, "bigCoin");
 
 		// menuBtn
-		const menuBtn = this.add.image(1229, 47, "menuBtn");
+		const menuBtn = this.add.image(1224, 47, "menuBtn");
 
 		// glace2
 		const glace2 = new FlavorBottle(this, 1145, 454);
@@ -227,7 +230,13 @@ export default class Level extends Phaser.Scene {
 		this.add.existing(tutiorialHand);
 
 		// upgradeLabel
-		const upgradeLabel = this.add.image(1226, 127, "upgradeLabel");
+		const upgradeLabel = this.add.image(1224, 127, "upgradeLabel");
+
+		// fxBtn
+		const fxBtn = this.add.image(1124, 47, "FxBtn");
+
+		// musicBtn
+		const musicBtn = this.add.image(1024, 47, "MusicBtn");
 
 		// glace1 (prefab fields)
 		glace1.FlavorType = "Red";
@@ -255,6 +264,8 @@ export default class Level extends Phaser.Scene {
 		this.blurOverlay = blurOverlay;
 		this.panel = panel;
 		this.menuBtn = menuBtn;
+		this.fxBtn = fxBtn;
+		this.musicBtn = musicBtn;
 		this.tutiorialHand = tutiorialHand;
 		this.upgradeLabel = upgradeLabel;
 
@@ -284,6 +295,10 @@ export default class Level extends Phaser.Scene {
 	private blurOverlay!: Phaser.GameObjects.Image;
 	private panel!: PanelPrefab;
 	private menuBtn!: Phaser.GameObjects.Image;
+	private fxBtn!: Phaser.GameObjects.Image;
+	private musicBtn!: Phaser.GameObjects.Image;
+	private isFxMuted = false;
+	private isMusicMuted = false;
 	public tutiorialHand!: HelpHand;
 	private upgradeLabel!: Phaser.GameObjects.Image;
 
@@ -1594,6 +1609,108 @@ export default class Level extends Phaser.Scene {
 		upgradeLabel.y = this.upgradeLabelBaseY;
 	}
 
+	private readStoredAudioFlag(storageKey: string, fallback: boolean) {
+		if (typeof window === "undefined") {
+			return fallback;
+		}
+
+		const storedValue = window.localStorage.getItem(storageKey);
+		if (storedValue === null) {
+			return fallback;
+		}
+
+		return storedValue === "1";
+	}
+
+	private writeStoredAudioFlag(storageKey: string, isMuted: boolean) {
+		if (typeof window === "undefined") {
+			return;
+		}
+
+		window.localStorage.setItem(storageKey, isMuted ? "1" : "0");
+	}
+
+	private applyAudioButtonState() {
+		this.musicBtn?.setAlpha(this.isMusicMuted ? 0.35 : 1);
+		this.fxBtn?.setAlpha(this.isFxMuted ? 0.35 : 1);
+
+		if (this.backgroundMusic) {
+			const backgroundMusic = this.backgroundMusic as any;
+			if (typeof backgroundMusic.setVolume === "function") {
+				backgroundMusic.setVolume(this.isMusicMuted ? 0 : 0.5);
+			}
+		}
+	}
+
+	private setupAudioToggleGuard() {
+		const soundManager = this.sound as any;
+
+		if (soundManager.__candybearFxGuard) {
+			return;
+		}
+
+		soundManager.__candybearOriginalPlay = soundManager.play.bind(soundManager);
+		soundManager.play = (...args: unknown[]) => {
+			if (this.isFxMuted) {
+				return undefined;
+			}
+
+			return soundManager.__candybearOriginalPlay(...args);
+		};
+		soundManager.__candybearFxGuard = true;
+	}
+
+	private syncAudioStateFromStorage() {
+		this.isMusicMuted = this.readStoredAudioFlag(MUSIC_MUTED_STORAGE_KEY, false);
+		this.isFxMuted = this.readStoredAudioFlag(FX_MUTED_STORAGE_KEY, false);
+		this.applyAudioButtonState();
+	}
+
+	private toggleMusicAudio() {
+		this.isMusicMuted = !this.isMusicMuted;
+		this.writeStoredAudioFlag(MUSIC_MUTED_STORAGE_KEY, this.isMusicMuted);
+		this.applyAudioButtonState();
+	}
+
+	private toggleFxAudio() {
+		this.isFxMuted = !this.isFxMuted;
+		this.writeStoredAudioFlag(FX_MUTED_STORAGE_KEY, this.isFxMuted);
+		this.applyAudioButtonState();
+	}
+
+	private setupAudioButtons() {
+		this.setupAudioToggleGuard();
+		this.syncAudioStateFromStorage();
+
+		this.musicBtn.setScrollFactor(0);
+		this.musicBtn.setDepth(this.getHudMenuDepth());
+		this.musicBtn.setInteractive({ useHandCursor: true });
+		this.musicBtn.on(Phaser.Input.Events.POINTER_OVER, () => {
+			this.musicBtn.setScale(1.08);
+		});
+		this.musicBtn.on(Phaser.Input.Events.POINTER_OUT, () => {
+			this.musicBtn.setScale(1);
+		});
+		this.musicBtn.on(Phaser.Input.Events.POINTER_DOWN, () => {
+			this.musicBtn.setScale(0.95);
+			this.toggleMusicAudio();
+		});
+
+		this.fxBtn.setScrollFactor(0);
+		this.fxBtn.setDepth(this.getHudMenuDepth());
+		this.fxBtn.setInteractive({ useHandCursor: true });
+		this.fxBtn.on(Phaser.Input.Events.POINTER_OVER, () => {
+			this.fxBtn.setScale(1.08);
+		});
+		this.fxBtn.on(Phaser.Input.Events.POINTER_OUT, () => {
+			this.fxBtn.setScale(1);
+		});
+		this.fxBtn.on(Phaser.Input.Events.POINTER_DOWN, () => {
+			this.fxBtn.setScale(0.95);
+			this.toggleFxAudio();
+		});
+	}
+
 	private setupMenuButton() {
 
 		this.menuBtn.setScrollFactor(0);
@@ -2557,14 +2674,41 @@ export default class Level extends Phaser.Scene {
 		this.panel.showIntroState();
 	}
 
+	private loadBackgroundMusicIfNeeded(onReady: () => void) {
+		if (this.cache.audio.exists("backgroundMusic")) {
+			onReady();
+			return;
+		}
+
+		this.load.audio("backgroundMusic", ["assets/audio/backgroundMusic.mp3"]);
+		this.load.once(Phaser.Loader.Events.COMPLETE, () => {
+			onReady();
+		}, this);
+		this.load.start();
+	}
+
 	private startBackgroundMusic() {
 
 		if (this.backgroundMusic?.isPlaying) {
 			return;
 		}
 
+		if (!this.cache.audio.exists("backgroundMusic")) {
+			this.loadBackgroundMusicIfNeeded(() => this.startBackgroundMusic());
+			return;
+		}
+
 		this.backgroundMusic = this.sound.add("backgroundMusic", { loop: true, volume: 0.5 });
-		this.backgroundMusic.play();
+
+		try {
+			this.backgroundMusic.play();
+		} catch (error) {
+			if (error instanceof DOMException && error.name === "InvalidStateError") {
+				console.warn("[Audio] Audio suspendido hasta la primera interacción del usuario.", error);
+				return;
+			}
+			throw error;
+		}
 	}
 
 	private dismissSceneIntro(panelStartY: number) {
@@ -3509,11 +3653,13 @@ export default class Level extends Phaser.Scene {
 		const coinDropSoundKey = Phaser.Math.Between(0, 1) === 0 ? "coinDrop" : "coinDrop2";
 		this.sound.play(coinDropSoundKey);
 		const coinOffsets = this.getCoinOffsets(amount);
+		const frontCoinDepth = Math.max(this.workstation.depth + 50, 900);
 
 		coinOffsets.forEach((offsetX, index) => {
 			const coin = new Coin(this, x + offsetX, Level.REWARD_COIN_Y);
 			this.add.existing(coin);
-			coin.setDepth(this.workstation.depth + 1);
+			coin.setDepth(frontCoinDepth);
+			this.children.bringToTop(coin);
 			coin.setScale(0);
 
 			this.time.delayedCall(index * Level.REWARD_COIN_STAGGER, () => {
@@ -3567,11 +3713,13 @@ export default class Level extends Phaser.Scene {
 		);
 		const endY = this.scale.height + Level.SPENT_COIN_START_OFFSET;
 		const coinOffsets = this.getCoinOffsets(spentCoinCount);
+		const frontCoinDepth = Math.max(this.workstation.depth + 50, 900);
 
 		coinOffsets.forEach((offsetX, index) => {
 			const coin = new Coin(this, x + offsetX, startY);
 			this.add.existing(coin);
-			coin.setDepth(this.workstation.depth + 1);
+			coin.setDepth(frontCoinDepth);
+			this.children.bringToTop(coin);
 			coin.setScale(0.9);
 
 			this.time.delayedCall(index * Level.REWARD_COIN_STAGGER, () => {
@@ -5198,6 +5346,7 @@ export default class Level extends Phaser.Scene {
 		this.setupTrayInputs();
 		this.setupIntroOverlay();
 		this.setupMenuButton();
+		this.setupAudioButtons();
 		this.setupUpgradeLabel();
 		this.setupDeveloperCheat();
 	//	applySoftRainbowCameraFilter(this, { strength: 0.5, speed: 0.3});

@@ -24,13 +24,6 @@
                 "key": "AnversoCard"
             },
             {
-                "url": [
-                    "assets/audio/backgroundMusic.mp3"
-                ],
-                "type": "audio",
-                "key": "backgroundMusic"
-            },
-            {
                 "url": "assets/bigCoin.png",
                 "type": "image",
                 "key": "bigCoin"
@@ -271,6 +264,11 @@
                 "key": "FryerAnim"
             },
             {
+                "url": "assets/FxBtn.png",
+                "type": "image",
+                "key": "FxBtn"
+            },
+            {
                 "url": "assets/glace1.png",
                 "type": "image",
                 "key": "glace1"
@@ -383,6 +381,11 @@
                 ],
                 "type": "audio",
                 "key": "MilkRefill"
+            },
+            {
+                "url": "assets/MusicBtn.png",
+                "type": "image",
+                "key": "MusicBtn"
             },
             {
                 "url": "assets/nextdayBtn.png",
@@ -620,13 +623,6 @@
                 "url": "assets/SandwichProduct.png",
                 "type": "image",
                 "key": "SandwichProduct"
-            },
-            {
-                "url": [
-                    "assets/audio/ScenSelectionBgmusic.mp3"
-                ],
-                "type": "audio",
-                "key": "ScenSelectionBgmusic"
             },
             {
                 "url": "assets/smallHeart.png",

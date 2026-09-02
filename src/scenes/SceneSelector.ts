@@ -193,7 +193,7 @@ export default class SceneSelector extends Phaser.Scene {
 		this.refreshPage();
 		this.updateMomentsButtonAttention();
 		applySoftRainbowCameraFilter(this, { strength: 0.5, speed: 0.3});
-		this.startBackgroundMusic();
+		this.loadBackgroundMusicIfNeeded(() => this.startBackgroundMusic());
 	}
 
 	private flushLoadedContent() {
@@ -648,14 +648,41 @@ export default class SceneSelector extends Phaser.Scene {
 		this.scene.start("Level", { infiniteMode: true });
 	}
 
+	private loadBackgroundMusicIfNeeded(onReady: () => void) {
+		if (this.cache.audio.exists("ScenSelectionBgmusic")) {
+			onReady();
+			return;
+		}
+
+		this.load.audio("ScenSelectionBgmusic", ["assets/audio/ScenSelectionBgmusic.mp3"]);
+		this.load.once(Phaser.Loader.Events.COMPLETE, () => {
+			onReady();
+		}, this);
+		this.load.start();
+	}
+
 	private startBackgroundMusic() {
 
 		if (this.backgroundMusic?.isPlaying) {
 			return;
 		}
 
+		if (!this.cache.audio.exists("ScenSelectionBgmusic")) {
+			this.loadBackgroundMusicIfNeeded(() => this.startBackgroundMusic());
+			return;
+		}
+
 		this.backgroundMusic = this.sound.add("ScenSelectionBgmusic", { loop: true, volume: 0.5 });
-		this.backgroundMusic.play();
+
+		try {
+			this.backgroundMusic.play();
+		} catch (error) {
+			if (error instanceof DOMException && error.name === "InvalidStateError") {
+				console.warn("[Audio] Se reintentará al interactuar con la pantalla.", error);
+				return;
+			}
+			throw error;
+		}
 	}
 
 	private initializePagination() {

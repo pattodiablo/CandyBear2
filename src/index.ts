@@ -98,10 +98,37 @@ function createGame() {
 	});
 }
 
+function unlockAudioDevice() {
+	if (!game?.sound) {
+		return;
+	}
+
+	try {
+		const soundManager = game.sound as any;
+		const context = soundManager?.context;
+		if (context && typeof context.resume === "function" && context.state === "suspended") {
+			void context.resume();
+		}
+		if (typeof soundManager.resumeAll === "function") {
+			soundManager.resumeAll();
+		}
+	} catch (error) {
+		console.warn("[Audio] no se pudo desbloquear el dispositivo de audio.", error);
+	}
+}
+
+function installAudioUnlockHandlers() {
+	const events = ["pointerdown", "touchstart", "keydown", "click", "mousedown"];
+	for (const eventName of events) {
+		window.addEventListener(eventName, unlockAudioDevice, { passive: true, once: true });
+	}
+}
+
 function bootGame() {
 	if (!game) {
 		game = createGame();
 		setupFocusPause(game);
+		installAudioUnlockHandlers();
 		game.scene.start("Boot");
 
 		window.addEventListener("resize", refreshGameScale);
