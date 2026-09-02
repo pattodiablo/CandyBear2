@@ -1614,12 +1614,17 @@ export default class Level extends Phaser.Scene {
 			return fallback;
 		}
 
-		const storedValue = window.localStorage.getItem(storageKey);
-		if (storedValue === null) {
+		try {
+			const storedValue = window.localStorage.getItem(storageKey);
+			if (storedValue === null) {
+				return fallback;
+			}
+
+			return storedValue === "1";
+		} catch (error) {
+			console.warn(`[Audio] No se pudo leer ${storageKey} desde localStorage.`, error);
 			return fallback;
 		}
-
-		return storedValue === "1";
 	}
 
 	private writeStoredAudioFlag(storageKey: string, isMuted: boolean) {
@@ -1627,7 +1632,11 @@ export default class Level extends Phaser.Scene {
 			return;
 		}
 
-		window.localStorage.setItem(storageKey, isMuted ? "1" : "0");
+		try {
+			window.localStorage.setItem(storageKey, isMuted ? "1" : "0");
+		} catch (error) {
+			console.warn(`[Audio] No se pudo guardar ${storageKey} en localStorage.`, error);
+		}
 	}
 
 	private applyAudioButtonState() {
@@ -1892,7 +1901,7 @@ export default class Level extends Phaser.Scene {
 		this.isGameplayPaused = false;
 		this.time.timeScale = this.savedGameplayTimeScale;
 
-		if (this.backgroundMusic && !this.backgroundMusic.isPlaying) {
+		if (this.backgroundMusic && !this.backgroundMusic.isPlaying && !this.isMusicMuted) {
 			this.backgroundMusic.resume();
 		}
 	}
@@ -2695,6 +2704,11 @@ export default class Level extends Phaser.Scene {
 
 		if (!this.cache.audio.exists("backgroundMusic")) {
 			this.loadBackgroundMusicIfNeeded(() => this.startBackgroundMusic());
+			return;
+		}
+
+		if (this.isMusicMuted) {
+			this.backgroundMusic = this.sound.add("backgroundMusic", { loop: true, volume: 0 });
 			return;
 		}
 

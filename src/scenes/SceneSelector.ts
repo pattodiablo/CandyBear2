@@ -8,6 +8,9 @@ import SceneSelectorBtn from "./Prefabs/SceneSelectorBtn";
 import Phaser from "phaser";
 import CardPrefab from "./Prefabs/CardPrefab";
 import dayHolderPrefab from "./Prefabs/dayHolderPrefab";
+
+const MUSIC_MUTED_STORAGE_KEY = "candybear2-music-muted";
+const FX_MUTED_STORAGE_KEY = "candybear2-fx-muted";
 import {
 	canAffordAnyMomentCard,
 	canPurchaseMomentCard,
@@ -80,6 +83,12 @@ export default class SceneSelector extends Phaser.Scene {
 		const playBtn = new SceneSelectorBtn(this, 988, 648);
 		this.add.existing(playBtn);
 
+		// fxBtn
+		const fxBtn = this.add.image(171, 88, "FxBtn");
+
+		// musicBtn
+		const musicBtn = this.add.image(71, 88, "MusicBtn");
+
 		// momentsBtnPrefab (prefab fields)
 		momentsBtnPrefab.btnText = "Upgrades";
 		momentsBtnPrefab.initialState = false;
@@ -99,6 +108,8 @@ export default class SceneSelector extends Phaser.Scene {
 		this.momentsBtnPrefab = momentsBtnPrefab;
 		this.bigCoin = bigCoin;
 		this.likeHeart = likeHeart;
+		this.fxBtn = fxBtn;
+		this.musicBtn = musicBtn;
 		this.infiniteModeBtn = infiniteModeBtn;
 		this.playBtn = playBtn;
 
@@ -112,6 +123,10 @@ export default class SceneSelector extends Phaser.Scene {
 	private momentsBtnPrefab!: SceneSelectorBtn;
 	private bigCoin!: Phaser.GameObjects.Image;
 	private likeHeart!: Phaser.GameObjects.Image;
+	private fxBtn!: Phaser.GameObjects.Image;
+	private musicBtn!: Phaser.GameObjects.Image;
+	private isFxMuted = false;
+	private isMusicMuted = false;
 	private infiniteModeBtn!: SceneSelectorBtn;
 	private playBtn!: SceneSelectorBtn;
 
@@ -180,6 +195,7 @@ export default class SceneSelector extends Phaser.Scene {
 
 		this.flushLoadedContent();
 		this.editorCreate();
+		this.setupAudioButtons();
 		this.initializePlayerStats();
 		this.highestUnlockedLevel = getHighestUnlockedLevel(SceneSelector.TOTAL_DAY_HOLDERS);
 		this.createDayHolders();
@@ -648,6 +664,117 @@ export default class SceneSelector extends Phaser.Scene {
 		this.scene.start("Level", { infiniteMode: true });
 	}
 
+	private readStoredAudioFlag(storageKey: string, fallback: boolean) {
+		if (typeof window === "undefined") {
+			return fallback;
+		}
+
+		try {
+			const storedValue = window.localStorage.getItem(storageKey);
+			if (storedValue === null) {
+				return fallback;
+			}
+
+			return storedValue === "1";
+		} catch (error) {
+			console.warn(`[Audio] No se pudo leer ${storageKey} desde localStorage.`, error);
+			return fallback;
+		}
+	}
+
+	private writeStoredAudioFlag(storageKey: string, isMuted: boolean) {
+		if (typeof window === "undefined") {
+			return;
+		}
+
+		try {
+			window.localStorage.setItem(storageKey, isMuted ? "1" : "0");
+		} catch (error) {
+			console.warn(`[Audio] No se pudo guardar ${storageKey} en localStorage.`, error);
+		}
+	}
+
+	private applyAudioButtonState() {
+		this.musicBtn?.setAlpha(this.isMusicMuted ? 0.35 : 1);
+		this.fxBtn?.setAlpha(this.isFxMuted ? 0.35 : 1);
+
+		if (this.backgroundMusic) {
+			const backgroundMusic = this.backgroundMusic as any;
+			if (typeof backgroundMusic.setVolume === "function") {
+				backgroundMusic.setVolume(this.isMusicMuted ? 0 : 0.5);
+			}
+		}
+	}
+
+	private setupAudioToggleGuard() {
+		const soundManager = this.sound as any;
+
+		if (soundManager.__candybearFxGuard) {
+			return;
+		}
+
+		soundManager.__candybearOriginalPlay = soundManager.play.bind(soundManager);
+		soundManager.play = (...args: unknown[]) => {
+			if (this.isFxMuted) {
+				return undefined;
+			}
+
+			return soundManager.__candybearOriginalPlay(...args);
+		};
+		soundManager.__candybearFxGuard = true;
+	}
+
+	private syncAudioStateFromStorage() {
+		this.isMusicMuted = this.readStoredAudioFlag(MUSIC_MUTED_STORAGE_KEY, false);
+		this.isFxMuted = this.readStoredAudioFlag(FX_MUTED_STORAGE_KEY, false);
+		this.applyAudioButtonState();
+	}
+
+	private toggleMusicAudio() {
+		this.isMusicMuted = !this.isMusicMuted;
+		this.writeStoredAudioFlag(MUSIC_MUTED_STORAGE_KEY, this.isMusicMuted);
+		this.applyAudioButtonState();
+	}
+
+	private toggleFxAudio() {
+		this.isFxMuted = !this.isFxMuted;
+		this.writeStoredAudioFlag(FX_MUTED_STORAGE_KEY, this.isFxMuted);
+		this.applyAudioButtonState();
+	}
+
+	private setupAudioButtons() {
+		this.setupAudioToggleGuard();
+		this.syncAudioStateFromStorage();
+
+		this.musicBtn.setScrollFactor(0);
+		this.musicBtn.setDepth(SceneSelector.HUD_DEPTH);
+		this.musicBtn.setInteractive({ useHandCursor: true });
+		this.musicBtn.on(Phaser.Input.Events.POINTER_OVER, () => {
+			this.musicBtn.setScale(1.08);
+		});
+		this.musicBtn.on(Phaser.Input.Events.POINTER_OUT, () => {
+			this.musicBtn.setScale(1);
+		});
+		this.musicBtn.on(Phaser.Input.Events.POINTER_DOWN, () => {
+			this.musicBtn.setScale(0.95);
+			this.toggleMusicAudio();
+		});
+
+		this.fxBtn.setScrollFactor(0);
+		this.fxBtn.setDepth(SceneSelector.HUD_DEPTH);
+		this.fxBtn.setInteractive({ useHandCursor: true });
+		this.fxBtn.on(Phaser.Input.Events.POINTER_OVER, () => {
+			this.fxBtn.setScale(1.08);
+		});
+		this.fxBtn.on(Phaser.Input.Events.POINTER_OUT, () => {
+			this.fxBtn.setScale(1);
+		});
+		this.fxBtn.on(Phaser.Input.Events.POINTER_DOWN, () => {
+			this.fxBtn.setScale(0.95);
+			this.toggleFxAudio();
+		});
+	}
+
 	private loadBackgroundMusicIfNeeded(onReady: () => void) {
 		if (this.cache.audio.exists("ScenSelectionBgmusic")) {
 			onReady();
@@ -672,7 +799,7 @@ export default class SceneSelector extends Phaser.Scene {
 			return;
 		}
 
-		this.backgroundMusic = this.sound.add("ScenSelectionBgmusic", { loop: true, volume: 0.5 });
+		this.backgroundMusic = this.sound.add("ScenSelectionBgmusic", { loop: true, volume: this.isMusicMuted ? 0 : 0.5 });
 
 		try {
 			this.backgroundMusic.play();

@@ -444,6 +444,21 @@ export default class AClient extends Phaser.GameObjects.Container {
 	private startRequestWaitTimer() {
 
 		this.stopRequestWaitTimer();
+
+		const levelScene = this.scene as Level;
+		if (levelScene.getCurrentLevelNumber() <= 1) {
+			this.requestExpiresAt = Number.POSITIVE_INFINITY;
+			this.stopRequestWaitTimersOnly();
+			this.requestUrgencyTimer = this.scene.time.addEvent({
+				delay: AClient.URGENCY_UPDATE_INTERVAL,
+				loop: true,
+				callback: this.updateQuestionUrgency,
+				callbackScope: this,
+			});
+			this.updateQuestionUrgency();
+			return;
+		}
+
 		const baseWaitMs = getClientRequestWaitDurationMs();
 		const waitMs = Math.round(baseWaitMs * this.clientBear.getWaitMultiplier());
 		this.requestExpiresAt = this.scene.time.now + waitMs;
@@ -454,6 +469,17 @@ export default class AClient extends Phaser.GameObjects.Container {
 		const remaining = Math.max(0, this.requestExpiresAt - this.scene.time.now);
 
 		this.stopRequestWaitTimersOnly();
+
+		if (this.requestExpiresAt === Number.POSITIVE_INFINITY) {
+			this.requestUrgencyTimer = this.scene.time.addEvent({
+				delay: AClient.URGENCY_UPDATE_INTERVAL,
+				loop: true,
+				callback: this.updateQuestionUrgency,
+				callbackScope: this,
+			});
+			this.updateQuestionUrgency();
+			return;
+		}
 
 		if (remaining <= 0) {
 			this.handleRequestTimeout();

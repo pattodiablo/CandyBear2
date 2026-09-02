@@ -129,6 +129,26 @@
             "initialState": false,
             "x": 988,
             "y": 648
+        },
+        {
+            "type": "Image",
+            "id": "900cb70d-6752-4033-8edb-b5111fdc2ec4",
+            "label": "fxBtn",
+            "texture": {
+                "key": "FxBtn"
+            },
+            "x": 171,
+            "y": 88
+        },
+        {
+            "type": "Image",
+            "id": "cacf4d0a-d6c7-4f89-96f4-31cc32556959",
+            "label": "musicBtn",
+            "texture": {
+                "key": "MusicBtn"
+            },
+            "x": 71,
+            "y": 88
         }
     ],
     "plainObjects": [],
