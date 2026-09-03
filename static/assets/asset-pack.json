@@ -682,6 +682,11 @@
                 "key": "TutiorialHand"
             },
             {
+                "url": "assets/UpgradeBg.png",
+                "type": "image",
+                "key": "UpgradeBg"
+            },
+            {
                 "url": "assets/upgradeLabel.png",
                 "type": "image",
                 "key": "upgradeLabel"
