@@ -1,7 +1,13 @@
 import { getAcquiredProductSlots, type ProductSlotId } from "./productProgress";
 import { getAcquiredWorkstations, type WorkstationId } from "./workstationProgress";
+import {
+	BODY_SKIN_MAX_INDEX,
+	getClientBearName,
+	getBodySkinUnlockLevel,
+} from "./clientBearCatalog";
 
-export type UnlockId = Exclude<ProductSlotId, "holder1"> | WorkstationId;
+export type ClientUnlockId = `clientSkin${number}`;
+export type UnlockId = Exclude<ProductSlotId, "holder1"> | WorkstationId | ClientUnlockId;
 
 export interface UnlockCatalogEntry {
 	id: UnlockId;
@@ -18,6 +24,19 @@ export interface UnlockCatalogEntry {
  * Orden de aparición: Bomboloni → Second Workplace → Toaster/Sandwich → Milk → Second Fryer.
  * Workplace2 va antes que las freidoras extras; el primer unlock aparece desde el nivel 3.
  */
+const CLIENT_UNLOCKS_CATALOG: Record<ClientUnlockId, UnlockCatalogEntry> = {};
+
+for (let skinIndex = 1; skinIndex <= BODY_SKIN_MAX_INDEX; skinIndex++) {
+	const clientUnlockId: ClientUnlockId = `clientSkin${skinIndex}` as ClientUnlockId;
+	CLIENT_UNLOCKS_CATALOG[clientUnlockId] = {
+		id: clientUnlockId,
+		displayName: getClientBearName(skinIndex),
+		previewTextureKey: "ClientBear",
+		coinCost: 10 + skinIndex * 2,
+		unlockLevel: getBodySkinUnlockLevel(skinIndex),
+	};
+}
+
 export const UNLOCK_CATALOG: Record<UnlockId, UnlockCatalogEntry> = {
 	holder2: {
 		id: "holder2",
@@ -30,7 +49,6 @@ export const UNLOCK_CATALOG: Record<UnlockId, UnlockCatalogEntry> = {
 		id: "workplace2",
 		displayName: "Second Workplace",
 		previewTextureKey: "workplaceThumb",
-		// Expansión temprana de glaseado (antes que freidoras extras).
 		coinCost: 9,
 		unlockLevel: 4,
 	},
@@ -52,7 +70,6 @@ export const UNLOCK_CATALOG: Record<UnlockId, UnlockCatalogEntry> = {
 		id: "fryer2",
 		displayName: "Second Fryer",
 		previewTextureKey: "FryerThumb",
-		// Freidora extra más tarde y más cara que el workplace.
 		coinCost: 40,
 		unlockLevel: 7,
 	},
@@ -61,7 +78,6 @@ export const UNLOCK_CATALOG: Record<UnlockId, UnlockCatalogEntry> = {
 		displayName: "Sandwich",
 		previewTextureKey: "SandwichThumb",
 		coinCost: 7,
-		// Mismo tramo que la tostadora (se desbloquea en paquete).
 		unlockLevel: 5,
 	},
 	holder4: {
@@ -69,9 +85,9 @@ export const UNLOCK_CATALOG: Record<UnlockId, UnlockCatalogEntry> = {
 		displayName: "Milk Glass",
 		previewTextureKey: "MilkThumb",
 		coinCost: 6,
-		// Mismo tramo que la milk machine (se desbloquea en paquete).
 		unlockLevel: 6,
 	},
+	...CLIENT_UNLOCKS_CATALOG,
 };
 
 export const UNLOCK_ORDER: UnlockId[] = [
@@ -82,14 +98,70 @@ export const UNLOCK_ORDER: UnlockId[] = [
 	"fryer2",
 	"holder3",
 	"holder4",
+	...Object.keys(CLIENT_UNLOCKS_CATALOG).sort((left, right) => {
+		const leftIndex = Number.parseInt(left.replace("clientSkin", ""), 10) || 0;
+		const rightIndex = Number.parseInt(right.replace("clientSkin", ""), 10) || 0;
+		return leftIndex - rightIndex;
+	}) as ClientUnlockId[],
 ];
 
 const UNLOCK_COST_PROGRESSIVE_GROWTH = 0.18;
+const ACQUIRED_CLIENT_UNLOCKS_STORAGE_KEY = "candybear2-acquired-client-unlocks";
+
+export function getAcquiredClientUnlocks() {
+	if (typeof window === "undefined") {
+		return [] as ClientUnlockId[];
+	}
+
+	try {
+		const storedValue = window.localStorage.getItem(ACQUIRED_CLIENT_UNLOCKS_STORAGE_KEY);
+		if (!storedValue) {
+			return [] as ClientUnlockId[];
+		}
+
+		const parsed = JSON.parse(storedValue);
+		if (!Array.isArray(parsed)) {
+			return [] as ClientUnlockId[];
+		}
+
+		return parsed.filter((unlockId): unlockId is ClientUnlockId => (
+			typeof unlockId === "string" && unlockId.startsWith("clientSkin")
+		));
+	} catch {
+		return [] as ClientUnlockId[];
+	}
+}
+
+export function isClientUnlockId(unlockId: UnlockId): unlockId is ClientUnlockId {
+	return typeof unlockId === "string" && unlockId.startsWith("clientSkin");
+}
+
+export function isClientUnlockAcquired(unlockId: ClientUnlockId) {
+	return getAcquiredClientUnlocks().includes(unlockId);
+}
+
+export function storeClientUnlockAcquired(unlockId: ClientUnlockId) {
+	if (typeof window === "undefined") {
+		return;
+	}
+
+	const acquired = new Set(getAcquiredClientUnlocks());
+	acquired.add(unlockId);
+	window.localStorage.setItem(
+		ACQUIRED_CLIENT_UNLOCKS_STORAGE_KEY,
+		JSON.stringify([...acquired].sort((left, right) => {
+			const leftIndex = Number.parseInt(left.replace("clientSkin", ""), 10) || 0;
+			const rightIndex = Number.parseInt(right.replace("clientSkin", ""), 10) || 0;
+			return leftIndex - rightIndex;
+		}))
+	);
+}
 
 export function getPurchasedUnlockCount() {
 	const acquiredUnlocks = new Set<UnlockId>([
 		...getAcquiredProductSlots().filter((slotId): slotId is Exclude<ProductSlotId, "holder1"> => slotId !== "holder1"),
 		...getAcquiredWorkstations(),
+		...getAcquiredClientUnlocks(),
 	]);
 
 	return UNLOCK_ORDER.filter((unlockId) => acquiredUnlocks.has(unlockId)).length;
@@ -116,6 +188,10 @@ export function isUnlockAvailableAtLevel(unlockId: UnlockId, levelNumber: number
 
 export function isProductUnlockId(unlockId: UnlockId): unlockId is Exclude<ProductSlotId, "holder1"> {
 	return unlockId === "holder2" || unlockId === "holder3" || unlockId === "holder4";
+}
+
+export function isClientUnlockCandidate(unlockId: UnlockId) {
+	return isClientUnlockId(unlockId);
 }
 
 const PRODUCT_BUNDLED_WORKSTATIONS: Partial<Record<Exclude<ProductSlotId, "holder1">, WorkstationId>> = {

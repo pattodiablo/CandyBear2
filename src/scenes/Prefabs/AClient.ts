@@ -765,6 +765,11 @@ export default class AClient extends Phaser.GameObjects.Container {
 				if (grantLike) {
 					const skinIndex = this.clientBear.getAppearanceVariantIndex();
 					levelScene.showLikeHeartAt(exitX, () => {
+						const tipCoins = levelScene.maybeAwardLikeTip(exitX, skinIndex, wasQuickService);
+						if (tipCoins > 0) {
+							this.scene.sound.play("coinDrop", { volume: 0.5 });
+						}
+
 						const yumPrefab = levelScene.showYumAt(exitX);
 						levelScene.queueAlmostAfterYum(yumPrefab, wasAlmostLeaving);
 						levelScene.respawnClient(this, yumPrefab);

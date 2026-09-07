@@ -91,18 +91,36 @@ export function getBodySkinUnlockLevel(skinIndex: number) {
 	);
 }
 
-/** Índice máximo de skin desbloqueado para un nivel de campaña. */
+/**
+ * Índice máximo de skin desbloqueado para el jugador.
+ * Se ignora el progreso por nivel; las apariencias de clientes solo aparecen si
+ * el jugador ya ha comprado ese skin en el sistema de unlocks.
+ */
 export function getMaxUnlockedBodySkinIndex(levelNumber: number) {
-	const normalizedLevel = Math.max(1, Math.floor(levelNumber));
-	let maxUnlocked = 0;
+	const acquiredSkinIndexes = new Set<number>([0]);
 
-	for (let skinIndex = 0; skinIndex <= BODY_SKIN_MAX_INDEX; skinIndex++) {
-		if (getBodySkinUnlockLevel(skinIndex) <= normalizedLevel) {
-			maxUnlocked = skinIndex;
+	if (typeof window !== "undefined") {
+		try {
+			const storedValue = window.localStorage.getItem("candybear2-acquired-client-unlocks");
+			if (storedValue) {
+				const parsed = JSON.parse(storedValue);
+				if (Array.isArray(parsed)) {
+					for (const unlockId of parsed) {
+						if (typeof unlockId === "string" && unlockId.startsWith("clientSkin")) {
+							const skinIndex = Number.parseInt(unlockId.replace("clientSkin", ""), 10);
+							if (!Number.isNaN(skinIndex)) {
+								acquiredSkinIndexes.add(skinIndex);
+							}
+						}
+					}
+				}
+			}
+		} catch {
+			// Si no hay estado persistido, se mantiene solo el skin por defecto.
 		}
 	}
 
-	return maxUnlocked;
+	return Math.max(...acquiredSkinIndexes, 0);
 }
 
 /**
@@ -132,22 +150,44 @@ export function getClientBearProfile(skinIndex: number): ClientBearProfile {
  * A mayor dificultad, sesga un poco hacia skins más altos (más exigentes).
  */
 export function pickClientBearSkinIndex(levelNumber: number, difficulty: number) {
-	const maxUnlocked = getMaxUnlockedBodySkinIndex(levelNumber);
+	const acquiredSkinIndexes = new Set<number>([0]);
 
-	if (maxUnlocked <= 0) {
+	if (typeof window !== "undefined") {
+		try {
+			const storedValue = window.localStorage.getItem("candybear2-acquired-client-unlocks");
+			if (storedValue) {
+				const parsed = JSON.parse(storedValue);
+				if (Array.isArray(parsed)) {
+					for (const unlockId of parsed) {
+						if (typeof unlockId === "string" && unlockId.startsWith("clientSkin")) {
+							const skinIndex = Number.parseInt(unlockId.replace("clientSkin", ""), 10);
+							if (!Number.isNaN(skinIndex)) {
+								acquiredSkinIndexes.add(skinIndex);
+							}
+						}
+					}
+				}
+			}
+		} catch {
+			// Mantener el skin por defecto si no hay estado persistido.
+		}
+	}
+
+	const unlockedIndexes = [...acquiredSkinIndexes].sort((left, right) => left - right);
+	if (unlockedIndexes.length <= 1) {
 		return 0;
 	}
 
 	const difficultyBias = Phaser.Math.Clamp(difficulty, 0.5, 3);
 	const weights: number[] = [];
 
-	for (let skinIndex = 0; skinIndex <= maxUnlocked; skinIndex++) {
-		const progress = skinIndex / maxUnlocked;
-		// Peso base 1; skins altos ganan peso con la dificultad.
+	for (const skinIndex of unlockedIndexes) {
+		const progress = skinIndex / (unlockedIndexes[unlockedIndexes.length - 1] || 1);
 		weights.push(1 + progress * (difficultyBias - 0.5));
 	}
 
-	return pickWeightedIndex(weights);
+	const chosenIndex = pickWeightedIndex(weights);
+	return unlockedIndexes[chosenIndex] ?? 0;
 }
 
 function pickWeightedIndex(weights: number[]) {

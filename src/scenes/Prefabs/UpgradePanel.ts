@@ -153,6 +153,7 @@ export default class UpgradePanel extends Phaser.GameObjects.Container {
 			card.removeAllListeners();
 			card.hitAreaPanel.removeAllListeners();
 			card.hitAreaPanel.disableInteractive();
+			card.clearClientPreview();
 
 			if (!choice) {
 				card.setAlpha(0);
@@ -162,10 +163,17 @@ export default class UpgradePanel extends Phaser.GameObjects.Container {
 			const isAffordable = choice.isAffordable;
 			card.setAlpha(isAffordable ? 1 : 0.45);
 
-			if (choice.frame !== undefined) {
-				card.itemImage.setTexture(choice.textureKey, choice.frame);
+			if (choice.textureKey === "ClientBear" && typeof choice.id === "string" && choice.id.startsWith("clientSkin")) {
+				const skinIndex = Number.parseInt(choice.id.replace("clientSkin", ""), 10) || 0;
+				card.setClientPreview(skinIndex);
 			} else {
-				card.itemImage.setTexture(choice.textureKey);
+				if (choice.frame !== undefined) {
+					card.itemImage.setTexture(choice.textureKey, choice.frame);
+				} else {
+					card.itemImage.setTexture(choice.textureKey);
+				}
+				card.itemImage.setVisible(true);
+				card.itemImage.setScale(0.72);
 			}
 			card.text.setText(choice.label.toUpperCase());
 			card.itemCost.setText(String(choice.cost));

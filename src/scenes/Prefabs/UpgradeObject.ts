@@ -4,6 +4,7 @@
 /* START OF COMPILED CODE */
 
 /* START-USER-IMPORTS */
+import SpineClient from "./SpineClient";
 /* END-USER-IMPORTS */
 
 export default class UpgradeObject extends Phaser.GameObjects.Container {
@@ -62,10 +63,32 @@ export default class UpgradeObject extends Phaser.GameObjects.Container {
 	public text: Phaser.GameObjects.Text;
 	public itemCost: Phaser.GameObjects.Text;
 	public hitAreaPanel: Phaser.GameObjects.Rectangle;
+	public clientPreview?: SpineClient;
 
 	/* START-USER-CODE */
 
-	// Write your code here.
+	public setClientPreview(skinIndex: number) {
+		this.clearClientPreview();
+		const preview = new SpineClient(this.scene, this.scene.spine, 0, 10);
+		preview.setScale(0.52);
+		preview.setPosition(0, -6);
+		preview.applyAppearanceVariant(skinIndex);
+		preview.playAnimation("idle", true);
+		this.add(preview);
+		this.clientPreview = preview;
+		this.itemImage.setVisible(false);
+		this.itemImage.setScale(1);
+	}
+
+	public clearClientPreview() {
+		if (this.clientPreview) {
+			this.clientPreview.destroy();
+			this.clientPreview = undefined;
+		}
+		this.itemImage.setVisible(true);
+		this.itemImage.setScale(0.72);
+		this.itemImage.setPosition(0, 0);
+	}
 
 	/* END-USER-CODE */
 }

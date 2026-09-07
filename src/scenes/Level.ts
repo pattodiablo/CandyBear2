@@ -19,6 +19,7 @@ import Reloj from "./Prefabs/Reloj";
 import Phaser from "phaser";
 import Cookie from "./Prefabs/Cookie";
 import AClient from "./Prefabs/AClient";
+import SpineClient from "./Prefabs/SpineClient";
 import YumPrefab from "./Prefabs/YumPrefab";
 import AlmostPrefab from "./Prefabs/AlmostPrefab";
 import Coin from "./Prefabs/Coin";
@@ -54,9 +55,12 @@ import {
 	getBundledWorkstationsForProductUnlock,
 	getEffectiveUnlockCost,
 	getUnlockCatalogEntry,
+	isClientUnlockAcquired,
+	isClientUnlockId,
 	isProductUnlockId,
 	isUnlockAvailableAtLevel,
 	shouldShowWorkstationLockIcon,
+	storeClientUnlockAcquired,
 	UNLOCK_ORDER,
 	type UnlockId,
 } from "./unlockCatalog";
@@ -514,6 +518,7 @@ export default class Level extends Phaser.Scene {
 	private upgradeLabelFloatTween?: Phaser.Tweens.Tween;
 	private unlockPanelContainer?: Phaser.GameObjects.Container;
 	private unlockPreviewImage?: Phaser.GameObjects.Image;
+	private unlockPreviewClient?: SpineClient;
 	private unlockNameText?: Phaser.GameObjects.Text;
 	private unlockCostText?: Phaser.GameObjects.Text;
 	private unlockBuyButton?: Phaser.GameObjects.Container;
@@ -580,6 +585,7 @@ export default class Level extends Phaser.Scene {
 	/** Textos del panel de upgrade: sin stroke, color #B3605E. */
 	private static readonly MANDATORY_UPGRADE_TEXT_COLOR = "#B3605E";
 	private static readonly MANDATORY_UPGRADE_BUY_COLOR = "#FFFFFF";
+	private static readonly ENABLE_PROGRESSION_LOCKS = false;
 	private static readonly PROGRESSION_LOCK_TEXTURE_KEY = "lock";
 	private static readonly PROGRESSION_LOCK_SCALE = 0.72;
 	private static readonly PROGRESSION_LOCK_DEPTH_OFFSET = 8;
@@ -687,6 +693,7 @@ export default class Level extends Phaser.Scene {
 		this.exitConfirmNoButton = undefined;
 		this.unlockPanelContainer = undefined;
 		this.unlockPreviewImage = undefined;
+		this.unlockPreviewClient = undefined;
 		this.unlockNameText = undefined;
 		this.unlockCostText = undefined;
 		this.unlockBuyButton = undefined;
@@ -1109,6 +1116,10 @@ export default class Level extends Phaser.Scene {
 	}
 
 	private clearProgressionLockIcons() {
+		if (!Level.ENABLE_PROGRESSION_LOCKS) {
+			this.progressionLockIcons = [];
+			return;
+		}
 
 		for (const lockIcon of this.progressionLockIcons) {
 			if (lockIcon.active) {
@@ -1142,6 +1153,9 @@ export default class Level extends Phaser.Scene {
 	}
 
 	private syncProgressionLockAffordance(lockIcon: Phaser.GameObjects.Image) {
+		if (!Level.ENABLE_PROGRESSION_LOCKS) {
+			return;
+		}
 
 		this.stopProgressionLockAffordance(lockIcon);
 
@@ -1165,6 +1179,9 @@ export default class Level extends Phaser.Scene {
 		shakeIndex: number,
 		loop: boolean
 	) {
+		if (!Level.ENABLE_PROGRESSION_LOCKS) {
+			return;
+		}
 
 		if (!lockIcon.active || !lockIcon.getData("affordanceActive")) {
 			return;
@@ -1217,6 +1234,10 @@ export default class Level extends Phaser.Scene {
 	}
 
 	private updateProgressionLockAffordance() {
+		if (!Level.ENABLE_PROGRESSION_LOCKS) {
+			this.progressionLockIcons = [];
+			return;
+		}
 
 		for (const lockIcon of this.progressionLockIcons) {
 			if (lockIcon.active) {
@@ -1226,6 +1247,9 @@ export default class Level extends Phaser.Scene {
 	}
 
 	private createProgressionLockIcon(x: number, y: number, depth: number, unlockId: UnlockId) {
+		if (!Level.ENABLE_PROGRESSION_LOCKS) {
+			return;
+		}
 
 		const lockIcon = this.add.image(x, y, Level.PROGRESSION_LOCK_TEXTURE_KEY);
 		const baseX = x;
@@ -1276,6 +1300,9 @@ export default class Level extends Phaser.Scene {
 		unlockId: UnlockId,
 		offsetY = 0
 	) {
+		if (!Level.ENABLE_PROGRESSION_LOCKS) {
+			return;
+		}
 
 		this.createProgressionLockIcon(
 			target.x,
@@ -1286,11 +1313,12 @@ export default class Level extends Phaser.Scene {
 	}
 
 	private applyLevelProgression() {
-
 		this.clearProgressionLockIcons();
 		this.applyProductSlotProgression();
 		this.applyWorkstationProgression();
-		this.updateProgressionLockAffordance();
+		if (Level.ENABLE_PROGRESSION_LOCKS) {
+			this.updateProgressionLockAffordance();
+		}
 	}
 
 	private applyWorkstationProgression() {
@@ -2137,8 +2165,14 @@ export default class Level extends Phaser.Scene {
 		container.setDepth(Level.EXIT_CONFIRM_DEPTH);
 		container.setVisible(false);
 		container.setAlpha(0);
+		const previewClient = new SpineClient(this, this.spine, 0, 30, "ClientBearSpine", "ClientBear-atlas");
+		previewClient.setVisible(false);
+		previewClient.setScale(0.42);
+		container.add(previewClient);
+
 		this.unlockPanelContainer = container;
 		this.unlockPreviewImage = previewImage;
+		this.unlockPreviewClient = previewClient;
 		this.unlockNameText = nameText;
 		this.unlockCostText = costText;
 		this.unlockPanelRestY = centerY;
@@ -2187,10 +2221,28 @@ export default class Level extends Phaser.Scene {
 			return;
 		}
 
-		if (entry.previewFrame !== undefined) {
-			this.unlockPreviewImage.setTexture(entry.previewTextureKey, entry.previewFrame);
+		const isClientPreview = isClientUnlockId(unlockId);
+		const clientSkinIndex = isClientPreview
+			? Number.parseInt(unlockId.replace("clientSkin", ""), 10)
+			: 0;
+
+		if (isClientPreview) {
+			this.unlockPreviewImage.setVisible(false);
+			if (this.unlockPreviewClient) {
+				this.unlockPreviewClient.setVisible(true);
+				this.unlockPreviewClient.applyAppearanceVariant(clientSkinIndex);
+				this.unlockPreviewClient.setPosition(0, 12);
+			}
 		} else {
-			this.unlockPreviewImage.setTexture(entry.previewTextureKey);
+			this.unlockPreviewImage.setVisible(true);
+			if (this.unlockPreviewClient) {
+				this.unlockPreviewClient.setVisible(false);
+			}
+			if (entry.previewFrame !== undefined) {
+				this.unlockPreviewImage.setTexture(entry.previewTextureKey, entry.previewFrame);
+			} else {
+				this.unlockPreviewImage.setTexture(entry.previewTextureKey);
+			}
 		}
 
 		this.unlockPreviewImage.setScale(Level.UNLOCK_PREVIEW_SCALE);
@@ -2242,7 +2294,13 @@ export default class Level extends Phaser.Scene {
 			return;
 		}
 
-		if (isProductUnlockId(unlockId) ? isProductAcquired(unlockId) : isWorkstationAcquired(unlockId)) {
+		const isAlreadyOwned = isProductUnlockId(unlockId)
+			? isProductAcquired(unlockId)
+			: isClientUnlockId(unlockId)
+				? isClientUnlockAcquired(unlockId)
+				: isWorkstationAcquired(unlockId);
+
+		if (isAlreadyOwned) {
 			return;
 		}
 
@@ -2333,13 +2391,20 @@ export default class Level extends Phaser.Scene {
 		const levelNumber = this.getCurrentLevelNumber();
 
 		return UNLOCK_ORDER.filter((unlockId) => {
-			if (!isProductUnlockId(unlockId) && !shouldShowWorkstationLockIcon(unlockId)) {
+			const isProduct = isProductUnlockId(unlockId);
+			const isClient = isClientUnlockId(unlockId);
+			const isWorkstation = !isProduct && !isClient;
+			const shouldShow = isProduct || isClient || (isWorkstation && shouldShowWorkstationLockIcon(unlockId));
+
+			if (!shouldShow) {
 				return false;
 			}
 
-			const isAcquired = isProductUnlockId(unlockId)
+			const isAcquired = isProduct
 				? isProductAcquired(unlockId)
-				: isWorkstationAcquired(unlockId);
+				: isClient
+					? isClientUnlockAcquired(unlockId)
+					: isWorkstationAcquired(unlockId);
 
 			if (isAcquired) {
 				return false;
@@ -2351,13 +2416,20 @@ export default class Level extends Phaser.Scene {
 
 	private getVisibleKitchenUpgradeChoices(): UnlockId[] {
 		return UNLOCK_ORDER.filter((unlockId) => {
-			if (!isProductUnlockId(unlockId) && !shouldShowWorkstationLockIcon(unlockId)) {
+			const isProduct = isProductUnlockId(unlockId);
+			const isClient = isClientUnlockId(unlockId);
+			const isWorkstation = !isProduct && !isClient;
+			const shouldShow = isProduct || isClient || (isWorkstation && shouldShowWorkstationLockIcon(unlockId));
+
+			if (!shouldShow) {
 				return false;
 			}
 
-			const isAcquired = isProductUnlockId(unlockId)
+			const isAcquired = isProduct
 				? isProductAcquired(unlockId)
-				: isWorkstationAcquired(unlockId);
+				: isClient
+					? isClientUnlockAcquired(unlockId)
+					: isWorkstationAcquired(unlockId);
 
 			return !isAcquired;
 		}).slice(0, 5);
@@ -2418,6 +2490,8 @@ export default class Level extends Phaser.Scene {
 			for (const workstationId of getBundledWorkstationsForProductUnlock(unlockId)) {
 				storeWorkstationAcquired(workstationId);
 			}
+		} else if (isClientUnlockId(unlockId)) {
+			storeClientUnlockAcquired(unlockId);
 		} else {
 			storeWorkstationAcquired(unlockId);
 		}
@@ -3740,6 +3814,21 @@ export default class Level extends Phaser.Scene {
 		this.maybeLaunchLikeCookieTrail(x, Level.LIKE_HEART_Y, skinIndex ?? 0);
 
 		return heart;
+	}
+
+	public maybeAwardLikeTip(x: number, skinIndex: number, wasQuickService: boolean) {
+		const normalizedSkinIndex = Phaser.Math.Clamp(Math.floor(skinIndex), 0, 15);
+		const baseTipChance = 0.2 + (1 - normalizedSkinIndex / 15) * 0.45;
+		const quickBonus = wasQuickService ? 0.15 : 0;
+		const tipChance = Phaser.Math.Clamp(baseTipChance + quickBonus, 0, 0.9);
+
+		if (Math.random() >= tipChance) {
+			return 0;
+		}
+
+		const tipCoins = Math.random() < 0.35 ? 2 : 1;
+		this.showCoinsAt(x, tipCoins);
+		return tipCoins;
 	}
 
 	/**
