@@ -223,12 +223,19 @@ export default class milkglass extends Phaser.GameObjects.Image {
 		this.isLaunching = true;
 		this.disableInteractive();
 		this.setVisible(false);
+		const refillAnimation = this.scene.anims.get("MilkRefill");
+		const refillDurationMs = refillAnimation
+			? Math.max(250, refillAnimation.duration / getMachineAnimationTimeScale(getMilkRefillSpeedBonus()))
+			: 2200;
+		levelScene.setMilkClockActive(slotId, true, refillDurationMs);
 
 		levelScene.milkmachine.playMilkRefillAtWorld(slotId, this.x, this.y, () => {
 			if (!this.active) {
+				levelScene.setMilkClockActive(slotId, false);
 				return;
 			}
 
+			levelScene.setMilkClockActive(slotId, false);
 			levelScene.milkmachine.clearSlot(slotId);
 			this.applyFilledAppearance();
 			this.setVisible(true);
@@ -402,13 +409,20 @@ export default class milkglass extends Phaser.GameObjects.Image {
 
 				if (!client.canReceiveDelivery()) {
 					// showProductDiscardLossAt ya reproduce "canceled".
-					levelScene.showProductDiscardLossAt(client.x, client.y - 64);
+					levelScene.showProductDiscardLossAt(
+						client.x,
+						client.y - 64,
+						getProductCoinReward("holder4", { isFlavored: this.hasFlavor() })
+					);
 					this.fallOffscreen();
 					return;
 				}
 
 				if (client.matchesProduct(this)) {
-					levelScene.showCoinsAt(client.x, getProductCoinReward("holder4"));
+					levelScene.showCoinsAt(
+						client.x,
+						getProductCoinReward("holder4", { isFlavored: this.hasFlavor() })
+					);
 					const isOrderComplete = client.receiveProductDelivery(this);
 
 					if (isOrderComplete) {
@@ -531,7 +545,11 @@ export default class milkglass extends Phaser.GameObjects.Image {
 		}
 
 		this.disableInteractive();
-		levelScene.showProductDiscardLossAt(this.x, this.y, getProductCoinReward("holder4"));
+		levelScene.showProductDiscardLossAt(
+			this.x,
+			this.y,
+			getProductCoinReward("holder4", { isFlavored: this.hasFlavor() })
+		);
 		this.fallOffscreen();
 	}
 

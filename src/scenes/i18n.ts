@@ -1,15 +1,17 @@
 export type GameLanguage = "en" | "es";
 
-type TranslationKey = "prepare" | "perfect";
+type TranslationKey = "prepare" | "perfect" | "lastCall";
 
 const STRINGS: Record<GameLanguage, Record<TranslationKey, string>> = {
 	en: {
 		prepare: "Clients coming",
 		perfect: "Perfect",
+		lastCall: "Last Call! Everything Must Go",
 	},
 	es: {
 		prepare: "Clientes llegando",
 		perfect: "Perfect",
+		lastCall: "Ultima llamada! Todo debe irse",
 	},
 };
 

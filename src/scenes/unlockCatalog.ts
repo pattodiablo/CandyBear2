@@ -1,5 +1,5 @@
-import type { ProductSlotId } from "./productProgress";
-import type { WorkstationId } from "./workstationProgress";
+import { getAcquiredProductSlots, type ProductSlotId } from "./productProgress";
+import { getAcquiredWorkstations, type WorkstationId } from "./workstationProgress";
 
 export type UnlockId = Exclude<ProductSlotId, "holder1"> | WorkstationId;
 
@@ -15,21 +15,21 @@ export interface UnlockCatalogEntry {
 
 /**
  * Product 1 (holder1) se mantiene desbloqueado por defecto.
- * Orden de aparición: Berry Dip → Second Workplace → Toaster/Sandwich → Milk → Second Fryer.
+ * Orden de aparición: Bomboloni → Second Workplace → Toaster/Sandwich → Milk → Second Fryer.
  * Workplace2 va antes que las freidoras extras; el primer unlock aparece desde el nivel 3.
  */
 export const UNLOCK_CATALOG: Record<UnlockId, UnlockCatalogEntry> = {
 	holder2: {
 		id: "holder2",
-		displayName: "Berry Dip",
-		previewTextureKey: "Product2Raw",
+		displayName: "Bomboloni",
+		previewTextureKey: "BomboloniThumb",
 		coinCost: 4,
 		unlockLevel: 3,
 	},
 	workplace2: {
 		id: "workplace2",
 		displayName: "Second Workplace",
-		previewTextureKey: "workplace",
+		previewTextureKey: "workplaceThumb",
 		// Expansión temprana de glaseado (antes que freidoras extras).
 		coinCost: 9,
 		unlockLevel: 4,
@@ -37,21 +37,21 @@ export const UNLOCK_CATALOG: Record<UnlockId, UnlockCatalogEntry> = {
 	toaster: {
 		id: "toaster",
 		displayName: "Toaster",
-		previewTextureKey: "toaster",
+		previewTextureKey: "FryerThumb",
 		coinCost: 28,
 		unlockLevel: 5,
 	},
 	milkmachine: {
 		id: "milkmachine",
 		displayName: "Milk Machine",
-		previewTextureKey: "Milkmachine",
+		previewTextureKey: "MilkThumb",
 		coinCost: 35,
 		unlockLevel: 6,
 	},
 	fryer2: {
 		id: "fryer2",
 		displayName: "Second Fryer",
-		previewTextureKey: "Fryer",
+		previewTextureKey: "FryerThumb",
 		// Freidora extra más tarde y más cara que el workplace.
 		coinCost: 40,
 		unlockLevel: 7,
@@ -59,8 +59,7 @@ export const UNLOCK_CATALOG: Record<UnlockId, UnlockCatalogEntry> = {
 	holder3: {
 		id: "holder3",
 		displayName: "Sandwich",
-		previewTextureKey: "sandWichAnim",
-		previewFrame: "sandwich0001.png",
+		previewTextureKey: "SandwichThumb",
 		coinCost: 7,
 		// Mismo tramo que la tostadora (se desbloquea en paquete).
 		unlockLevel: 5,
@@ -68,8 +67,7 @@ export const UNLOCK_CATALOG: Record<UnlockId, UnlockCatalogEntry> = {
 	holder4: {
 		id: "holder4",
 		displayName: "Milk Glass",
-		previewTextureKey: "GlassAnim",
-		previewFrame: "Vaso0001.png",
+		previewTextureKey: "MilkThumb",
 		coinCost: 6,
 		// Mismo tramo que la milk machine (se desbloquea en paquete).
 		unlockLevel: 6,
@@ -86,12 +84,29 @@ export const UNLOCK_ORDER: UnlockId[] = [
 	"holder4",
 ];
 
+const UNLOCK_COST_PROGRESSIVE_GROWTH = 0.18;
+
+export function getPurchasedUnlockCount() {
+	const acquiredUnlocks = new Set<UnlockId>([
+		...getAcquiredProductSlots().filter((slotId): slotId is Exclude<ProductSlotId, "holder1"> => slotId !== "holder1"),
+		...getAcquiredWorkstations(),
+	]);
+
+	return UNLOCK_ORDER.filter((unlockId) => acquiredUnlocks.has(unlockId)).length;
+}
+
+export function getEffectiveUnlockCost(unlockId: UnlockId) {
+	const baseCost = UNLOCK_CATALOG[unlockId].coinCost;
+	const purchasedUnlockCount = getPurchasedUnlockCount();
+	return Math.round(baseCost * (1 + (purchasedUnlockCount * UNLOCK_COST_PROGRESSIVE_GROWTH)));
+}
+
 export function getUnlockCatalogEntry(unlockId: UnlockId) {
 	return UNLOCK_CATALOG[unlockId];
 }
 
 export function getTotalUnlockCost() {
-	return UNLOCK_ORDER.reduce((total, unlockId) => total + UNLOCK_CATALOG[unlockId].coinCost, 0);
+	return UNLOCK_ORDER.reduce((total, unlockId) => total + getEffectiveUnlockCost(unlockId), 0);
 }
 
 export function isUnlockAvailableAtLevel(unlockId: UnlockId, levelNumber: number) {

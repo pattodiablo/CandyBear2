@@ -102,10 +102,17 @@ export default class ToasterPrefab extends Phaser.GameObjects.Container {
 		const sandwichSprite = this.scene.add.sprite(dest.x, dest.y, "sandWichAnim", "sandwich0001.png");
 		sandwichSprite.setDepth(this.toaster.depth + 1);
 		const animationTimeScale = getMachineAnimationTimeScale(getToasterSpeedBonus());
+		const roastAnimation = this.scene.anims.get("sandwichRoast");
+		const roastDurationMs = roastAnimation
+			? Math.max(500, roastAnimation.duration / animationTimeScale)
+			: 2200;
+		const levelScene = this.scene as Phaser.Scene & { setToasterClockActive?: (active: boolean, durationMs?: number) => void };
+		levelScene.setToasterClockActive?.(true, roastDurationMs);
 
 		const finishRoast = () => {
 			this.stopToasterAnimation();
 			this.resetToasterAppearance();
+			levelScene.setToasterClockActive?.(false);
 			onComplete?.();
 		};
 

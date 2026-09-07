@@ -29,6 +29,103 @@
             touch-action: none;
         }
 
+        #orientation-overlay {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(11, 23, 30, 0.78);
+            backdrop-filter: blur(5px);
+            z-index: 10000;
+        }
+
+        #orientation-overlay.visible {
+            display: flex;
+        }
+
+        .orientation-shell {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: #fffaf1;
+            gap: 12px;
+            padding: 24px;
+        }
+
+        .orientation-device {
+            position: relative;
+            width: 180px;
+            height: 110px;
+            border-radius: 22px;
+            border: 4px solid rgba(255, 255, 255, 0.9);
+            background: linear-gradient(180deg, #203040 0%, #0b121c 100%);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            transform: rotate(90deg);
+            animation: rotatePhone 1.8s ease-in-out infinite alternate;
+        }
+
+        .orientation-notch {
+            position: absolute;
+            top: 14px;
+            left: 50%;
+            width: 40px;
+            height: 8px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.8);
+            transform: translateX(-50%);
+        }
+
+        .orientation-screen {
+            position: absolute;
+            inset: 16px 12px 12px 12px;
+            border-radius: 14px;
+            background: linear-gradient(180deg, #ffd084 0%, #ff9b7a 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #2d1b0e;
+            font-weight: 800;
+            font-size: 12px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .orientation-copy {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .orientation-title {
+            font-size: clamp(28px, 4vw, 40px);
+            line-height: 1.05;
+            font-weight: 900;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            margin: 0;
+        }
+
+        .orientation-subtitle {
+            margin: 0;
+            max-width: 420px;
+            font-size: 18px;
+            line-height: 1.4;
+            color: rgba(255, 250, 241, 0.88);
+        }
+
+        @keyframes rotatePhone {
+            0% {
+                transform: rotate(90deg) scale(0.96);
+            }
+            100% {
+                transform: rotate(100deg) scale(1);
+            }
+        }
+
         #mobile-launch-overlay {
             position: fixed;
             inset: 0;
@@ -116,6 +213,19 @@
 </head>
 
 <body>
+    <div id="orientation-overlay" aria-live="polite">
+        <div class="orientation-shell">
+            <div class="orientation-device" aria-hidden="true">
+                <div class="orientation-notch"></div>
+                <div class="orientation-screen">Landscape</div>
+            </div>
+            <div class="orientation-copy">
+                <h2 class="orientation-title">Gira tu dispositivo</h2>
+                <p class="orientation-subtitle">Este juego debe jugarse en modo paisaje para disfrutar la experiencia completa.</p>
+            </div>
+        </div>
+    </div>
+
     <div id="mobile-launch-overlay">
         <div id="mobile-launch-actions">
             <button id="mobile-launch-button" class="mobile-launch-button" type="button" disabled>Loading game...</button>
@@ -147,10 +257,20 @@
             ];
 
             const overlay = document.getElementById("mobile-launch-overlay");
+            const orientationOverlay = document.getElementById("orientation-overlay");
             const launchButton = document.getElementById("mobile-launch-button");
             const skipButton = document.getElementById("mobile-launch-skip-button");
             const flushButton = document.getElementById("mobile-flush-button");
             const flushStatus = document.getElementById("mobile-flush-status");
+
+            const syncOrientationOverlay = () => {
+                const isPortrait = window.innerHeight >= window.innerWidth;
+                orientationOverlay.classList.toggle("visible", isPortrait);
+            };
+
+            syncOrientationOverlay();
+            window.addEventListener("resize", syncOrientationOverlay, { passive: true });
+            window.addEventListener("orientationchange", syncOrientationOverlay, { passive: true });
 
             const clearStoredProgress = () => {
                 for (const storageKey of GAME_STORAGE_KEYS) {

@@ -314,7 +314,7 @@
             "x": 595,
             "y": 360,
             "visible": true,
-            "editorRender": true
+            "editorRender": false
         },
         {
             "type": "Image",
@@ -412,6 +412,7 @@
             "type": "Image",
             "id": "fa3c18f7-2244-425f-b0e5-53a96815c4d4",
             "label": "fxBtn",
+            "scope": "PUBLIC",
             "texture": {
                 "key": "FxBtn"
             },
@@ -422,11 +423,106 @@
             "type": "Image",
             "id": "08d88b3f-a285-4b02-83d0-31cbbecf0d51",
             "label": "musicBtn",
+            "scope": "PUBLIC",
             "texture": {
                 "key": "MusicBtn"
             },
             "x": 1024,
             "y": 47
+        },
+        {
+            "prefabId": "7fd24576-921b-4961-bfe3-044d6a6d3949",
+            "id": "0c218343-2171-4a2a-afaf-a00311b40678",
+            "unlock": [
+                "x",
+                "y",
+                "editorRender"
+            ],
+            "label": "UpgradePanel",
+            "scope": "CLASS",
+            "x": 640,
+            "y": 360,
+            "editorRender": false
+        },
+        {
+            "prefabId": "f041bd7d-582c-4810-a8b9-c4a90f19ad84",
+            "id": "2f8791c3-acc0-4354-823b-a7e096d50fa6",
+            "unlock": [
+                "x",
+                "y",
+                "scaleX",
+                "scaleY"
+            ],
+            "label": "relojFryer1",
+            "scope": "CLASS",
+            "x": 388,
+            "y": 469,
+            "scaleX": 0.5,
+            "scaleY": 0.5
+        },
+        {
+            "prefabId": "f041bd7d-582c-4810-a8b9-c4a90f19ad84",
+            "id": "b3a206b6-8113-4f1b-b3cd-c46b20dbadd7",
+            "unlock": [
+                "x",
+                "y",
+                "scaleX",
+                "scaleY"
+            ],
+            "label": "relojFryer2",
+            "scope": "CLASS",
+            "x": 388,
+            "y": 598,
+            "scaleX": 0.5,
+            "scaleY": 0.5
+        },
+        {
+            "prefabId": "f041bd7d-582c-4810-a8b9-c4a90f19ad84",
+            "id": "6911d757-af5c-4375-b2e1-37e28de5e32e",
+            "unlock": [
+                "x",
+                "y",
+                "scaleX",
+                "scaleY"
+            ],
+            "label": "relojMilk1",
+            "scope": "CLASS",
+            "x": 558,
+            "y": 567,
+            "scaleX": 0.5,
+            "scaleY": 0.5
+        },
+        {
+            "prefabId": "f041bd7d-582c-4810-a8b9-c4a90f19ad84",
+            "id": "31aeb425-b109-4ca4-b028-a3ec01acae15",
+            "unlock": [
+                "x",
+                "y",
+                "scaleX",
+                "scaleY"
+            ],
+            "label": "relojMilk2",
+            "scope": "CLASS",
+            "x": 664,
+            "y": 567,
+            "scaleX": 0.5,
+            "scaleY": 0.5
+        },
+        {
+            "prefabId": "f041bd7d-582c-4810-a8b9-c4a90f19ad84",
+            "id": "9f225521-5452-48e2-b6ba-5b345e9fc582",
+            "unlock": [
+                "x",
+                "y",
+                "scaleX",
+                "scaleY"
+            ],
+            "label": "relojMilk",
+            "scope": "CLASS",
+            "x": 824,
+            "y": 535,
+            "scaleX": 0.5,
+            "scaleY": 0.5
         }
     ],
     "plainObjects": [],

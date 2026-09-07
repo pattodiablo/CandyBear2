@@ -1,0 +1,144 @@
+{
+    "id": "7fd24576-921b-4961-bfe3-044d6a6d3949",
+    "sceneType": "PREFAB",
+    "settings": {
+        "exportClass": true,
+        "autoImport": true,
+        "preloadMethodName": "",
+        "preloadPackFiles": [],
+        "createMethodName": "",
+        "compilerOutputLanguage": "TYPE_SCRIPT",
+        "borderWidth": 1280,
+        "borderHeight": 720
+    },
+    "displayList": [
+        {
+            "type": "Container",
+            "id": "6edc3ec5-6b26-4b41-bf3c-00818a8444af",
+            "label": "container_1",
+            "x": -76,
+            "list": [
+                {
+                    "type": "Image",
+                    "id": "2c0b2032-df3b-46c0-93b9-75dd28dd539a",
+                    "label": "upgradeRainbow",
+                    "scope": "CLASS",
+                    "texture": {
+                        "key": "upgradeRainbow"
+                    }
+                },
+                {
+                    "type": "Image",
+                    "id": "874e9afe-978e-4a9a-b3fc-b3cf55a5ad14",
+                    "label": "upgradeBg",
+                    "scope": "PUBLIC",
+                    "texture": {
+                        "key": "UpgradeBg"
+                    }
+                },
+                {
+                    "type": "Text",
+                    "id": "bb502a9a-e204-4e5c-b2e9-c0516fbc029f",
+                    "label": "text_1",
+                    "x": 1,
+                    "y": -208,
+                    "originX": 0.5,
+                    "originY": 0.5,
+                    "text": "New Unlock",
+                    "fontFamily": "Klop",
+                    "fontSize": "40pt",
+                    "color": "#DF3D7A"
+                },
+                {
+                    "type": "Container",
+                    "id": "aaeeed53-fa34-4b27-b46c-a8a71fd25b29",
+                    "label": "container_2"
+                },
+                {
+                    "prefabId": "2a848bac-21e8-41ca-9fda-ce971f316175",
+                    "id": "f74e878d-0c6d-4a6d-9351-8fac94920221",
+                    "unlock": [
+                        "x",
+                        "y"
+                    ],
+                    "label": "upgradeSmallPanel",
+                    "x": -357,
+                    "y": -15
+                },
+                {
+                    "prefabId": "2a848bac-21e8-41ca-9fda-ce971f316175",
+                    "id": "bb2952a2-0b58-4d19-9438-34f59d6cc787",
+                    "unlock": [
+                        "x",
+                        "y"
+                    ],
+                    "label": "upgradeSmallPanel_1",
+                    "x": -186,
+                    "y": -15
+                },
+                {
+                    "prefabId": "2a848bac-21e8-41ca-9fda-ce971f316175",
+                    "id": "b2fca5bb-3536-47ac-b1bb-b84964422dd3",
+                    "unlock": [
+                        "x",
+                        "y"
+                    ],
+                    "label": "upgradeSmallPanel_2",
+                    "x": -4,
+                    "y": -15
+                },
+                {
+                    "prefabId": "2a848bac-21e8-41ca-9fda-ce971f316175",
+                    "id": "b7ec9403-2781-4ed8-ac03-744cf9201e30",
+                    "unlock": [
+                        "x",
+                        "y"
+                    ],
+                    "label": "upgradeSmallPanel_3",
+                    "x": 159,
+                    "y": -15
+                },
+                {
+                    "prefabId": "2a848bac-21e8-41ca-9fda-ce971f316175",
+                    "id": "bfd8c38b-405d-4e0e-97f8-8195375e8793",
+                    "unlock": [
+                        "x",
+                        "y"
+                    ],
+                    "label": "upgradeSmallPanel_4",
+                    "x": 335,
+                    "y": -15
+                },
+                {
+                    "type": "Image",
+                    "id": "42e7ee7f-082e-46ed-82b4-d89a8add7287",
+                    "label": "rewardedBtn",
+                    "scope": "CLASS",
+                    "texture": {
+                        "key": "rewardedBtn"
+                    },
+                    "x": 159,
+                    "y": 178
+                },
+                {
+                    "type": "Image",
+                    "id": "bd87fa4d-3823-44d7-9dbc-809470105aad",
+                    "label": "closeBtn",
+                    "scope": "PUBLIC",
+                    "texture": {
+                        "key": "closeBtn"
+                    },
+                    "x": 335,
+                    "y": 178
+                }
+            ]
+        }
+    ],
+    "plainObjects": [],
+    "meta": {
+        "app": "Phaser Editor - Scene Editor",
+        "url": "https://phaser.io/editor",
+        "contentType": "phasereditor2d.core.scene.SceneContentType",
+        "version": 5
+    }
+}

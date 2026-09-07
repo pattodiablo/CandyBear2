@@ -13,6 +13,8 @@ import sandwichPrefab from "./Prefabs/sandwichPrefab";
 import PanelPrefab from "./Prefabs/PanelPrefab";
 import FlavorBottle from "./Prefabs/FlavorBottle";
 import HelpHand from "./HelpHand";
+import UpgradePanel from "./Prefabs/UpgradePanel";
+import Reloj from "./Prefabs/Reloj";
 /* START-USER-IMPORTS */
 import Phaser from "phaser";
 import Cookie from "./Prefabs/Cookie";
@@ -50,6 +52,7 @@ import {
 } from "./workstationProgress";
 import {
 	getBundledWorkstationsForProductUnlock,
+	getEffectiveUnlockCost,
 	getUnlockCatalogEntry,
 	isProductUnlockId,
 	isUnlockAvailableAtLevel,
@@ -238,6 +241,45 @@ export default class Level extends Phaser.Scene {
 		// musicBtn
 		const musicBtn = this.add.image(1024, 47, "MusicBtn");
 
+		// UpgradePanel
+		const upgradePanel = new UpgradePanel(this, 640, 360);
+		this.add.existing(upgradePanel);
+
+		// relojFryer1
+		const relojFryer1 = new Reloj(this, 388, 469);
+		this.add.existing(relojFryer1);
+		relojFryer1.setDepth(2000);
+		relojFryer1.scaleX = 0.5;
+		relojFryer1.scaleY = 0.5;
+
+		// relojFryer2
+		const relojFryer2 = new Reloj(this, 388, 598);
+		this.add.existing(relojFryer2);
+		relojFryer2.setDepth(2000);
+		relojFryer2.scaleX = 0.5;
+		relojFryer2.scaleY = 0.5;
+
+		// relojMilk1
+		const relojMilk1 = new Reloj(this, 558, 567);
+		this.add.existing(relojMilk1);
+		relojMilk1.setDepth(2000);
+		relojMilk1.scaleX = 0.5;
+		relojMilk1.scaleY = 0.5;
+
+		// relojMilk2
+		const relojMilk2 = new Reloj(this, 664, 567);
+		this.add.existing(relojMilk2);
+		relojMilk2.setDepth(2000);
+		relojMilk2.scaleX = 0.5;
+		relojMilk2.scaleY = 0.5;
+
+		// relojToaster
+		const relojToaster = new Reloj(this, 824, 535);
+		this.add.existing(relojToaster);
+		relojToaster.setDepth(2000);
+		relojToaster.scaleX = 0.5;
+		relojToaster.scaleY = 0.5;
+
 		// glace1 (prefab fields)
 		glace1.FlavorType = "Red";
 
@@ -264,10 +306,17 @@ export default class Level extends Phaser.Scene {
 		this.blurOverlay = blurOverlay;
 		this.panel = panel;
 		this.menuBtn = menuBtn;
-		this.fxBtn = fxBtn;
-		this.musicBtn = musicBtn;
 		this.tutiorialHand = tutiorialHand;
 		this.upgradeLabel = upgradeLabel;
+		this.fxBtn = fxBtn;
+		this.musicBtn = musicBtn;
+		this.upgradePanel = upgradePanel;
+		this.relojFryer1 = relojFryer1;
+		this.relojFryer2 = relojFryer2;
+		this.relojMilk1 = relojMilk1;
+		this.relojMilk2 = relojMilk2;
+		this.relojToaster = relojToaster;
+		this.hideAllKitchenClocks();
 
 		this.events.emit("scene-awake");
 	}
@@ -295,12 +344,16 @@ export default class Level extends Phaser.Scene {
 	private blurOverlay!: Phaser.GameObjects.Image;
 	private panel!: PanelPrefab;
 	private menuBtn!: Phaser.GameObjects.Image;
-	private fxBtn!: Phaser.GameObjects.Image;
-	private musicBtn!: Phaser.GameObjects.Image;
-	private isFxMuted = false;
-	private isMusicMuted = false;
 	public tutiorialHand!: HelpHand;
 	private upgradeLabel!: Phaser.GameObjects.Image;
+	public fxBtn!: Phaser.GameObjects.Image;
+	public musicBtn!: Phaser.GameObjects.Image;
+	private upgradePanel!: UpgradePanel;
+	private relojFryer1!: Reloj;
+	private relojFryer2!: Reloj;
+	private relojMilk1!: Reloj;
+	private relojMilk2!: Reloj;
+	private relojToaster!: Reloj;
 
 	/* START-USER-CODE */
 	public static readonly CAMPAIGN_LEVEL_COUNT = 40;
@@ -426,6 +479,8 @@ export default class Level extends Phaser.Scene {
 	private likesCounterText?: Phaser.GameObjects.Text;
 	private clientsRemainingInLevel = 0;
 	private backgroundMusic?: Phaser.Sound.BaseSound;
+	private isFxMuted = false;
+	private isMusicMuted = false;
 	private selectedLevelNumber = 1;
 	private isInfiniteMode = false;
 	private infiniteBaseLevel = 1;
@@ -1067,7 +1122,7 @@ export default class Level extends Phaser.Scene {
 
 	private canAffordUnlock(unlockId: UnlockId) {
 
-		return this.coinCount >= getUnlockCatalogEntry(unlockId).coinCost;
+		return this.coinCount >= getEffectiveUnlockCost(unlockId);
 	}
 
 	private canPurchaseUnlock(unlockId: UnlockId) {
@@ -2128,6 +2183,7 @@ export default class Level extends Phaser.Scene {
 	private updateUnlockPanelContent(unlockId: UnlockId) {
 
 		const entry = getUnlockCatalogEntry(unlockId);
+		const effectiveCost = getEffectiveUnlockCost(unlockId);
 		if (!this.unlockPreviewImage || !this.unlockNameText || !this.unlockCostText) {
 			return;
 		}
@@ -2148,7 +2204,7 @@ export default class Level extends Phaser.Scene {
 			return;
 		}
 
-		this.unlockCostText.setText(`${entry.coinCost} coins`);
+		this.unlockCostText.setText(`${effectiveCost} coins`);
 		this.unlockCostText.setColor("#A96625");
 	}
 
@@ -2271,10 +2327,10 @@ export default class Level extends Phaser.Scene {
 	}
 
 	/**
-	 * Upgrades de cocina disponibles en este día, no comprados y que el jugador puede pagar.
+	 * Upgrades de cocina disponibles en este día, sin importar si el jugador puede pagarlos.
 	 * Omite estaciones que solo se desbloquean en paquete con un producto (toaster/milk).
 	 */
-	private getAffordableKitchenUpgrades(): UnlockId[] {
+	private getAvailableKitchenUpgrades(): UnlockId[] {
 		const levelNumber = this.getCurrentLevelNumber();
 
 		return UNLOCK_ORDER.filter((unlockId) => {
@@ -2290,23 +2346,45 @@ export default class Level extends Phaser.Scene {
 				return false;
 			}
 
-			if (!isUnlockAvailableAtLevel(unlockId, levelNumber)) {
-				return false;
-			}
-
-			return this.coinCount >= getUnlockCatalogEntry(unlockId).coinCost;
+			return isUnlockAvailableAtLevel(unlockId, levelNumber);
 		});
 	}
 
-	private tryPurchaseKitchenUnlock(unlockId: UnlockId, costFeedbackTarget?: Phaser.GameObjects.Text) {
-		const entry = getUnlockCatalogEntry(unlockId);
+	private getVisibleKitchenUpgradeChoices(): UnlockId[] {
+		return UNLOCK_ORDER.filter((unlockId) => {
+			if (!isProductUnlockId(unlockId) && !shouldShowWorkstationLockIcon(unlockId)) {
+				return false;
+			}
 
-		if (!isUnlockAvailableAtLevel(unlockId, this.getCurrentLevelNumber())) {
+			const isAcquired = isProductUnlockId(unlockId)
+				? isProductAcquired(unlockId)
+				: isWorkstationAcquired(unlockId);
+
+			return !isAcquired;
+		}).slice(0, 5);
+	}
+
+	private getAffordableKitchenUpgrades(): UnlockId[] {
+		return this.getAvailableKitchenUpgrades().filter(
+			(unlockId) => this.coinCount >= getEffectiveUnlockCost(unlockId),
+		);
+	}
+
+	private tryPurchaseKitchenUnlock(
+		unlockId: UnlockId,
+		costFeedbackTarget?: Phaser.GameObjects.Text,
+		options?: { ignoreLevelAvailability?: boolean },
+	) {
+		const entry = getUnlockCatalogEntry(unlockId);
+		const effectiveCost = getEffectiveUnlockCost(unlockId);
+		const shouldIgnoreLevelAvailability = options?.ignoreLevelAvailability ?? false;
+
+		if (!shouldIgnoreLevelAvailability && !isUnlockAvailableAtLevel(unlockId, this.getCurrentLevelNumber())) {
 			this.sound.play("deny");
 			return false;
 		}
 
-		if (this.coinCount < entry.coinCost) {
+		if (this.coinCount < effectiveCost) {
 			this.sound.play("deny");
 
 			if (costFeedbackTarget) {
@@ -2331,7 +2409,7 @@ export default class Level extends Phaser.Scene {
 			return false;
 		}
 
-		this.coinCount = Math.max(0, this.coinCount - entry.coinCost);
+		this.coinCount = Math.max(0, this.coinCount - effectiveCost);
 		storeTotalCoins(this.coinCount);
 		this.updateCoinCounter();
 
@@ -2428,7 +2506,8 @@ export default class Level extends Phaser.Scene {
 			const costRow = this.add.container(0, Level.MANDATORY_UPGRADE_COST_Y);
 			const coinIcon = this.add.image(0, 0, "coin");
 			coinIcon.setScale(Level.MANDATORY_UPGRADE_COIN_SCALE);
-			const costText = this.add.text(0, 0, String(entry.coinCost), {
+			const effectiveCost = getEffectiveUnlockCost(unlockId);
+			const costText = this.add.text(0, 0, String(effectiveCost), {
 				color: Level.MANDATORY_UPGRADE_TEXT_COLOR,
 				fontFamily: "Klop",
 				fontSize: "26px",
@@ -2480,48 +2559,114 @@ export default class Level extends Phaser.Scene {
 			return;
 		}
 
-		if (!this.mandatoryUpgradeContainer) {
-			this.createMandatoryUpgradeSelectUi();
-		}
-
 		this.onMandatoryUpgradeComplete = onComplete;
 		this.isMandatoryUpgradeSelectVisible = true;
-		this.rebuildMandatoryUpgradeCards(unlockIds);
-
-		const panelStartY = -this.scale.height * 0.55;
-		this.mandatoryUpgradeContainer!.y = panelStartY;
-		this.mandatoryUpgradeContainer!.setVisible(true);
-		this.mandatoryUpgradeContainer!.setAlpha(1);
-
-		this.blurOverlay.setVisible(true);
-		this.blurOverlay.setAlpha(Math.max(this.blurOverlay.alpha, 1));
-		this.blurOverlay.setInteractive(
-			new Phaser.Geom.Rectangle(0, 0, this.scale.width, this.scale.height),
-			Phaser.Geom.Rectangle.Contains
-		);
-
 		this.panel.disableReadyButton();
 		this.panel.setVisible(false);
 
+		const visibleChoices = unlockIds.slice(0, 5).map((unlockId) => {
+			const entry = getUnlockCatalogEntry(unlockId);
+			const effectiveCost = getEffectiveUnlockCost(unlockId);
+			return {
+				id: unlockId,
+				label: entry.displayName,
+				textureKey: entry.previewTextureKey,
+				frame: entry.previewFrame,
+				cost: effectiveCost,
+				isAffordable: this.coinCount >= effectiveCost,
+			};
+		});
+
+		this.upgradePanel.setPosition(this.scale.width * 0.5, this.scale.height * 0.5);
+		this.upgradePanel.setVisible(true);
+		this.upgradePanel.setAlpha(1);
+		this.upgradePanel.populateChoices(visibleChoices, (unlockId) => {
+			this.confirmMandatoryUpgradePurchase(unlockId);
+		});
+		this.upgradePanel.setCloseHandler(() => {
+			this.closeMandatoryUpgradeSelect();
+		});
+		this.upgradePanel.animateOpen();
+
+		const panelStartY = -this.scale.height * 0.55;
+		this.upgradePanel.y = panelStartY;
+
+		this.blurOverlay.setVisible(false);
+		this.blurOverlay.setAlpha(0);
+		this.blurOverlay.clearTint();
+		this.blurOverlay.disableInteractive();
+
 		this.tweens.add({
-			targets: this.mandatoryUpgradeContainer,
-			y: this.mandatoryUpgradeRestY,
+			targets: this.upgradePanel,
+			y: this.scale.height * 0.5,
 			duration: Level.INTRO_PANEL_DROP_DURATION,
 			ease: "Bounce.Out",
 		});
 	}
 
+	private closeMandatoryUpgradeSelect() {
+		if (!this.isMandatoryUpgradeSelectVisible || !this.upgradePanel) {
+			return;
+		}
+
+		const onComplete = this.onMandatoryUpgradeComplete;
+		this.isMandatoryUpgradeSelectVisible = false;
+
+		if (this.mandatoryUpgradeContainer) {
+			this.mandatoryUpgradeContainer.setVisible(false);
+			this.mandatoryUpgradeContainer.setAlpha(0);
+			this.mandatoryUpgradeContainer.y = this.mandatoryUpgradeRestY;
+			this.mandatoryUpgradeCardsRoot?.removeAll(true);
+		}
+
+		this.upgradePanel.animateClose();
+		this.tweens.add({
+			targets: this.upgradePanel,
+			y: -this.scale.height * 0.55,
+			alpha: 0,
+			duration: Level.INTRO_PANEL_EXIT_DURATION,
+			ease: "Back.In",
+			delay: 150,
+			onComplete: () => {
+				this.upgradePanel.setVisible(false);
+				this.upgradePanel.setAlpha(0);
+				this.upgradePanel.y = 360;
+				this.onMandatoryUpgradeComplete = undefined;
+				if (this.blurOverlay) {
+					this.blurOverlay.disableInteractive();
+					this.blurOverlay.setVisible(false);
+					this.blurOverlay.setAlpha(0);
+					this.blurOverlay.clearTint();
+				}
+				onComplete?.();
+			},
+		});
+	}
+
 	private hideMandatoryUpgradeSelect() {
-		if (!this.isMandatoryUpgradeSelectVisible || !this.mandatoryUpgradeContainer) {
+		if (!this.isMandatoryUpgradeSelectVisible) {
 			return;
 		}
 
 		this.isMandatoryUpgradeSelectVisible = false;
-		this.mandatoryUpgradeContainer.setVisible(false);
-		this.mandatoryUpgradeContainer.setAlpha(0);
-		this.mandatoryUpgradeContainer.y = this.mandatoryUpgradeRestY;
-		this.mandatoryUpgradeCardsRoot?.removeAll(true);
+		if (this.mandatoryUpgradeContainer) {
+			this.mandatoryUpgradeContainer.setVisible(false);
+			this.mandatoryUpgradeContainer.setAlpha(0);
+			this.mandatoryUpgradeContainer.y = this.mandatoryUpgradeRestY;
+			this.mandatoryUpgradeCardsRoot?.removeAll(true);
+		}
+		if (this.upgradePanel) {
+			this.upgradePanel.setVisible(false);
+			this.upgradePanel.setAlpha(0);
+			this.upgradePanel.y = 360;
+		}
 		this.onMandatoryUpgradeComplete = undefined;
+		if (this.blurOverlay) {
+			this.blurOverlay.disableInteractive();
+			this.blurOverlay.setVisible(false);
+			this.blurOverlay.setAlpha(0);
+			this.blurOverlay.clearTint();
+		}
 	}
 
 	private confirmMandatoryUpgradePurchase(
@@ -2532,7 +2677,7 @@ export default class Level extends Phaser.Scene {
 			return;
 		}
 
-		if (!this.tryPurchaseKitchenUnlock(unlockId, costFeedbackTarget)) {
+		if (!this.tryPurchaseKitchenUnlock(unlockId, costFeedbackTarget, { ignoreLevelAvailability: true })) {
 			return;
 		}
 
@@ -2761,7 +2906,10 @@ export default class Level extends Phaser.Scene {
 
 		const panelFinalY = this.panelRestY || this.panel.y;
 		const panelStartY = -this.panel.displayHeight - Level.INTRO_PANEL_START_OFFSET;
-		const affordableUpgrades = this.getAffordableKitchenUpgrades();
+		const availableUpgrades = this.getVisibleKitchenUpgradeChoices();
+		const affordableUpgrades = availableUpgrades.filter(
+			(unlockId) => this.coinCount >= getEffectiveUnlockCost(unlockId),
+		);
 
 		this.blurOverlay.setVisible(true);
 		this.blurOverlay.setAlpha(0);
@@ -2777,11 +2925,12 @@ export default class Level extends Phaser.Scene {
 			ease: "Quad.Out"
 		});
 
-		// Si hay desbloqueos de cocina asequibles: solo el panel de upgrade (sin Ready).
+		// El panel solo debe mostrarse cuando el jugador pueda pagar al menos un unlock.
+		// Aun así se muestran todos los items disponibles, pero los no alcanzables quedan deshabilitados.
 		if (affordableUpgrades.length > 0) {
 			this.panel.setVisible(false);
 			this.panel.setAlpha(0);
-			this.showMandatoryUpgradeSelect(affordableUpgrades, () => {
+			this.showMandatoryUpgradeSelect(availableUpgrades, () => {
 				this.startBackgroundMusic();
 				this.finishIntroAndStartLevel();
 			});
@@ -2921,19 +3070,55 @@ export default class Level extends Phaser.Scene {
 		}
 	}
 
-	public playFryerAnimation(fryerId: "fryer1" | "fryer2") {
+	public playFryerAnimation(fryerId: "fryer1" | "fryer2", durationMs?: number) {
 
 		this.getFryerById(fryerId)?.playFryAnimation();
+		if (durationMs !== undefined) {
+			this.getClockForFryer(fryerId)?.setClockActiveForDuration(durationMs);
+			return;
+		}
+		this.getClockForFryer(fryerId)?.setClockActive(true);
 	}
 
 	public resetFryerAppearance(fryerId: "fryer1" | "fryer2") {
 
 		this.getFryerById(fryerId)?.resetFryerAppearance();
+		this.getClockForFryer(fryerId)?.setClockActive(false);
 	}
 
 	private getFryerById(fryerId: "fryer1" | "fryer2") {
 
 		return fryerId === "fryer1" ? this.fryer1 : this.fryer2;
+	}
+
+	private getClockForFryer(fryerId: "fryer1" | "fryer2") {
+
+		return fryerId === "fryer1" ? this.relojFryer1 : this.relojFryer2;
+	}
+
+	private hideAllKitchenClocks() {
+		this.relojFryer1?.setClockActive(false);
+		this.relojFryer2?.setClockActive(false);
+		this.relojMilk1?.setClockActive(false);
+		this.relojMilk2?.setClockActive(false);
+		this.relojToaster?.setClockActive(false);
+	}
+
+	public setMilkClockActive(slotId: MilkSlotId, active: boolean, durationMs?: number) {
+		const clock = slotId === "milkRefill1" ? this.relojMilk1 : this.relojMilk2;
+		if (durationMs !== undefined) {
+			clock?.setClockActiveForDuration(durationMs);
+			return;
+		}
+		clock?.setClockActive(active);
+	}
+
+	public setToasterClockActive(active: boolean, durationMs?: number) {
+		if (durationMs !== undefined) {
+			this.relojToaster?.setClockActiveForDuration(durationMs);
+			return;
+		}
+		this.relojToaster?.setClockActive(active);
 	}
 
 	public claimAvailableWorkplace() {
@@ -2992,12 +3177,11 @@ export default class Level extends Phaser.Scene {
 
 		if (slotId === "milkRefill1") {
 			this.milkRefill1Occupied = false;
+			this.relojMilk1?.setClockActive(false);
 			this.milkmachine.clearSlot("milkRefill1");
-			return;
-		}
-
-		if (slotId === "milkRefill2") {
+		} else if (slotId === "milkRefill2") {
 			this.milkRefill2Occupied = false;
+			this.relojMilk2?.setClockActive(false);
 			this.milkmachine.clearSlot("milkRefill2");
 		}
 	}
@@ -3804,17 +3988,85 @@ export default class Level extends Phaser.Scene {
 			return false;
 		}
 
-		for (const product of readyTrayProducts) {
-			const appearance = this.getRequestAppearanceFromTrayProduct(product);
-			this.forcedClientOrderQueue.push([appearance]);
-			this.extraClientsSpawned++;
-			this.clientsRemainingInLevel++;
-			this.queuedClientEntries++;
-		}
+		this.showPreparationMessage(t("lastCall"));
+		this.destroyLastCallProductionProducts();
+		this.time.delayedCall(2500, () => {
+			for (const product of readyTrayProducts) {
+				const appearance = this.getRequestAppearanceFromTrayProduct(product);
+				this.forcedClientOrderQueue.push([appearance]);
+				this.extraClientsSpawned++;
+				this.clientsRemainingInLevel++;
+				this.queuedClientEntries++;
+			}
 
-		this.updateClientsLeftIndicator();
-		this.processClientEntryQueue();
+			this.updateClientsLeftIndicator();
+			this.processClientEntryQueue();
+			this.hidePreparationMessage();
+		});
 		return true;
+	}
+
+	private destroyLastCallProductionProducts() {
+		const productsToDestroy: Array<AProduct | milkglass | sandwichPrefab> = [
+			...this.getSceneProducts(),
+			...this.getSceneMilkGlasses(),
+			...this.getSceneSandwiches(),
+		].filter((product) => product.active);
+
+		for (const product of productsToDestroy) {
+			const trayId = (product as any).currentTrayId as "charola1" | "charola2" | undefined;
+			const isOnTray = trayId !== undefined && product.canReceiveDirectDelivery();
+			if (isOnTray) {
+				continue;
+			}
+
+			if (this.selectedDipProduct === product) {
+				this.clearDipSelection(product);
+			}
+			if (this.selectedDeliveryProduct === product) {
+				this.clearDeliverySelection(product);
+			}
+
+			if (product instanceof AProduct) {
+				const fryerId = (product as any).currentFryerId as "fryer1" | "fryer2" | undefined;
+				const workplaceId = (product as any).currentWorkplaceId as "workplace1" | "workplace2" | undefined;
+				if (fryerId) {
+					this.releaseFryer(fryerId);
+				}
+				if (workplaceId) {
+					this.releaseWorkplace(workplaceId);
+				}
+			} else if (product instanceof milkglass) {
+				const slotId = (product as any).currentSlotId as MilkSlotId | undefined;
+				if (slotId) {
+					this.releaseMilkSlot(slotId);
+				}
+			} else if (product instanceof sandwichPrefab) {
+				const slotId = (product as any).currentSlotId as ToasterSlotId | undefined;
+				if (slotId) {
+					this.releaseToasterSlot(slotId);
+				}
+				if (trayId) {
+					this.releaseTraySlot(trayId, product);
+				}
+			}
+
+			if (this.rawProduct1 === product) {
+				this.rawProduct1 = undefined as any;
+			}
+			if (this.rawProduct2 === product) {
+				this.rawProduct2 = undefined as any;
+			}
+			if (this.sandwichProduct === product) {
+				this.sandwichProduct = undefined as any;
+			}
+			if (this.milkGlass === product) {
+				this.milkGlass = undefined as any;
+			}
+
+			ConfettiPrefab.launchSmallBurstAt(this, product.x, product.y, product.depth + 1);
+			product.destroy();
+		}
 	}
 
 	private getReadyTrayProductsForOrders() {
@@ -4100,13 +4352,13 @@ export default class Level extends Phaser.Scene {
 		});
 	}
 
-	private showPreparationMessage() {
+	private showPreparationMessage(messageText: string = t("prepare")) {
 		this.hidePreparationMessage();
 
 		const message = this.add.text(
 			this.scale.width * 0.5,
 			Level.PREP_MESSAGE_Y,
-			t("prepare"),
+			messageText,
 			{
 				color: "#DF3D7A",
 				fontFamily: "Klop",

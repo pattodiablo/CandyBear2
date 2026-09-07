@@ -218,6 +218,14 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		}
 	}
 
+	private getSafeScene(): Phaser.Scene | undefined {
+		if (!this.active || !this.scene) {
+			return undefined;
+		}
+
+		return this.scene;
+	}
+
 	public canReceiveDirectDelivery() {
 
 		return this.active
@@ -370,14 +378,22 @@ export default class AProduct extends Phaser.GameObjects.Image {
 
 	private raiseProduct() {
 
+		const scene = this.getSafeScene();
+		if (!scene) {
+			return;
+		}
+
 		this.clearActiveState();
-		this.scene.tweens.add({
+		scene.tweens.add({
 			targets: this,
 			y: this.baseY - AProduct.RAISED_OFFSET_Y,
 			angle: this.baseAngle + AProduct.SPIN_ANGLE,
 			duration: 360,
 			ease: "Cubic.Out",
 			onComplete: () => {
+				if (!this.active || !this.scene) {
+					return;
+				}
 				this.isRaised = true;
 				this.isLaunching = false;
 				this.angle = this.baseAngle;
@@ -388,14 +404,22 @@ export default class AProduct extends Phaser.GameObjects.Image {
 
 	private returnToBase() {
 
+		const scene = this.getSafeScene();
+		if (!scene) {
+			return;
+		}
+
 		this.clearActiveState();
-		this.scene.tweens.add({
+		scene.tweens.add({
 			targets: this,
 			y: this.baseY,
 			angle: this.baseAngle - AProduct.SPIN_ANGLE,
 			duration: 360,
 			ease: "Cubic.Out",
 			onComplete: () => {
+				if (!this.active || !this.scene) {
+					return;
+				}
 				this.isRaised = false;
 				this.isLaunching = false;
 				this.angle = this.baseAngle;
@@ -405,7 +429,12 @@ export default class AProduct extends Phaser.GameObjects.Image {
 
 	private startActiveState() {
 
-		this.danceTween = this.scene.tweens.add({
+		const scene = this.getSafeScene();
+		if (!scene) {
+			return;
+		}
+
+		this.danceTween = scene.tweens.add({
 			targets: this,
 			angle: { from: this.baseAngle - 8, to: this.baseAngle + 8 },
 			duration: 220,
@@ -414,8 +443,8 @@ export default class AProduct extends Phaser.GameObjects.Image {
 			ease: "Sine.InOut"
 		});
 
-		this.activeTimer = this.scene.time.delayedCall(AProduct.HOLDER_ACTIVE_DURATION, () => {
-			if (!this.isRaised || this.isLaunching) {
+		this.activeTimer = scene.time.delayedCall(AProduct.HOLDER_ACTIVE_DURATION, () => {
+			if (!this.active || !this.scene || !this.isRaised || this.isLaunching) {
 				return;
 			}
 
@@ -426,7 +455,12 @@ export default class AProduct extends Phaser.GameObjects.Image {
 
 	private moveToFryer() {
 
-		const levelScene = this.scene as Level;
+		const scene = this.getSafeScene();
+		if (!scene) {
+			return;
+		}
+
+		const levelScene = scene as Level;
 		const targetFryer = levelScene.claimAvailableFryer();
 
 		if (!targetFryer) {
@@ -435,16 +469,16 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		}
 
 		this.clearActiveState();
-		const replacementProduct = new AProduct(this.scene, this.baseX, this.baseY, this.Raw.key, this.Raw.frame);
+		const replacementProduct = new AProduct(scene, this.baseX, this.baseY, this.Raw.key, this.Raw.frame);
 		replacementProduct.Raw = { ...this.Raw };
 		replacementProduct.Cooked = { ...this.Cooked };
 		replacementProduct.ChocolateDip = { ...this.ChocolateDip };
 		replacementProduct.CandyDip = { ...this.CandyDip };
 		replacementProduct.fryDuration = this.fryDuration;
-		this.scene.add.existing(replacementProduct);
+		scene.add.existing(replacementProduct);
 		levelScene.registerHolderProductReplacement(this, replacementProduct);
 		this.playSwooshSound();
-		this.scene.tweens.add({
+		scene.tweens.add({
 			targets: this,
 			x: targetFryer.target.x,
 			y: targetFryer.target.y - AProduct.FRYER_OFFSET_Y,
@@ -463,17 +497,22 @@ export default class AProduct extends Phaser.GameObjects.Image {
 
 	private startFrying(fryerY: number) {
 
-		const levelScene = this.scene as Level;
+		const scene = this.getSafeScene();
+		if (!scene) {
+			return;
+		}
+
+		const levelScene = scene as Level;
 
 		this.isCooking = true;
 		this.isCooked = false;
 
 		if (this.currentFryerId) {
-			levelScene.playFryerAnimation(this.currentFryerId);
+			levelScene.playFryerAnimation(this.currentFryerId, getAdjustedFryDurationMs(this.fryDuration));
 		}
 
-		this.scene.sound.play(["fry", "fry2", "fry3"][Phaser.Math.Between(0, 2)]);
-		this.floatTween = this.scene.tweens.add({
+		scene.sound.play(["fry", "fry2", "fry3"][Phaser.Math.Between(0, 2)]);
+		this.floatTween = scene.tweens.add({
 			targets: this,
 			y: fryerY - AProduct.FRY_FLOAT_OFFSET_Y,
 			duration: 350,
@@ -488,6 +527,10 @@ export default class AProduct extends Phaser.GameObjects.Image {
 	}
 
 	private finishFrying(fryerY: number) {
+
+		if (!this.active || !this.scene) {
+			return;
+		}
 
 		const levelScene = this.scene as Level;
 
@@ -543,6 +586,9 @@ export default class AProduct extends Phaser.GameObjects.Image {
 	}
 
 	private pickUpFromFryer() {
+		if (!this.active || !this.scene) {
+			return;
+		}
 		this.clearWorkplaceTransferRetry();
 
 		const levelScene = this.scene as Level;
@@ -577,6 +623,10 @@ export default class AProduct extends Phaser.GameObjects.Image {
 
 	private discardBurnedProduct() {
 
+		if (!this.active || !this.scene) {
+			return;
+		}
+
 		const levelScene = this.scene as Level;
 		this.clearWorkplaceTransferRetry();
 		this.clearBurnState(true);
@@ -602,13 +652,21 @@ export default class AProduct extends Phaser.GameObjects.Image {
 
 	private moveToWorkplace(workplace: Phaser.GameObjects.Image) {
 
-		this.scene.tweens.add({
+		const scene = this.getSafeScene();
+		if (!scene) {
+			return;
+		}
+
+		scene.tweens.add({
 			targets: this,
 			x: workplace.x,
 			y: workplace.y,
 			duration: 360,
 			ease: "Cubic.InOut",
 			onComplete: () => {
+				if (!this.active || !this.scene) {
+					return;
+				}
 				this.isLaunching = false;
 				this.isAtWorkplace = true;
 				this.isReadyForDelivery = false;
@@ -619,46 +677,62 @@ export default class AProduct extends Phaser.GameObjects.Image {
 
 	private startDipSelection() {
 
-		const levelScene = this.scene as Level;
+		const scene = this.getSafeScene();
+		if (!scene) {
+			return;
+		}
+
+		const levelScene = scene as Level;
 		this.isLaunching = true;
 		this.isAtWorkplace = false;
-		this.scene.tweens.add({
+		scene.tweens.add({
 			targets: this,
 			scaleX: this.baseScaleX * AProduct.WORKPLACE_SELECTION_SCALE,
 			scaleY: this.baseScaleY * AProduct.WORKPLACE_SELECTION_SCALE,
 			duration: 220,
 			ease: "Cubic.Out",
 			onComplete: () => {
+				if (!this.active || !this.scene) {
+					return;
+				}
 				this.isLaunching = false;
 				this.isSelectingDip = true;
 				levelScene.beginDipSelection(this);
-					this.startSelectionTimeout(() => {
-						this.cancelDipSelection();
-					});
+				this.startSelectionTimeout(() => {
+					this.cancelDipSelection();
+				});
 			}
 		});
 	}
 
 	private startDeliverySelection() {
 
-		const levelScene = this.scene as Level;
+		const scene = this.getSafeScene();
+		if (!scene) {
+			return;
+		}
+
+		const levelScene = scene as Level;
 		this.isLaunching = true;
 		this.isAtWorkplace = false;
 		this.isReadyForDelivery = false;
 
-		this.scene.tweens.add({
+		scene.tweens.add({
 			targets: this,
 			scaleX: this.baseScaleX * AProduct.WORKPLACE_SELECTION_SCALE,
 			scaleY: this.baseScaleY * AProduct.WORKPLACE_SELECTION_SCALE,
 			duration: 220,
 			ease: "Cubic.Out",
 			onComplete: () => {
+				if (!this.active || !this.scene) {
+					return;
+				}
 				this.isLaunching = false;
 				this.isSelectingDelivery = true;
 				levelScene.beginDeliverySelection(this);
-					this.startSelectionTimeout(() => {
-						this.cancelDeliverySelection();
-					});
+				this.startSelectionTimeout(() => {
+					this.cancelDeliverySelection();
+				});
 			}
 		});
 	}
@@ -688,7 +762,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 
 	public applyDip(dipType: "chocolate" | "candy") {
 
-		if (!this.isSelectingDip || !this.currentWorkplaceId) {
+		if (!this.isSelectingDip || !this.currentWorkplaceId || !this.active || !this.scene) {
 			return;
 		}
 
@@ -715,13 +789,21 @@ export default class AProduct extends Phaser.GameObjects.Image {
 
 	private playDipSwapAnimation(appearance: { key: string; frame?: string | number }) {
 
-		this.scene.tweens.add({
+		const scene = this.getSafeScene();
+		if (!scene) {
+			return;
+		}
+
+		scene.tweens.add({
 			targets: this,
 			scaleX: 0,
 			scaleY: 0,
 			duration: AProduct.DIP_SCALE_DURATION,
 			ease: "Cubic.In",
 			onComplete: () => {
+				if (!this.active || !this.scene) {
+					return;
+				}
 				this.applyAppearance(appearance);
 				ConfettiPrefab.launchSmallBurstAt(this.scene, this.x, this.y, this.depth + 1);
 				this.scene.tweens.add({
@@ -731,6 +813,9 @@ export default class AProduct extends Phaser.GameObjects.Image {
 					duration: 180,
 					ease: "Back.Out",
 					onComplete: () => {
+						if (!this.active || !this.scene) {
+							return;
+						}
 						this.scene.tweens.add({
 							targets: this,
 							scaleX: this.baseScaleX,
@@ -749,20 +834,27 @@ export default class AProduct extends Phaser.GameObjects.Image {
 
 	private returnToWorkplace() {
 
-		const levelScene = this.scene as Level;
+		const scene = this.getSafeScene();
+		if (!scene) {
+			return;
+		}
+
+		const levelScene = scene as Level;
 		const workplace = this.currentWorkplaceId === "workplace1" ? levelScene.workplace1 : levelScene.workplace2;
 
-		this.scene.tweens.add({
+		scene.tweens.add({
 			targets: this,
 			x: workplace.x,
 			y: workplace.y,
 			duration: 320,
 			ease: "Cubic.InOut",
 			onComplete: () => {
+				if (!this.active || !this.scene) {
+					return;
+				}
 				this.isLaunching = false;
 				this.isAtWorkplace = true;
 				this.isReadyForDelivery = true;
-				// Feedback: estela hacia bandeja (se puede guardar si no hay cliente).
 				levelScene.launchTrayHintTrailFrom(this.x, this.y);
 			}
 		});
@@ -770,7 +862,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 
 	public deliverToClient(client: { x: number; y: number; matchesProduct(product: AProduct): boolean; canReceiveDelivery(): boolean; receiveProductDelivery(product: AProduct): boolean; consumeRequestAndExit(showYum?: boolean): void; }) {
 
-		if (!this.isSelectingDelivery) {
+		if (!this.isSelectingDelivery || !this.active || !this.scene) {
 			return;
 		}
 
@@ -1041,20 +1133,27 @@ export default class AProduct extends Phaser.GameObjects.Image {
 
 	private fallOffscreen() {
 
+		const scene = this.getSafeScene();
+		if (!scene) {
+			return;
+		}
+
 		this.isCooked = false;
 		this.isBurned = false;
 		this.isReadyForDelivery = false;
 		this.isLaunching = true;
 
-		this.scene.tweens.add({
+		scene.tweens.add({
 			targets: this,
-			y: this.scene.scale.height + this.height,
+			y: scene.scale.height + this.height,
 			angle: this.angle - AProduct.SPIN_ANGLE,
 			alpha: 0.7,
 			duration: 420,
 			ease: "Cubic.In",
 			onComplete: () => {
-				this.destroy();
+				if (this.active) {
+					this.destroy();
+				}
 			}
 		});
 	}
@@ -1071,13 +1170,21 @@ export default class AProduct extends Phaser.GameObjects.Image {
 
 	private playSpawnTween() {
 
-		this.scene.tweens.add({
+		const scene = this.getSafeScene();
+		if (!scene) {
+			return;
+		}
+
+		scene.tweens.add({
 			targets: this,
 			scaleX: this.baseScaleX * 1.08,
 			scaleY: this.baseScaleY * 1.08,
 			duration: 120,
 			ease: "Back.Out",
 			onComplete: () => {
+				if (!this.active || !this.scene) {
+					return;
+				}
 				this.scene.tweens.add({
 					targets: this,
 					scaleX: this.baseScaleX,
@@ -1096,10 +1203,15 @@ export default class AProduct extends Phaser.GameObjects.Image {
 
 	private playPopTween(onComplete?: () => void) {
 
-		this.scene.tweens.killTweensOf(this);
+		const scene = this.getSafeScene();
+		if (!scene) {
+			return;
+		}
+
+		scene.tweens.killTweensOf(this);
 		this.resetScaleToBase();
 
-		this.scene.tweens.add({
+		scene.tweens.add({
 			targets: this,
 			scaleX: this.baseScaleX * 1.12,
 			scaleY: this.baseScaleY * 1.12,
