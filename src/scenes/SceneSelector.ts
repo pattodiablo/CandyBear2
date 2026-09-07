@@ -8,6 +8,7 @@ import SceneSelectorBtn from "./Prefabs/SceneSelectorBtn";
 import Phaser from "phaser";
 import CardPrefab from "./Prefabs/CardPrefab";
 import dayHolderPrefab from "./Prefabs/dayHolderPrefab";
+import { t } from "./i18n";
 
 const MUSIC_MUTED_STORAGE_KEY = "candybear2-music-muted";
 const FX_MUTED_STORAGE_KEY = "candybear2-fx-muted";
@@ -90,15 +91,15 @@ export default class SceneSelector extends Phaser.Scene {
 		const musicBtn = this.add.image(71, 88, "MusicBtn");
 
 		// momentsBtnPrefab (prefab fields)
-		momentsBtnPrefab.btnText = "Upgrades";
+		momentsBtnPrefab.btnText = t("upgrades");
 		momentsBtnPrefab.initialState = false;
 
 		// infiniteModeBtn (prefab fields)
-		infiniteModeBtn.btnText = "Infinite Mode";
+		infiniteModeBtn.btnText = t("infiniteMode");
 		infiniteModeBtn.initialState = false;
 
 		// playBtn (prefab fields)
-		playBtn.btnText = "Play";
+		playBtn.btnText = t("play");
 		playBtn.initialState = false;
 
 		this.nextPage = nextPage;

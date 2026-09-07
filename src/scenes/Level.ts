@@ -60,6 +60,7 @@ import {
 	UNLOCK_ORDER,
 	type UnlockId,
 } from "./unlockCatalog";
+import { t } from "./i18n";
 import { bindDeveloperCheatCode, DEVELOPER_CHEAT_COINS } from "./developerCheat";
 import { applySoftRainbowCameraFilter } from "../filters/softRainbowCameraFilter";
 import {
@@ -77,8 +78,6 @@ import {
 	recordLevelClearedWithoutUpgradePurchase,
 	shouldPromptBuyUpgrades,
 } from "./momentProgress";
-import { t } from "./i18n";
-
 interface LevelPlan {
 	levelNumber: number;
 	difficulty: number;
@@ -830,7 +829,7 @@ export default class Level extends Phaser.Scene {
 				levelNumber: 1,
 				difficulty: 0.85,
 				oscillation: 0,
-				waveSizes: [1],
+				waveSizes: [1, 1, 1, 1, 1],
 				isTutorial: true
 			};
 		}
@@ -967,11 +966,11 @@ export default class Level extends Phaser.Scene {
 	private applyLevelPlanToIntroPanel() {
 
 		if (this.isInfiniteMode) {
-			this.panel.setDayLabel("Infinite Mode");
+			this.panel.setDayLabel(t("infiniteMode"));
 			return;
 		}
 
-		this.panel.setDayLabel(`Day ${this.currentLevelPlan.levelNumber}`);
+		this.panel.setDayLabel(`${t("day")} ${this.currentLevelPlan.levelNumber}`);
 	}
 
 	private getHudTextStyle(color: string) {
@@ -1019,7 +1018,7 @@ export default class Level extends Phaser.Scene {
 
 	private initializeDayIndicator() {
 
-		const dayLabel = this.isInfiniteMode ? "Wave " : "Day ";
+		const dayLabel = this.isInfiniteMode ? `${t("wave")}: ` : `${t("day")}: `;
 		const dayValue = this.isInfiniteMode
 			? String(this.currentWaveIndex + 1)
 			: String(this.currentLevelPlan.levelNumber);
@@ -1046,7 +1045,7 @@ export default class Level extends Phaser.Scene {
 			return;
 		}
 
-		this.dayIndicatorLabel.setText("Wave ");
+		this.dayIndicatorLabel.setText(`${t("wave")}: `);
 		this.dayIndicatorNumber.setText(String(this.currentWaveIndex + 1));
 		this.layoutHudLabelPair(
 			this.dayIndicatorLabel,
@@ -1057,7 +1056,7 @@ export default class Level extends Phaser.Scene {
 
 	private initializeClientsLeftIndicator() {
 
-		this.clientsLeftLabel = this.add.text(0, Level.DAY_INDICATOR_Y, "Left: ", this.getHudTextStyle("#FD7CB6"));
+		this.clientsLeftLabel = this.add.text(0, Level.DAY_INDICATOR_Y, `${t("left")}: `, this.getHudTextStyle("#FD7CB6"));
 		this.clientsLeftNumber = this.add.text(0, Level.DAY_INDICATOR_Y, "0", this.getHudTextStyle("#2D120B"));
 		this.clientsLeftLabel.setOrigin(0, 0.5);
 		this.clientsLeftNumber.setOrigin(0, 0.5);
@@ -1809,7 +1808,7 @@ export default class Level extends Phaser.Scene {
 		background.setScale(0.75);
 		container.add(background);
 
-		this.exitConfirmMessage = this.add.text(0, Level.EXIT_LAYOUT_STANDARD.messageY, "Are you sure\nto exit?", {
+		this.exitConfirmMessage = this.add.text(0, Level.EXIT_LAYOUT_STANDARD.messageY, t("areYouSureToExit"), {
 			color: "#DF3D7A",
 			fontFamily: "Klop",
 			fontSize: "42px",
@@ -1821,14 +1820,14 @@ export default class Level extends Phaser.Scene {
 		this.exitConfirmMessage.setOrigin(0.5);
 		container.add(this.exitConfirmMessage);
 
-		this.exitConfirmYesButton = this.createExitDialogButton(0, Level.EXIT_LAYOUT_STANDARD.yesY, "Yes");
-		this.exitConfirmNoButton = this.createExitDialogButton(0, Level.EXIT_LAYOUT_STANDARD.noY, "No");
+		this.exitConfirmYesButton = this.createExitDialogButton(0, Level.EXIT_LAYOUT_STANDARD.yesY, t("yes"));
+		this.exitConfirmNoButton = this.createExitDialogButton(0, Level.EXIT_LAYOUT_STANDARD.noY, t("no"));
 		container.add([this.exitConfirmYesButton, this.exitConfirmNoButton]);
 
 		this.exitConfirmUpgradeMessage = this.add.text(
 			0,
 			0,
-			"New upgrades await in the\nmain menu!",
+			t("newUpgradesAwait"),
 			{
 				color: "#DF3D7A",
 				fontFamily: "Klop",
@@ -2199,12 +2198,12 @@ export default class Level extends Phaser.Scene {
 
 		const isAvailable = isUnlockAvailableAtLevel(unlockId, this.getCurrentLevelNumber());
 		if (!isAvailable) {
-			this.unlockCostText.setText(`Day ${entry.unlockLevel}+`);
+			this.unlockCostText.setText(`${t("day")} ${entry.unlockLevel}+`);
 			this.unlockCostText.setColor("#D62839");
 			return;
 		}
 
-		this.unlockCostText.setText(`${effectiveCost} coins`);
+		this.unlockCostText.setText(`${effectiveCost} ${t("coins")}`);
 		this.unlockCostText.setColor("#A96625");
 	}
 
@@ -2437,7 +2436,7 @@ export default class Level extends Phaser.Scene {
 		background.setScale(Level.MANDATORY_UPGRADE_PANEL_SCALE);
 		container.add(background);
 
-		const titleText = this.add.text(0, Level.MANDATORY_UPGRADE_TITLE_Y, "SELECT NEW UPGRADE", {
+		const titleText = this.add.text(0, Level.MANDATORY_UPGRADE_TITLE_Y, t("selectNewUpgrade"), {
 			color: Level.MANDATORY_UPGRADE_TEXT_COLOR,
 			fontFamily: "Klop",
 			fontSize: "28px",
@@ -2525,7 +2524,7 @@ export default class Level extends Phaser.Scene {
 			const buyButton = this.add.container(0, Level.MANDATORY_UPGRADE_BUY_Y);
 			const buyBg = this.add.image(0, 0, "onBtn");
 			buyBg.setScale(Level.MANDATORY_UPGRADE_BUY_SCALE);
-			const buyLabel = this.add.text(0, -1, "BUY", {
+			const buyLabel = this.add.text(0, -1, t("buy"), {
 				color: Level.MANDATORY_UPGRADE_BUY_COLOR,
 				fontFamily: "Klop",
 				fontSize: "24px",
@@ -4427,8 +4426,23 @@ export default class Level extends Phaser.Scene {
 		}
 	}
 
+	private queueTutorialInitialClientOrders() {
+		if (!this.currentLevelPlan.isTutorial || this.getCurrentLevelNumber() !== 1) {
+			return;
+		}
+
+		this.forcedClientOrderQueue = [
+			[{ key: "Product1Chocolate" }],
+			[{ key: "Product1Candy" }],
+			[{ key: "Product1Chocolate" }],
+			[{ key: "Product1Candy" }],
+			[{ key: "Product1Chocolate" }],
+		];
+	}
+
 	private spawnInitialClients() {
 		this.currentWaveIndex = 0;
+		this.queueTutorialInitialClientOrders();
 		this.spawnCurrentWave();
 	}
 

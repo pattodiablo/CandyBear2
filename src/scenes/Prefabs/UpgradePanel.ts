@@ -6,6 +6,7 @@
 import UpgradeObject from "./UpgradeObject";
 /* START-USER-IMPORTS */
 import type { UnlockId } from "../unlockCatalog";
+import { t } from "../i18n";
 /* END-USER-IMPORTS */
 
 export default class UpgradePanel extends Phaser.GameObjects.Container {
@@ -24,7 +25,7 @@ export default class UpgradePanel extends Phaser.GameObjects.Container {
 		// text_1
 		const text_1 = scene.add.text(1, -208, "", {});
 		text_1.setOrigin(0.5, 0.5);
-		text_1.text = "New Unlock";
+		text_1.text = t("newUnlock");
 		text_1.setStyle({ "color": "#DF3D7A", "fontFamily": "Klop", "fontSize": "40pt" });
 		this.add(text_1);
 
@@ -185,7 +186,7 @@ export default class UpgradePanel extends Phaser.GameObjects.Container {
 			});
 		});
 
-		this.titleText.setText(choices.length > 0 ? "SELECT NEW UPGRADE" : "New Unlock");
+		this.titleText.setText(choices.length > 0 ? t("selectNewUpgrade") : t("newUnlock"));
 	}
 
 
