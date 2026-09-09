@@ -2,6 +2,11 @@
     "section1": {
         "files": [
             {
+                "url": "assets/alert.png",
+                "type": "image",
+                "key": "alert"
+            },
+            {
                 "url": "assets/almostIcon.png",
                 "type": "image",
                 "key": "almostIcon"

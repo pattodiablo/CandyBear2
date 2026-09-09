@@ -8,6 +8,7 @@ import Phaser from "phaser";
 import type Level from "../Level";
 import { getAdjustedFryDurationMs } from "../momentUpgradeBonuses";
 import { getProductCoinReward, type ProductSlotId } from "../productProgress";
+import AlertPrefab from "./AlertPrefab";
 import ConfettiPrefab from "./ConfettiPrefab";
 /* END-USER-IMPORTS */
 
@@ -90,6 +91,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 	private selectionTimeout?: Phaser.Time.TimerEvent;
 	private workplaceRetryTimer?: Phaser.Time.TimerEvent;
 	private burnProgress = 0;
+	private burnAlert?: AlertPrefab;
 	private currentFryerId?: "fryer1" | "fryer2";
 	private currentWorkplaceId?: "workplace1" | "workplace2";
 	private currentTrayId?: "charola1" | "charola2";
@@ -585,8 +587,9 @@ export default class AProduct extends Phaser.GameObjects.Image {
 	}
 
 	private startBurnCountdown() {
-
+		this.ensureBurnAlert();
 		this.burnProgress = 0;
+		this.burnAlert?.updateBurnProgress(this.burnProgress);
 		this.burnTween?.stop();
 		this.burnTween = this.scene.tweens.addCounter({
 			from: 0,
@@ -606,16 +609,40 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		});
 	}
 
+	private ensureBurnAlert() {
+		if (this.burnAlert) {
+			this.burnAlert.setVisible(true);
+			return;
+		}
+
+		const alert = new AlertPrefab(this.scene, this.x, this.y - this.height * 0.85);
+		alert.setDepth(this.depth + 10);
+		this.scene.add.existing(alert);
+		this.burnAlert = alert;
+		this.on(Phaser.GameObjects.Events.DESTROY, () => {
+			this.burnAlert?.destroy();
+		});
+	}
+
 	private updateBurnTint() {
+		if (this.burnProgress >= 0.98 || this.isBurned) {
+			this.setTint(0xff4a4a);
+		} else {
+			const color = Phaser.Display.Color.Interpolate.ColorWithColor(
+				Phaser.Display.Color.ValueToColor(0xffffff),
+				AProduct.BURN_TINT,
+				100,
+				Math.round(this.burnProgress * 100)
+			);
 
-		const color = Phaser.Display.Color.Interpolate.ColorWithColor(
-			Phaser.Display.Color.ValueToColor(0xffffff),
-			AProduct.BURN_TINT,
-			100,
-			Math.round(this.burnProgress * 100)
-		);
+			this.setTint(Phaser.Display.Color.GetColor(color.r, color.g, color.b));
+		}
 
-		this.setTint(Phaser.Display.Color.GetColor(color.r, color.g, color.b));
+		if (this.burnAlert) {
+			this.burnAlert.setPosition(this.x, this.y - Math.max(this.displayHeight, 26) * 0.7);
+			this.burnAlert.setDepth(this.depth + 10);
+			this.burnAlert.updateBurnProgress(this.burnProgress);
+		}
 	}
 
 	private pickUpFromFryer() {
@@ -1110,6 +1137,9 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		this.burnTween?.stop();
 		this.burnTween = undefined;
 		this.burnProgress = 0;
+		this.burnAlert?.stopPulse();
+		this.burnAlert?.setVisible(false);
+		this.burnAlert?.setAlpha(0);
 
 		if (!keepTint) {
 			this.clearTint();

@@ -345,6 +345,7 @@
                 "y"
             ],
             "label": "glace2",
+            "scope": "CLASS",
             "x": 1145,
             "y": 454
         },
@@ -358,6 +359,7 @@
                 "FlavorType"
             ],
             "label": "glace1",
+            "scope": "CLASS",
             "FlavorType": "Red",
             "texture": {
                 "key": "glace1"

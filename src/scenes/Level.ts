@@ -219,10 +219,14 @@ export default class Level extends Phaser.Scene {
 
 		// glace2
 		const glace2 = new FlavorBottle(this, 1145, 454);
+		glace2.setVisible(false);
+		glace2.setActive(false);
 		this.add.existing(glace2);
 
 		// glace1
 		const glace1 = new FlavorBottle(this, 1062, 458, "glace1");
+		glace1.setVisible(false);
+		glace1.setActive(false);
 		this.add.existing(glace1);
 
 		// overTrayIcon
@@ -304,6 +308,8 @@ export default class Level extends Phaser.Scene {
 		this.blurOverlay = blurOverlay;
 		this.panel = panel;
 		this.menuBtn = menuBtn;
+		this.glace2 = glace2;
+		this.glace1 = glace1;
 		this.tutiorialHand = tutiorialHand;
 		this.upgradeLabel = upgradeLabel;
 		this.fxBtn = fxBtn;
@@ -341,6 +347,8 @@ export default class Level extends Phaser.Scene {
 	private blurOverlay!: Phaser.GameObjects.Image;
 	private panel!: PanelPrefab;
 	private menuBtn!: Phaser.GameObjects.Image;
+	private glace2!: FlavorBottle;
+	private glace1!: FlavorBottle;
 	public tutiorialHand!: HelpHand;
 	private upgradeLabel!: Phaser.GameObjects.Image;
 	public fxBtn!: Phaser.GameObjects.Image;
@@ -368,8 +376,8 @@ export default class Level extends Phaser.Scene {
 	private static readonly WAVE_SIZE_GROWTH_FACTOR = 0.4;
 	private static readonly WAVE_SIZE_OSCILLATION_BOOST = 0.5;
 	private static readonly TRAY_CAPACITY = 3;
-	/** Separación horizontal entre productos en la bandeja (más espacio = más fácil click). */
-	private static readonly TRAY_SLOT_OFFSET = 72;
+	/** Separación horizontal entre productos en la bandeja (más espacio = más fácil click, mejor para sándwiches). */
+	private static readonly TRAY_SLOT_OFFSET = 88;
 	/** Latido de escala cuando conviene guardar un producto en la charola. */
 	private static readonly TRAY_INVITE_SCALE = 1.07;
 	private static readonly TRAY_INVITE_PULSE_DURATION = 620;
@@ -394,6 +402,8 @@ export default class Level extends Phaser.Scene {
 	private static readonly DELAYED_CLIENT_STAGGER = 350;
 	/** Prep inicial al empezar el nivel (setear bandejas). */
 	private static readonly LEVEL_PREP_DURATION_MS = 14000;
+	private static readonly TUTORIAL_LEVEL_PREP_DURATION_MS = 3000;
+	private static readonly TUTORIAL_CLIENT_SPAWN_INTERVAL_MS = 10000;
 	/** Prep entre oleadas. */
 	private static readonly WAVE_PREP_DURATION_MS = 9000;
 	private static readonly PREP_MESSAGE_DEPTH = 1005;
@@ -830,7 +840,7 @@ export default class Level extends Phaser.Scene {
 				levelNumber: 1,
 				difficulty: 0.85,
 				oscillation: 0,
-				waveSizes: [1, 1, 1, 1, 1],
+				waveSizes: [5],
 				isTutorial: true
 			};
 		}
@@ -1537,6 +1547,16 @@ export default class Level extends Phaser.Scene {
 		}
 	}
 
+	private syncFlavorBottlesVisibility() {
+		const milkUnlocked = isProductAcquired("holder4");
+		this.glace1?.setVisible(milkUnlocked);
+		this.glace2?.setVisible(milkUnlocked);
+		this.glace1?.setActive(milkUnlocked);
+		this.glace2?.setActive(milkUnlocked);
+		this.glace1?.setInteractive(milkUnlocked ? { useHandCursor: true } : false);
+		this.glace2?.setInteractive(milkUnlocked ? { useHandCursor: true } : false);
+	}
+
 	private applyProductSlotProgression() {
 
 		const productSlots: Array<{
@@ -1570,6 +1590,8 @@ export default class Level extends Phaser.Scene {
 				this.showProgressionLockIcon(holder, slotId);
 			}
 		}
+
+		this.syncFlavorBottlesVisibility();
 	}
 
 	private getHudMenuDepth() {
@@ -4232,28 +4254,25 @@ export default class Level extends Phaser.Scene {
 
 	private presentLevelCompleteCelebration() {
 		ConfettiPrefab.launch(this);
+		const earnedStars = PanelPrefab.calculateEarnedStars(this.getStarPerformance());
+		const resultKey = earnedStars >= 3 ? "perfect" : earnedStars === 2 ? "good" : "ok";
 
-		if (this.isPerfectLevelClear()) {
-			this.showPerfectClearMessage(() => {
-				if (!this.sys.isActive()) {
-					return;
-				}
+		this.showLevelResultMessage(resultKey, () => {
+			if (!this.sys.isActive()) {
+				return;
+			}
 
-				this.playLevelCompletePanel();
-			});
-			return;
-		}
-
-		this.playLevelCompletePanel();
+			this.playLevelCompletePanel();
+		});
 	}
 
-	private showPerfectClearMessage(onComplete: () => void) {
+	private showLevelResultMessage(key: "perfect" | "good" | "ok", onComplete: () => void) {
 		this.clearPerfectClearMessage();
 
 		const message = this.add.text(
 			this.scale.width * 0.5,
 			this.scale.height * 0.42,
-			t("perfect"),
+			t(key),
 			{
 				color: "#DF3D7A",
 				fontFamily: "Klop",
@@ -4419,7 +4438,11 @@ export default class Level extends Phaser.Scene {
 	}
 
 	private startLevelPreparation() {
-		this.beginPreparationPhase(Level.LEVEL_PREP_DURATION_MS, () => {
+		const prepDuration = this.currentLevelPlan.levelNumber === 1
+			? Level.TUTORIAL_LEVEL_PREP_DURATION_MS
+			: Level.LEVEL_PREP_DURATION_MS;
+
+		this.beginPreparationPhase(prepDuration, () => {
 			this.spawnInitialClients();
 		});
 	}
@@ -4581,8 +4604,9 @@ export default class Level extends Phaser.Scene {
 			this.updateInfiniteWaveIndicator();
 		}
 
+		const isTutorialFirstWave = this.currentLevelPlan.levelNumber === 1 && this.currentWaveIndex === 0;
 		const shuffledIndices = Phaser.Utils.Array.Shuffle(Array.from({ length: clientCount }, (_, index) => index));
-		const delayedCount = this.getDelayedClientCount(clientCount);
+		const delayedCount = isTutorialFirstWave ? 0 : this.getDelayedClientCount(clientCount);
 		const delayedIndices = new Set(shuffledIndices.slice(0, delayedCount));
 		const immediateOrder = new Map(
 			shuffledIndices
@@ -4594,9 +4618,11 @@ export default class Level extends Phaser.Scene {
 		this.queuedClientEntries = 0;
 
 		for (let index = 0; index < clientCount; index++) {
-			const delay = delayedIndices.has(index)
-				? this.getDelayedClientSpawnDelay(index)
-				: this.getImmediateClientSpawnDelay(immediateOrder.get(index) ?? 0);
+			const delay = isTutorialFirstWave
+				? index * Level.TUTORIAL_CLIENT_SPAWN_INTERVAL_MS
+				: delayedIndices.has(index)
+					? this.getDelayedClientSpawnDelay(index)
+					: this.getImmediateClientSpawnDelay(immediateOrder.get(index) ?? 0);
 
 			const timer = this.time.delayedCall(delay, () => {
 				this.onWaveClientScheduled();
