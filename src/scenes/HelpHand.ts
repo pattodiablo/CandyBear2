@@ -9,7 +9,7 @@
 export default class HelpHand extends Phaser.GameObjects.Image {
 
 	constructor(scene: Phaser.Scene, x?: number, y?: number, texture?: string, frame?: number | string) {
-		super(scene, x ?? 18, y ?? 2, texture || "TutiorialHand", frame);
+		super(scene, x ?? 0, y ?? 0, texture || "TutiorialHand", frame);
 
 		this.setOrigin(1, 1.5);
 
@@ -37,6 +37,8 @@ export default class HelpHand extends Phaser.GameObjects.Image {
 	private floatTween?: Phaser.Tweens.Tween;
 	private fadeTween?: Phaser.Tweens.Tween;
 	private pulseTween?: Phaser.Tweens.Tween;
+	private clickWaveGraphics?: Phaser.GameObjects.Graphics;
+	private clickWaveTween?: Phaser.Tweens.Tween;
 
 	private startFloating() {
 
@@ -86,6 +88,7 @@ export default class HelpHand extends Phaser.GameObjects.Image {
 
 		this.x = this.restX;
 		this.y = this.restY + this.floatOffset;
+		this.clickWaveGraphics?.setPosition(this.x, this.y);
 	}
 
 	private revealAtTarget() {
@@ -103,6 +106,41 @@ export default class HelpHand extends Phaser.GameObjects.Image {
 			scaleY: 1,
 			duration: HelpHand.FADE_IN_DURATION,
 			ease: "Back.Out",
+		});
+		this.playClickWave();
+	}
+
+	private playClickWave() {
+		if (!this.clickWaveGraphics) {
+			this.clickWaveGraphics = this.scene.add.graphics();
+			this.clickWaveGraphics.setDepth(this.depth + 10);
+		}
+
+		this.clickWaveGraphics.clear();
+		this.clickWaveGraphics.setPosition(this.x, this.y);
+		this.clickWaveGraphics.setVisible(true);
+		this.clickWaveTween?.stop();
+
+		const waveState = { progress: 0 };
+		this.clickWaveTween = this.scene.tweens.add({
+			targets: waveState,
+			progress: 1,
+			duration: 680,
+			ease: "Sine.Out",
+			onUpdate: () => {
+				this.clickWaveGraphics?.clear();
+				for (let index = 0; index < 3; index++) {
+					const localProgress = (waveState.progress + (index / 3)) % 1;
+					const radius = 14 + (localProgress * 38);
+					const alpha = Math.max(0, 1 - localProgress);
+					this.clickWaveGraphics?.lineStyle(4, 0xFFFFFF, alpha);
+					this.clickWaveGraphics?.strokeCircle(0, 0, radius);
+				}
+			},
+			onComplete: () => {
+				this.clickWaveGraphics?.clear();
+				this.clickWaveGraphics?.setVisible(false);
+			},
 		});
 	}
 
@@ -148,6 +186,8 @@ export default class HelpHand extends Phaser.GameObjects.Image {
 		this.floatTween?.stop();
 		this.fadeTween?.stop();
 		this.pulseTween?.stop();
+		this.clickWaveTween?.stop();
+		this.clickWaveGraphics?.destroy();
 		super.destroy(fromScene);
 	}
 

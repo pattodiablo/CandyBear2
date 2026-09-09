@@ -24,13 +24,6 @@
                 "key": "AnversoCard"
             },
             {
-                "url": [
-                    "assets/audio/backgroundMusic.mp3"
-                ],
-                "type": "audio",
-                "key": "backgroundMusic"
-            },
-            {
                 "url": "assets/bigCoin.png",
                 "type": "image",
                 "key": "bigCoin"
@@ -44,6 +37,11 @@
                 "url": "assets/blurOverlay.png",
                 "type": "image",
                 "key": "blurOverlay"
+            },
+            {
+                "url": "assets/BombiniThumb.png",
+                "type": "image",
+                "key": "BomboloniThumb"
             },
             {
                 "url": [
@@ -108,6 +106,11 @@
                 "url": "assets/ClientQuestion.png",
                 "type": "image",
                 "key": "ClientQuestion"
+            },
+            {
+                "url": "assets/closeBtn.png",
+                "type": "image",
+                "key": "closeBtn"
             },
             {
                 "url": "assets/coin.png",
@@ -271,6 +274,16 @@
                 "key": "FryerAnim"
             },
             {
+                "url": "assets/Fryerthumb.png",
+                "type": "image",
+                "key": "FryerThumb"
+            },
+            {
+                "url": "assets/FxBtn.png",
+                "type": "image",
+                "key": "FxBtn"
+            },
+            {
                 "url": "assets/glace1.png",
                 "type": "image",
                 "key": "glace1"
@@ -383,6 +396,16 @@
                 ],
                 "type": "audio",
                 "key": "MilkRefill"
+            },
+            {
+                "url": "assets/MilkThumb.png",
+                "type": "image",
+                "key": "MilkThumb"
+            },
+            {
+                "url": "assets/MusicBtn.png",
+                "type": "image",
+                "key": "MusicBtn"
             },
             {
                 "url": "assets/nextdayBtn.png",
@@ -536,6 +559,19 @@
                 "key": "RedGlass"
             },
             {
+                "url": "assets/reloj.png",
+                "frameConfig": {
+                    "frameWidth": 100,
+                    "frameHeight": 100,
+                    "startFrame": 0,
+                    "endFrame": -1,
+                    "spacing": 0,
+                    "margin": 0
+                },
+                "type": "spritesheet",
+                "key": "reloj"
+            },
+            {
                 "url": "assets/reversoCard1.png",
                 "type": "image",
                 "key": "reversoCard1"
@@ -611,6 +647,16 @@
                 "key": "reversoCard9"
             },
             {
+                "url": "assets/rewardedBtn.png",
+                "type": "image",
+                "key": "rewardedBtn"
+            },
+            {
+                "url": "assets/sandClock.png",
+                "type": "image",
+                "key": "sandClock"
+            },
+            {
                 "atlasURL": "assets/GlassAnim/sandWichAnim.json",
                 "textureURL": "assets/GlassAnim/sandWichAnim.png",
                 "type": "atlas",
@@ -622,11 +668,9 @@
                 "key": "SandwichProduct"
             },
             {
-                "url": [
-                    "assets/audio/ScenSelectionBgmusic.mp3"
-                ],
-                "type": "audio",
-                "key": "ScenSelectionBgmusic"
+                "url": "assets/SandwichThumb.png",
+                "type": "image",
+                "key": "SandwichThumb"
             },
             {
                 "url": "assets/smallHeart.png",
@@ -686,14 +730,39 @@
                 "key": "TutiorialHand"
             },
             {
+                "url": "assets/UpgradeBg.png",
+                "type": "image",
+                "key": "UpgradeBg"
+            },
+            {
+                "url": "assets/upgradeCostPanel.png",
+                "type": "image",
+                "key": "upgradeCostPanel"
+            },
+            {
                 "url": "assets/upgradeLabel.png",
                 "type": "image",
                 "key": "upgradeLabel"
             },
             {
+                "url": "assets/upgradeRainbow.png",
+                "type": "image",
+                "key": "upgradeRainbow"
+            },
+            {
+                "url": "assets/upgradeSmallPanel.png",
+                "type": "image",
+                "key": "upgradeSmallPanel"
+            },
+            {
                 "url": "assets/workplace.png",
                 "type": "image",
                 "key": "workplace"
+            },
+            {
+                "url": "assets/workplaceThumb.png",
+                "type": "image",
+                "key": "workplaceThumb"
             },
             {
                 "url": "assets/Workstation.png",

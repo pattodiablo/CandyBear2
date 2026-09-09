@@ -5,6 +5,7 @@
 
 /* START-USER-IMPORTS */
 import Phaser from "phaser";
+import { t } from "../i18n";
 /* END-USER-IMPORTS */
 
 export default class PanelPrefab extends Phaser.GameObjects.Container {
@@ -61,7 +62,7 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		// earnedToday
 		const earnedToday = scene.add.text(40, 86, "", {});
 		earnedToday.setOrigin(0.5, 0.5);
-		earnedToday.text = "Earnings today";
+		earnedToday.text = t("earningsToday");
 		earnedToday.setStyle({ "color": "#A96625", "fontFamily": "Klop", "fontSize": "30px" });
 		finalLabels.add(earnedToday);
 
@@ -114,7 +115,7 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		this.upgradeAvailableMessage = scene.add.text(
 			levelsBtn.x,
 			0,
-			"Upgrades available",
+			t("upgradesAvailable"),
 			{
 				color: "#DF3D7A",
 				fontFamily: "Klop",
@@ -130,7 +131,7 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		this.upgradeAvailableMessage.setVisible(false);
 		this.add(this.upgradeAvailableMessage);
 
-		this.buyUpgradesLabel = scene.add.text(nextdayBtn.x, nextdayBtn.y - 4, "Buy upgrades", {
+		this.buyUpgradesLabel = scene.add.text(nextdayBtn.x, nextdayBtn.y - 4, t("buyUpgrades"), {
 			color: "#F8ECDA",
 			fontFamily: "Klop",
 			fontSize: "34px",
@@ -144,7 +145,7 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		this.applyFinalButtonLayout();
 		this.disableLevelsButton();
 
-		this.dayLabelText = scene.add.text(44, -70, "Day 1", {
+		this.dayLabelText = scene.add.text(44, -70, `${t("day")} 1`, {
 			color: "#DF3D7A",
 			fontFamily: "Klop",
 			fontSize: "76px",

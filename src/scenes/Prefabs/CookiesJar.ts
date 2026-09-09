@@ -17,7 +17,14 @@ export default class CookiesJar extends Phaser.GameObjects.Container {
 		const jarImage = scene.add.image(0, 0, "cookieJar");
 		this.add(jarImage);
 
+		// sandClock
+		const sandClock = scene.add.image(0, -38, "sandClock");
+		sandClock.setVisible(false);
+		sandClock.setAlpha(0);
+		this.add(sandClock);
+
 		this.jarImage = jarImage;
+		this.sandClock = sandClock;
 
 		/* START-USER-CTR-CODE */
 		this.baseScaleX = this.scaleX;
@@ -31,6 +38,7 @@ export default class CookiesJar extends Phaser.GameObjects.Container {
 	}
 
 	private jarImage: Phaser.GameObjects.Image;
+	public sandClock: Phaser.GameObjects.Image;
 
 	/* START-USER-CODE */
 	private static readonly HOVER_SCALE = 1.08;
@@ -53,7 +61,10 @@ export default class CookiesJar extends Phaser.GameObjects.Container {
 	private readonly baseScaleY: number;
 	private isPressed = false;
 	private isAttentionPulsing = false;
+	private isSandClockUrgent = false;
 	private attentionPulseTween?: Phaser.Tweens.Tween;
+	private sandClockPulseTween?: Phaser.Tweens.Tween;
+	private sandClockSpinTween?: Phaser.Tweens.Tween;
 	private badgeBackground?: Phaser.GameObjects.Graphics;
 	private badgeText?: Phaser.GameObjects.Text;
 
@@ -112,6 +123,59 @@ export default class CookiesJar extends Phaser.GameObjects.Container {
 		this.attentionPulseTween?.stop();
 		this.attentionPulseTween = undefined;
 		this.jarImage.setScale(1);
+	}
+
+	public setSandClockUrgent(active: boolean) {
+		if (active) {
+			this.startSandClockUrgent();
+			return;
+		}
+
+		this.stopSandClockUrgent();
+	}
+
+	private startSandClockUrgent() {
+		if (this.isSandClockUrgent) {
+			return;
+		}
+
+		this.isSandClockUrgent = true;
+		this.sandClock.setVisible(true);
+		this.sandClock.setAlpha(1);
+		this.scene.tweens.killTweensOf(this.sandClock);
+
+		this.sandClockSpinTween = this.scene.tweens.add({
+			targets: this.sandClock,
+			rotation: { from: 0, to: Math.PI * 2 },
+			duration: 1100,
+			repeat: -1,
+			ease: "Linear",
+		});
+
+		this.sandClockPulseTween = this.scene.tweens.add({
+			targets: this.sandClock,
+			scaleX: { from: 1, to: 1.15 },
+			scaleY: { from: 1, to: 1.15 },
+			duration: 280,
+			yoyo: true,
+			repeat: -1,
+			ease: "Sine.InOut",
+		});
+	}
+
+	private stopSandClockUrgent() {
+		if (!this.isSandClockUrgent && !this.sandClockSpinTween && !this.sandClockPulseTween) {
+			return;
+		}
+
+		this.isSandClockUrgent = false;
+		this.scene.tweens.killTweensOf(this.sandClock);
+		this.sandClock.setRotation(0);
+		this.sandClock.setScale(1);
+		this.sandClock.setVisible(false);
+		this.sandClock.setAlpha(0);
+		this.sandClockSpinTween = undefined;
+		this.sandClockPulseTween = undefined;
 	}
 
 	/**

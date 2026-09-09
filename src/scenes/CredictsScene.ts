@@ -9,6 +9,7 @@ import SpineClient from "./Prefabs/SpineClient";
 import { BODY_SKIN_MAX_INDEX, getClientBearName, getClientBearQuote } from "./clientBearCatalog";
 import { getBearLikes } from "./likeProgress";
 import { markCampaignCreditsSeen, unlockInfiniteMode } from "./levelProgress";
+import { t } from "./i18n";
 
 /** Datos de cada osito en la galería. Más adelante se rellenan con stats reales. */
 interface CreditBearEntry {
@@ -34,7 +35,7 @@ export default class CredictsScene extends Phaser.Scene {
 		// Thankstext
 		const thankstext = this.add.text(640, 92, "", {});
 		thankstext.setOrigin(0.5, 0.5);
-		thankstext.text = "Thanks for playing";
+		thankstext.text = t("thanksForPlaying");
 		thankstext.setStyle({ "color": "#EEA1A7", "fontFamily": "Klop", "fontSize": "54pt" });
 
 		this.thankstext = thankstext;
@@ -395,7 +396,7 @@ export default class CredictsScene extends Phaser.Scene {
 		quoteText.setOrigin(0, 0.5);
 		card.add(quoteText);
 
-		const likesText = this.add.text(textLeft, halfH - 48, `${entry.likesGiven} likes given`, {
+		const likesText = this.add.text(textLeft, halfH - 48, `${entry.likesGiven} ${t("likesGiven")}`, {
 			color: CredictsScene.TEXT_LIKES_COLOR,
 			fontFamily: "Klop",
 			fontSize: "24px",
@@ -411,7 +412,7 @@ export default class CredictsScene extends Phaser.Scene {
 		this.infiniteModeCta.setDepth(20);
 		this.infiniteModeCta.setScale(CredictsScene.INFINITE_BTN_BASE_SCALE);
 
-		this.infiniteModeHint = this.add.text(0, -56, "now available", {
+		this.infiniteModeHint = this.add.text(0, -56, t("nowAvailable"), {
 			color: CredictsScene.INFINITE_LABEL_COLOR,
 			fontFamily: "Klop",
 			fontSize: "28px",
@@ -423,7 +424,7 @@ export default class CredictsScene extends Phaser.Scene {
 		this.infiniteModeButton.setInteractive({ useHandCursor: true });
 		this.infiniteModeCta.add(this.infiniteModeButton);
 
-		this.infiniteModeButtonText = this.add.text(-2, -4, "Infinite mode", {
+		this.infiniteModeButtonText = this.add.text(-2, -4, t("infiniteMode"), {
 			color: "#F8ECDA",
 			fontFamily: "Klop",
 			fontSize: "36px",
@@ -438,7 +439,7 @@ export default class CredictsScene extends Phaser.Scene {
 		badgeBg.fillRoundedRect(-28, -14, 56, 28, 12);
 		badgeBg.lineStyle(3, 0xFFFFFF, 1);
 		badgeBg.strokeRoundedRect(-28, -14, 56, 28, 12);
-		const badgeText = this.add.text(0, -1, "NEW", {
+		const badgeText = this.add.text(0, -1, t("newBadge"), {
 			color: "#FFFFFF",
 			fontFamily: "Klop",
 			fontSize: "20px",

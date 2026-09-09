@@ -1,0 +1,110 @@
+{
+    "id": "2a848bac-21e8-41ca-9fda-ce971f316175",
+    "sceneType": "PREFAB",
+    "settings": {
+        "exportClass": true,
+        "autoImport": true,
+        "preloadMethodName": "",
+        "preloadPackFiles": [],
+        "createMethodName": "",
+        "compilerOutputLanguage": "TYPE_SCRIPT",
+        "borderWidth": 1280,
+        "borderHeight": 720
+    },
+    "displayList": [
+        {
+            "type": "Container",
+            "id": "97878594-6e68-4c99-9848-db4dacf0d860",
+            "label": "container_1",
+            "list": [
+                {
+                    "type": "Image",
+                    "id": "23a9cea2-cd4e-46ca-97be-0242aff8a96b",
+                    "label": "upgradeSmallPanel",
+                    "texture": {
+                        "key": "upgradeSmallPanel"
+                    }
+                },
+                {
+                    "type": "Image",
+                    "id": "670c36a3-c144-4be4-9bb5-ec0e66eaf06c",
+                    "label": "upgradeCostPanel",
+                    "texture": {
+                        "key": "upgradeCostPanel"
+                    },
+                    "y": 103
+                },
+                {
+                    "type": "Image",
+                    "id": "6b653fd7-07bd-4980-b503-bdd3f180ef54",
+                    "label": "itemImage",
+                    "scope": "CLASS",
+                    "texture": {
+                        "key": "Product2Cooked"
+                    }
+                },
+                {
+                    "type": "Text",
+                    "id": "319bec9c-fd90-4dd1-9be3-250adc05d713",
+                    "label": "text",
+                    "scope": "CLASS",
+                    "y": -94,
+                    "originX": 0.5,
+                    "originY": 0.5,
+                    "text": "ProductText",
+                    "fontFamily": "Klop",
+                    "fontSize": "15pt",
+                    "color": "#DF3D7A"
+                },
+                {
+                    "type": "Text",
+                    "id": "8d604335-e50b-46d3-a9f8-c57169e1a7ea",
+                    "label": "ItemCost",
+                    "scope": "CLASS",
+                    "x": -18,
+                    "y": 102,
+                    "originY": 0.5,
+                    "text": "0000",
+                    "fontFamily": "Klop",
+                    "fontSize": "15pt",
+                    "color": "#FFE769",
+                    "stroke": "#FEB134",
+                    "strokeThickness": 2
+                },
+                {
+                    "type": "Image",
+                    "id": "1b5b23f1-0b9a-4272-ba88-93daf3b99fb0",
+                    "label": "coin",
+                    "texture": {
+                        "key": "coin"
+                    },
+                    "x": -38,
+                    "y": 103,
+                    "scaleX": 0.601251851079237,
+                    "scaleY": 0.601251851079237
+                },
+                {
+                    "type": "Image",
+                    "id": "1d92805b-73b2-4606-acbf-40257a660f7c",
+                    "label": "HitAreaPanel",
+                    "scope": "CLASS",
+                    "texture": {
+                        "key": "upgradeSmallPanel"
+                    },
+                    "alpha": 0,
+                    "alphaTopLeft": 0,
+                    "alphaTopRight": 0,
+                    "alphaBottomLeft": 0,
+                    "alphaBottomRight": 0
+                }
+            ]
+        }
+    ],
+    "plainObjects": [],
+    "meta": {
+        "app": "Phaser Editor - Scene Editor",
+        "url": "https://phaser.io/editor",
+        "contentType": "phasereditor2d.core.scene.SceneContentType",
+        "version": 5
+    }
+}

@@ -5,6 +5,7 @@
 
 /* START-USER-IMPORTS */
 import Phaser from "phaser";
+import { t } from "../i18n";
 /* END-USER-IMPORTS */
 
 export default class dayHolderPrefab extends Phaser.GameObjects.Container {
@@ -21,7 +22,7 @@ export default class dayHolderPrefab extends Phaser.GameObjects.Container {
 		// DayText
 		const dayText = scene.add.text(0, -53, "", {});
 		dayText.setOrigin(0.5, 0.5);
-		dayText.text = "DAY";
+		dayText.text = t("dayShort");
 		dayText.setStyle({ "color": "#DF3D7A", "fontFamily": "Klop", "fontSize": "36px" });
 		this.add(dayText);
 

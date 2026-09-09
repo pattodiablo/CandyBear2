@@ -60,6 +60,19 @@ export function getClientBearQuote(skinIndex: number) {
 	return `'${quote}'`;
 }
 
+export interface ClientBearPersonality {
+	label: string;
+	speed: "Muy Lenta" | "Lenta" | "Normal" | "Rápida" | "Muy Rápida";
+	patience: "Muy Alta" | "Alta" | "Media" | "Normal" | "Baja" | "Crítica" | "Muy Baja";
+	payout: "Pago Bajo" | "Pago Base" | "Propina Alta" | "Propina Máxima" | "Normal";
+	maxOrderCount: number;
+	likeBias: "Nunca" | "Raro" | "Normal" | "Doble" | "Siempre";
+	successDialogue: string;
+	failureDialogue: string;
+	baseTipChanceBonus: number;
+	tipPayoutMultiplier: number;
+}
+
 export interface ClientBearProfile {
 	skinIndex: number;
 	/** Multiplicador del tiempo de espera base (más alto = más paciente). */
@@ -71,6 +84,212 @@ export interface ClientBearProfile {
 	 * de la cookie jar (además de completar el pedido).
 	 */
 	requiresCookieForLike: boolean;
+	maxOrderCount: number;
+	baseTipChanceBonus: number;
+	tipPayoutMultiplier: number;
+	successDialogue: string;
+	failureDialogue: string;
+	personalityLabel: string;
+}
+
+const CLIENT_BEAR_PERSONALITIES: Record<number, ClientBearPersonality> = {
+	0: {
+		label: "Gommy / Pepe (Estándar)",
+		speed: "Normal",
+		patience: "Normal",
+		payout: "Pago Base",
+		maxOrderCount: 2,
+		likeBias: "Normal",
+		successDialogue: "YUM!",
+		failureDialogue: "NOP!",
+		baseTipChanceBonus: 0.08,
+		tipPayoutMultiplier: 1,
+	},
+	1: {
+		label: "Lulu (Coqueta)",
+		speed: "Normal",
+		patience: "Media",
+		payout: "Propina Alta",
+		maxOrderCount: 2,
+		likeBias: "Doble",
+		successDialogue: "YAY!",
+		failureDialogue: "UPS!",
+		baseTipChanceBonus: 0.22,
+		tipPayoutMultiplier: 1.7,
+	},
+	2: {
+		label: "Carl (Estándar)",
+		speed: "Normal",
+		patience: "Normal",
+		payout: "Pago Base",
+		maxOrderCount: 1,
+		likeBias: "Normal",
+		successDialogue: "YUM!",
+		failureDialogue: "NOP!",
+		baseTipChanceBonus: 0.08,
+		tipPayoutMultiplier: 1,
+	},
+	3: {
+		label: "Fubu (Abuelito)",
+		speed: "Muy Lenta",
+		patience: "Muy Alta",
+		payout: "Normal",
+		maxOrderCount: 1,
+		likeBias: "Siempre",
+		successDialogue: "Mmm...",
+		failureDialogue: "Aww...",
+		baseTipChanceBonus: 0.14,
+		tipPayoutMultiplier: 1.25,
+	},
+	4: {
+		label: "Mock (Enojado)",
+		speed: "Rápida",
+		patience: "Crítica",
+		payout: "Pago Base",
+		maxOrderCount: 1,
+		likeBias: "Nunca",
+		successDialogue: "Hmph!",
+		failureDialogue: "GRRR!",
+		baseTipChanceBonus: 0,
+		tipPayoutMultiplier: 1,
+	},
+	5: {
+		label: "Gommy (Estándar)",
+		speed: "Normal",
+		patience: "Normal",
+		payout: "Pago Base",
+		maxOrderCount: 2,
+		likeBias: "Normal",
+		successDialogue: "YUM!",
+		failureDialogue: "NOP!",
+		baseTipChanceBonus: 0.08,
+		tipPayoutMultiplier: 1,
+	},
+	6: {
+		label: "Sussy (Estándar)",
+		speed: "Normal",
+		patience: "Normal",
+		payout: "Pago Base",
+		maxOrderCount: 1,
+		likeBias: "Normal",
+		successDialogue: "YUM!",
+		failureDialogue: "NOP!",
+		baseTipChanceBonus: 0.08,
+		tipPayoutMultiplier: 1,
+	},
+	7: {
+		label: "Falck (Bad Boy)",
+		speed: "Rápida",
+		patience: "Media",
+		payout: "Propina Alta",
+		maxOrderCount: 1,
+		likeBias: "Normal",
+		successDialogue: "COOL!",
+		failureDialogue: "MEH!",
+		baseTipChanceBonus: 0.2,
+		tipPayoutMultiplier: 1.6,
+	},
+	8: {
+		label: "Shef (Chef)",
+		speed: "Normal",
+		patience: "Media",
+		payout: "Propina Máxima",
+		maxOrderCount: 3,
+		likeBias: "Doble",
+		successDialogue: "BRAVO!",
+		failureDialogue: "PUAJ!",
+		baseTipChanceBonus: 0.28,
+		tipPayoutMultiplier: 2,
+	},
+	9: {
+		label: "Muly (Estándar)",
+		speed: "Normal",
+		patience: "Normal",
+		payout: "Pago Base",
+		maxOrderCount: 1,
+		likeBias: "Normal",
+		successDialogue: "YUM!",
+		failureDialogue: "NOP!",
+		baseTipChanceBonus: 0.08,
+		tipPayoutMultiplier: 1,
+	},
+	10: {
+		label: "Spock (Zen)",
+		speed: "Lenta",
+		patience: "Alta",
+		payout: "Pago Base",
+		maxOrderCount: 1,
+		likeBias: "Normal",
+		successDialogue: "OMMM...",
+		failureDialogue: "UFF...",
+		baseTipChanceBonus: 0.06,
+		tipPayoutMultiplier: 1,
+	},
+	11: {
+		label: "Darky (Diablito)",
+		speed: "Muy Rápida",
+		patience: "Baja",
+		payout: "Pago Bajo",
+		maxOrderCount: 2,
+		likeBias: "Raro",
+		successDialogue: "MUAJA!",
+		failureDialogue: "OUCH!",
+		baseTipChanceBonus: 0.02,
+		tipPayoutMultiplier: 0.9,
+	},
+	12: {
+		label: "Fran (Constructor)",
+		speed: "Normal",
+		patience: "Muy Baja",
+		payout: "Propina Alta",
+		maxOrderCount: 3,
+		likeBias: "Raro",
+		successDialogue: "YEAH!",
+		failureDialogue: "BAH!",
+		baseTipChanceBonus: 0.24,
+		tipPayoutMultiplier: 1.8,
+	},
+	13: {
+		label: "Fuse (Mago)",
+		speed: "Lenta",
+		patience: "Alta",
+		payout: "Propina Alta",
+		maxOrderCount: 2,
+		likeBias: "Normal",
+		successDialogue: "TADA!",
+		failureDialogue: "BOOM!",
+		baseTipChanceBonus: 0.24,
+		tipPayoutMultiplier: 1.8,
+	},
+	14: {
+		label: "Rut (Coqueta)",
+		speed: "Normal",
+		patience: "Media",
+		payout: "Propina Alta",
+		maxOrderCount: 2,
+		likeBias: "Doble",
+		successDialogue: "YAY!",
+		failureDialogue: "UPS!",
+		baseTipChanceBonus: 0.22,
+		tipPayoutMultiplier: 1.7,
+	},
+	15: {
+		label: "Som (Estándar)",
+		speed: "Normal",
+		patience: "Normal",
+		payout: "Pago Base",
+		maxOrderCount: 1,
+		likeBias: "Normal",
+		successDialogue: "YUM!",
+		failureDialogue: "NOP!",
+		baseTipChanceBonus: 0.08,
+		tipPayoutMultiplier: 1,
+	},
+};
+
+export function getClientBearPersonality(skinIndex: number): ClientBearPersonality {
+	const normalizedIndex = Phaser.Math.Clamp(Math.floor(skinIndex), 0, BODY_SKIN_MAX_INDEX);
+	return CLIENT_BEAR_PERSONALITIES[normalizedIndex] ?? CLIENT_BEAR_PERSONALITIES[0];
 }
 
 /**
@@ -91,18 +310,36 @@ export function getBodySkinUnlockLevel(skinIndex: number) {
 	);
 }
 
-/** Índice máximo de skin desbloqueado para un nivel de campaña. */
+/**
+ * Índice máximo de skin desbloqueado para el jugador.
+ * Se ignora el progreso por nivel; las apariencias de clientes solo aparecen si
+ * el jugador ya ha comprado ese skin en el sistema de unlocks.
+ */
 export function getMaxUnlockedBodySkinIndex(levelNumber: number) {
-	const normalizedLevel = Math.max(1, Math.floor(levelNumber));
-	let maxUnlocked = 0;
+	const acquiredSkinIndexes = new Set<number>([0]);
 
-	for (let skinIndex = 0; skinIndex <= BODY_SKIN_MAX_INDEX; skinIndex++) {
-		if (getBodySkinUnlockLevel(skinIndex) <= normalizedLevel) {
-			maxUnlocked = skinIndex;
+	if (typeof window !== "undefined") {
+		try {
+			const storedValue = window.localStorage.getItem("candybear2-acquired-client-unlocks");
+			if (storedValue) {
+				const parsed = JSON.parse(storedValue);
+				if (Array.isArray(parsed)) {
+					for (const unlockId of parsed) {
+						if (typeof unlockId === "string" && unlockId.startsWith("clientSkin")) {
+							const skinIndex = Number.parseInt(unlockId.replace("clientSkin", ""), 10);
+							if (!Number.isNaN(skinIndex)) {
+								acquiredSkinIndexes.add(skinIndex);
+							}
+						}
+					}
+				}
+			}
+		} catch {
+			// Si no hay estado persistido, se mantiene solo el skin por defecto.
 		}
 	}
 
-	return maxUnlocked;
+	return Math.max(...acquiredSkinIndexes, 0);
 }
 
 /**
@@ -113,17 +350,51 @@ export function getMaxUnlockedBodySkinIndex(levelNumber: number) {
  */
 export function getClientBearProfile(skinIndex: number): ClientBearProfile {
 	const normalizedIndex = Phaser.Math.Clamp(Math.floor(skinIndex), 0, BODY_SKIN_MAX_INDEX);
+	const personality = getClientBearPersonality(normalizedIndex);
 	const progress = normalizedIndex / BODY_SKIN_MAX_INDEX;
-	// ~18% en skins bajos → ~45% en skins altos
 	const cookieSecretChance = Phaser.Math.Linear(0.18, 0.45, progress);
+
+	const likeChanceMap: Record<ClientBearPersonality["likeBias"], number> = {
+		"Nunca": 0,
+		"Raro": 0.18,
+		"Normal": 0.48,
+		"Doble": 0.7,
+		"Siempre": 1,
+	};
+
+	const waitMultiplierMap: Record<ClientBearPersonality["speed"], number> = {
+		"Muy Lenta": 1.5,
+		"Lenta": 1.28,
+		"Normal": 1,
+		"Rápida": 0.8,
+		"Muy Rápida": 0.62,
+	};
+
+	const patienceBias = {
+		"Muy Alta": 1.2,
+		"Alta": 1.1,
+		"Media": 1,
+		"Normal": 1,
+		"Baja": 0.85,
+		"Crítica": 0.7,
+		"Muy Baja": 0.6,
+	} as const;
+
+	const baseWaitMultiplier = waitMultiplierMap[personality.speed] ?? 1;
+	const patienceMultiplier = patienceBias[personality.patience as keyof typeof patienceBias] ?? 1;
+	const likeChance = likeChanceMap[personality.likeBias] ?? 0.48;
 
 	return {
 		skinIndex: normalizedIndex,
-		// ~1.35x (fácil) → ~0.60x (exigente)
-		waitMultiplier: Number(Phaser.Math.Linear(1.35, 0.6, progress).toFixed(3)),
-		// ~80% → ~10%
-		likeChance: Number(Phaser.Math.Linear(0.8, 0.1, progress).toFixed(3)),
+		waitMultiplier: Number((baseWaitMultiplier * patienceMultiplier).toFixed(3)),
+		likeChance: Number(Math.min(1, Math.max(0, likeChance)).toFixed(3)),
 		requiresCookieForLike: Math.random() < cookieSecretChance,
+		maxOrderCount: personality.maxOrderCount,
+		baseTipChanceBonus: personality.baseTipChanceBonus,
+		tipPayoutMultiplier: personality.tipPayoutMultiplier,
+		successDialogue: personality.successDialogue,
+		failureDialogue: personality.failureDialogue,
+		personalityLabel: personality.label,
 	};
 }
 
@@ -132,22 +403,44 @@ export function getClientBearProfile(skinIndex: number): ClientBearProfile {
  * A mayor dificultad, sesga un poco hacia skins más altos (más exigentes).
  */
 export function pickClientBearSkinIndex(levelNumber: number, difficulty: number) {
-	const maxUnlocked = getMaxUnlockedBodySkinIndex(levelNumber);
+	const acquiredSkinIndexes = new Set<number>([0]);
 
-	if (maxUnlocked <= 0) {
+	if (typeof window !== "undefined") {
+		try {
+			const storedValue = window.localStorage.getItem("candybear2-acquired-client-unlocks");
+			if (storedValue) {
+				const parsed = JSON.parse(storedValue);
+				if (Array.isArray(parsed)) {
+					for (const unlockId of parsed) {
+						if (typeof unlockId === "string" && unlockId.startsWith("clientSkin")) {
+							const skinIndex = Number.parseInt(unlockId.replace("clientSkin", ""), 10);
+							if (!Number.isNaN(skinIndex)) {
+								acquiredSkinIndexes.add(skinIndex);
+							}
+						}
+					}
+				}
+			}
+		} catch {
+			// Mantener el skin por defecto si no hay estado persistido.
+		}
+	}
+
+	const unlockedIndexes = [...acquiredSkinIndexes].sort((left, right) => left - right);
+	if (unlockedIndexes.length <= 1) {
 		return 0;
 	}
 
 	const difficultyBias = Phaser.Math.Clamp(difficulty, 0.5, 3);
 	const weights: number[] = [];
 
-	for (let skinIndex = 0; skinIndex <= maxUnlocked; skinIndex++) {
-		const progress = skinIndex / maxUnlocked;
-		// Peso base 1; skins altos ganan peso con la dificultad.
+	for (const skinIndex of unlockedIndexes) {
+		const progress = skinIndex / (unlockedIndexes[unlockedIndexes.length - 1] || 1);
 		weights.push(1 + progress * (difficultyBias - 0.5));
 	}
 
-	return pickWeightedIndex(weights);
+	const chosenIndex = pickWeightedIndex(weights);
+	return unlockedIndexes[chosenIndex] ?? 0;
 }
 
 function pickWeightedIndex(weights: number[]) {

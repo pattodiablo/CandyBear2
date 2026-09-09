@@ -66,6 +66,7 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 	private activeTimer?: Phaser.Time.TimerEvent;
 	private danceTween?: Phaser.Tweens.Tween;
 	private burnTween?: Phaser.Tweens.Tween;
+	private blockedMoveTween?: Phaser.Tweens.Tween;
 	private selectionTimeout?: Phaser.Time.TimerEvent;
 	private burnProgress = 0;
 	private currentSlotId?: ToasterSlotId;
@@ -188,12 +189,32 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 		});
 	}
 
+	private playBlockedMoveFeedback() {
+		if (!this.active || !this.scene) {
+			return;
+		}
+
+		const originalX = this.x;
+		this.blockedMoveTween?.stop();
+		this.blockedMoveTween = this.scene.tweens.add({
+			targets: this,
+			x: { from: originalX - 8, to: originalX + 8 },
+			duration: 90,
+			ease: "Sine.InOut",
+			onComplete: () => {
+				this.x = originalX;
+				this.blockedMoveTween = undefined;
+			}
+		});
+	}
+
 	private moveToToaster() {
 
 		const levelScene = this.scene as Level;
 		const targetSlot = levelScene.claimAvailableToasterSlot();
 
 		if (!targetSlot) {
+			this.playBlockedMoveFeedback();
 			this.returnToBase();
 			return;
 		}
