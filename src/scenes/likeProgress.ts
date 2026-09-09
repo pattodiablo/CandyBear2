@@ -71,6 +71,17 @@ export function recordLike() {
 	window.localStorage.setItem(TOTAL_LIKES_STORAGE_KEY, String(nextTotalLikes));
 }
 
+export function addTotalLikes(amount: number) {
+	if (typeof window === "undefined") {
+		return getTotalLikes();
+	}
+
+	const normalizedAmount = Math.max(0, Math.floor(amount));
+	const nextTotalLikes = getTotalLikes() + normalizedAmount;
+	window.localStorage.setItem(TOTAL_LIKES_STORAGE_KEY, String(nextTotalLikes));
+	return nextTotalLikes;
+}
+
 /** Likes que ha dado un osito concreto (por skinIndex). */
 export function getBearLikes(skinIndex: number) {
 	const normalizedIndex = Math.max(0, Math.floor(skinIndex));

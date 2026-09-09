@@ -24,7 +24,7 @@ import YumPrefab from "./Prefabs/YumPrefab";
 import AlmostPrefab from "./Prefabs/AlmostPrefab";
 import Coin from "./Prefabs/Coin";
 import ConfettiPrefab from "./Prefabs/ConfettiPrefab";
-import { getTotalLikes, recordBearLike, recordLike, storeLevelLikes } from "./likeProgress";
+import { addTotalLikes, getTotalLikes, recordBearLike, recordLike, storeLevelLikes } from "./likeProgress";
 import {
 	getHighestUnlockedLevel,
 	getStoredTotalCoins,
@@ -82,6 +82,7 @@ import {
 	recordLevelClearedWithoutUpgradePurchase,
 	shouldPromptBuyUpgrades,
 } from "./momentProgress";
+import { runPokiRewardedBreak } from "../pokiHelpers";
 interface LevelPlan {
 	levelNumber: number;
 	difficulty: number;
@@ -309,6 +310,9 @@ export default class Level extends Phaser.Scene {
 		this.fxBtn = fxBtn;
 		this.musicBtn = musicBtn;
 		this.upgradePanel = upgradePanel;
+		this.upgradePanel.setRewardedHandler(() => {
+			void this.handleRewardedUpgradeBonus();
+		});
 		this.relojFryer1 = relojFryer1;
 		this.relojFryer2 = relojFryer2;
 		this.relojMilk1 = relojMilk1;
@@ -3033,6 +3037,19 @@ export default class Level extends Phaser.Scene {
 		this.coinCounterText?.setText(`${this.coinCount}`);
 		this.updateProgressionLockAffordance();
 		this.updateUpgradeLabelAttention();
+	}
+
+	private async handleRewardedUpgradeBonus() {
+		const didReward = await runPokiRewardedBreak(this);
+		if (!didReward) {
+			this.sound.play("deny");
+			return;
+		}
+
+		this.addCoins(30);
+		addTotalLikes(10);
+		this.updateLikesCounter();
+		this.sound.play("pop1");
 	}
 
 	private updateLikesCounter() {

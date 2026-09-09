@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { PokiPlugin } from "@poki/phaser-3";
 import { SpinePlugin } from "@esotericsoftware/spine-phaser-v4";
 import Level from "./scenes/Level";
 import SceneSelector from "./scenes/SceneSelector";
@@ -81,6 +82,18 @@ function createGame() {
 		height: 720,
 		backgroundColor: "#FEF6E7",
 		plugins: {
+			global: [
+				{
+					key: "poki",
+					plugin: PokiPlugin,
+					start: true,
+					data: {
+						loadingSceneKey: "Preload",
+						gameplaySceneKey: "Level",
+						autoCommercialBreak: true,
+					}
+				}
+			],
 			scene: [
 				{
 					key: "spine.SpinePlugin",

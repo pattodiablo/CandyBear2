@@ -65,7 +65,9 @@ export default class UpgradePanel extends Phaser.GameObjects.Container {
 		this.upgradeBg = upgradeBg;
 		this.titleText = text_1;
 		this.closeButton = closeBtn;
+		this.rewardedBtn = rewardedBtn;
 		this.closeButton.setInteractive({ useHandCursor: true });
+		this.rewardedBtn.setInteractive({ useHandCursor: true });
 		this.setVisible(false);
 		this.setAlpha(0);
 
@@ -85,8 +87,24 @@ export default class UpgradePanel extends Phaser.GameObjects.Container {
 	public upgradeBg: Phaser.GameObjects.Image;
 	private titleText: Phaser.GameObjects.Text;
 	public closeButton: Phaser.GameObjects.Image;
+	public rewardedBtn: Phaser.GameObjects.Image;
 
 	/* START-USER-CODE */
+
+	public setRewardedHandler(onRewarded: () => void) {
+		this.rewardedBtn.removeAllListeners();
+		this.rewardedBtn.setInteractive({ useHandCursor: true });
+		this.rewardedBtn.on(Phaser.Input.Events.POINTER_OVER, () => {
+			this.rewardedBtn.setScale(1.06);
+		});
+		this.rewardedBtn.on(Phaser.Input.Events.POINTER_OUT, () => {
+			this.rewardedBtn.setScale(1);
+		});
+		this.rewardedBtn.on(Phaser.Input.Events.POINTER_DOWN, () => {
+			this.rewardedBtn.setScale(0.96);
+			onRewarded();
+		});
+	}
 
 	public setCloseHandler(onClose: () => void) {
 		this.closeButton.removeAllListeners();

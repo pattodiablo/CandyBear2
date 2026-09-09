@@ -55,6 +55,20 @@ export async function runPokiCommercialBreak(scene: Phaser.Scene): Promise<void>
 	}
 }
 
+export async function runPokiRewardedBreak(scene: Phaser.Scene): Promise<boolean> {
+	const poki = getPokiPlugin(scene);
+
+	if (!poki) {
+		return false;
+	}
+
+	try {
+		return await poki.rewardedBreak();
+	} catch {
+		return false;
+	}
+}
+
 /** Notify Poki that loading finished (safe if the plugin is missing). */
 export function notifyPokiGameLoadingFinished(scene: Phaser.Scene): void {
 	getPokiPlugin(scene)?.gameLoadingFinished();
