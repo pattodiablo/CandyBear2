@@ -652,6 +652,11 @@
                 "key": "rewardedBtn"
             },
             {
+                "url": "assets/sandClock.png",
+                "type": "image",
+                "key": "sandClock"
+            },
+            {
                 "atlasURL": "assets/GlassAnim/sandWichAnim.json",
                 "textureURL": "assets/GlassAnim/sandWichAnim.png",
                 "type": "atlas",

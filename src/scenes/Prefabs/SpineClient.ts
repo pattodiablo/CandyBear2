@@ -112,6 +112,30 @@ export default class SpineClient extends SpineGameObject {
 		return this.bearProfile.likeChance;
 	}
 
+	public getMaxOrderCount() {
+		return this.bearProfile.maxOrderCount;
+	}
+
+	public getTipChanceBonus() {
+		return this.bearProfile.baseTipChanceBonus;
+	}
+
+	public getTipPayoutMultiplier() {
+		return this.bearProfile.tipPayoutMultiplier;
+	}
+
+	public getSuccessDialogue() {
+		return this.bearProfile.successDialogue;
+	}
+
+	public getFailureDialogue() {
+		return this.bearProfile.failureDialogue;
+	}
+
+	public getPersonalityLabel() {
+		return this.bearProfile.personalityLabel;
+	}
+
 	public requiresCookieForLike() {
 		return this.bearProfile.requiresCookieForLike;
 	}

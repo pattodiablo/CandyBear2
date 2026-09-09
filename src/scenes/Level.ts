@@ -251,35 +251,30 @@ export default class Level extends Phaser.Scene {
 		// relojFryer1
 		const relojFryer1 = new Reloj(this, 388, 469);
 		this.add.existing(relojFryer1);
-		relojFryer1.setDepth(2000);
 		relojFryer1.scaleX = 0.5;
 		relojFryer1.scaleY = 0.5;
 
 		// relojFryer2
 		const relojFryer2 = new Reloj(this, 388, 598);
 		this.add.existing(relojFryer2);
-		relojFryer2.setDepth(2000);
 		relojFryer2.scaleX = 0.5;
 		relojFryer2.scaleY = 0.5;
 
 		// relojMilk1
 		const relojMilk1 = new Reloj(this, 558, 567);
 		this.add.existing(relojMilk1);
-		relojMilk1.setDepth(2000);
 		relojMilk1.scaleX = 0.5;
 		relojMilk1.scaleY = 0.5;
 
 		// relojMilk2
 		const relojMilk2 = new Reloj(this, 664, 567);
 		this.add.existing(relojMilk2);
-		relojMilk2.setDepth(2000);
 		relojMilk2.scaleX = 0.5;
 		relojMilk2.scaleY = 0.5;
 
 		// relojToaster
 		const relojToaster = new Reloj(this, 824, 535);
 		this.add.existing(relojToaster);
-		relojToaster.setDepth(2000);
 		relojToaster.scaleX = 0.5;
 		relojToaster.scaleY = 0.5;
 
@@ -319,7 +314,6 @@ export default class Level extends Phaser.Scene {
 		this.relojMilk1 = relojMilk1;
 		this.relojMilk2 = relojMilk2;
 		this.relojToaster = relojToaster;
-		this.hideAllKitchenClocks();
 
 		this.events.emit("scene-awake");
 	}
@@ -3572,7 +3566,9 @@ export default class Level extends Phaser.Scene {
 		}
 
 		const shouldPulse = this.canUseCookieJar() && this.hasClientThatNeedsCookie();
+		const shouldUrgentSandClock = this.canUseCookieJar() && this.hasImpatientClient();
 		this.cookieJar.setAttentionPulse(shouldPulse);
+		this.cookieJar.setSandClockUrgent(shouldUrgentSandClock);
 	}
 
 	/**
@@ -3816,9 +3812,15 @@ export default class Level extends Phaser.Scene {
 		return heart;
 	}
 
-	public maybeAwardLikeTip(x: number, skinIndex: number, wasQuickService: boolean) {
+	public maybeAwardLikeTip(
+		x: number,
+		skinIndex: number,
+		wasQuickService: boolean,
+		baseTipChanceBonus = 0.12,
+		tipPayoutMultiplier = 1,
+	) {
 		const normalizedSkinIndex = Phaser.Math.Clamp(Math.floor(skinIndex), 0, 15);
-		const baseTipChance = 0.2 + (1 - normalizedSkinIndex / 15) * 0.45;
+		const baseTipChance = 0.12 + (1 - normalizedSkinIndex / 15) * 0.34 + baseTipChanceBonus;
 		const quickBonus = wasQuickService ? 0.15 : 0;
 		const tipChance = Phaser.Math.Clamp(baseTipChance + quickBonus, 0, 0.9);
 
@@ -3827,8 +3829,8 @@ export default class Level extends Phaser.Scene {
 		}
 
 		const tipCoins = Math.random() < 0.35 ? 2 : 1;
-		this.showCoinsAt(x, tipCoins);
-		return tipCoins;
+		this.showCoinsAt(x, Math.max(1, Math.round(tipCoins * tipPayoutMultiplier)));
+		return Math.max(1, Math.round(tipCoins * tipPayoutMultiplier));
 	}
 
 	/**

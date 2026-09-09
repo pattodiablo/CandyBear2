@@ -133,6 +133,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 	private readonly orderIconSlotSizes: Array<{ width: number; height: number }>;
 	private receivedCookieTreat = false;
 	private cookieHintIcon?: Phaser.GameObjects.Image;
+	private personalityDialogueText?: Phaser.GameObjects.Text;
 
 	private hasActiveRequest() {
 		return this.pendingProducts.length > 0;
@@ -278,6 +279,71 @@ export default class AClient extends Phaser.GameObjects.Container {
 		this.cookieHintIcon = undefined;
 	}
 
+	private clearPersonalityDialogue() {
+		if (!this.personalityDialogueText) {
+			return;
+		}
+
+		this.scene.tweens.killTweensOf(this.personalityDialogueText);
+		if (this.personalityDialogueText.active) {
+			this.personalityDialogueText.destroy();
+		}
+		this.personalityDialogueText = undefined;
+	}
+
+	private showPersonalityDialogue(dialogue: string, success: boolean) {
+		if (!dialogue) {
+			return;
+		}
+
+		this.clearPersonalityDialogue();
+		const bubble = this.scene.add.text(0, -190, dialogue, {
+			fontSize: "28px",
+			fontFamily: "Klop",
+			fontStyle: "bold",
+			color: success ? "#F16AAE" : "#E48CB4",
+			stroke: "#FFF8F3",
+			strokeThickness: 6,
+			shadow: {
+				color: "#B13B78",
+				blur: 0,
+				offsetX: 0,
+				offsetY: 3,
+				stroke: true,
+				fill: false,
+			},
+		});
+		bubble.setOrigin(0.5);
+		bubble.setDepth(this.depth + 3);
+		this.add(bubble);
+		this.personalityDialogueText = bubble;
+		bubble.setAlpha(0);
+		bubble.setScale(0.7);
+		this.scene.tweens.add({
+			targets: bubble,
+			alpha: 1,
+			scaleX: 1,
+			scaleY: 1,
+			y: -210,
+			duration: 180,
+			ease: "Back.Out",
+		});
+		this.scene.time.delayedCall(1100, () => {
+			if (!bubble.active) {
+				return;
+			}
+			this.scene.tweens.add({
+				targets: bubble,
+				alpha: 0,
+				scaleX: 0.85,
+				scaleY: 0.85,
+				duration: 220,
+				ease: "Cubic.In",
+				onComplete: () => this.clearPersonalityDialogue(),
+			});
+		});
+	}
+
 	/** Marca que este osito recibió galleta (wait bonus + secreto de like). */
 	public receiveCookieTreat() {
 		this.receivedCookieTreat = true;
@@ -324,10 +390,12 @@ export default class AClient extends Phaser.GameObjects.Container {
 			this.initialOrderCount = this.pendingProducts.length;
 			this.forcedOrders = undefined;
 		} else {
-			const orderCount = rollClientOrderCount(
+			const baseOrderCount = rollClientOrderCount(
 				levelScene.getCurrentLevelNumber(),
 				levelScene.getCurrentLevelDifficulty()
 			);
+			const maxOrderCount = this.clientBear.getMaxOrderCount();
+			const orderCount = Math.min(baseOrderCount, maxOrderCount);
 			this.initialOrderCount = orderCount;
 			this.pendingProducts = pickClientOrders(orderCount);
 		}
@@ -738,6 +806,12 @@ export default class AClient extends Phaser.GameObjects.Container {
 			this.scene.sound.play("angry");
 		}
 
+		if (showYum) {
+			this.showPersonalityDialogue(this.clientBear.getSuccessDialogue(), true);
+		} else {
+			this.showPersonalityDialogue(this.clientBear.getFailureDialogue(), false);
+		}
+
 		this.questionRevealTimer?.remove(false);
 		this.questionRevealTimer = undefined;
 		this.clearRequestState();
@@ -765,7 +839,13 @@ export default class AClient extends Phaser.GameObjects.Container {
 				if (grantLike) {
 					const skinIndex = this.clientBear.getAppearanceVariantIndex();
 					levelScene.showLikeHeartAt(exitX, () => {
-						const tipCoins = levelScene.maybeAwardLikeTip(exitX, skinIndex, wasQuickService);
+						const tipCoins = levelScene.maybeAwardLikeTip(
+							exitX,
+							skinIndex,
+							wasQuickService,
+							this.clientBear.getTipChanceBonus(),
+							this.clientBear.getTipPayoutMultiplier(),
+						);
 						if (tipCoins > 0) {
 							this.scene.sound.play("coinDrop", { volume: 0.5 });
 						}

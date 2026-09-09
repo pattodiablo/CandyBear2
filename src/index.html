@@ -51,20 +51,23 @@
             justify-content: center;
             text-align: center;
             color: #fffaf1;
-            gap: 12px;
-            padding: 24px;
+            gap: 18px;
+            width: min(92vw, 460px);
+            padding: 22px 18px 26px;
+            box-sizing: border-box;
         }
 
         .orientation-device {
             position: relative;
-            width: 180px;
-            height: 110px;
+            width: clamp(160px, 38vw, 200px);
+            height: clamp(96px, 22vw, 126px);
             border-radius: 22px;
             border: 4px solid rgba(255, 255, 255, 0.9);
             background: linear-gradient(180deg, #203040 0%, #0b121c 100%);
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
             transform: rotate(90deg);
             animation: rotatePhone 1.8s ease-in-out infinite alternate;
+            flex-shrink: 0;
         }
 
         .orientation-notch {
@@ -98,6 +101,9 @@
             flex-direction: column;
             align-items: center;
             gap: 8px;
+            width: 100%;
+            max-width: 420px;
+            margin-top: 20px;
         }
 
         .orientation-title {
@@ -111,7 +117,7 @@
 
         .orientation-subtitle {
             margin: 0;
-            max-width: 420px;
+            max-width: 100%;
             font-size: 18px;
             line-height: 1.4;
             color: rgba(255, 250, 241, 0.88);
@@ -233,7 +239,6 @@
             <button id="mobile-flush-button" class="mobile-launch-button" type="button">Clear Saved Data</button>
             <div id="mobile-flush-status" aria-live="polite"></div>
         </div>
-        <div id="mobile-launch-hint">On some phones, fullscreen only works after a tap. If Safari blocks it, the game will still open using the full browser area.</div>
     </div>
     <script>
         (function () {

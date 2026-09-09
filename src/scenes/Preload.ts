@@ -38,10 +38,10 @@ export default class Preload extends Phaser.Scene {
 	private static readonly BAR_RADIUS = 15;
 	private static readonly BAR_X = (1280 - Preload.BAR_WIDTH) * 0.5;
 	private static readonly BAR_Y = 652;
-	private static readonly TRACK_FILL_COLOR = 0xfff0e0;
+	private static readonly TRACK_FILL_COLOR = 0xffffff;
 	private static readonly TRACK_STROKE_COLOR = 0xa96625;
 	private static readonly FILL_COLOR = 0xff5f7e;
-	private static readonly FILL_HIGHLIGHT_COLOR = 0x72d7c7;
+	private static readonly FILL_HIGHLIGHT_COLOR = 0xffffff;
 
 	private progressBarTrack!: Phaser.GameObjects.Graphics;
 	private progressBarFill!: Phaser.GameObjects.Graphics;
