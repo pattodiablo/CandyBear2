@@ -25,6 +25,11 @@ export default class AlertPrefab extends Phaser.GameObjects.Image {
 	/* START-USER-CODE */
 
 	public updateBurnProgress(progress: number) {
+		if (!this.active || !this.scene) {
+			this.stopPulse();
+			return;
+		}
+
 		const normalized = Phaser.Math.Clamp(progress, 0, 1);
 		const isVisible = normalized > 0.02;
 
@@ -39,7 +44,7 @@ export default class AlertPrefab extends Phaser.GameObjects.Image {
 
 		if (normalized >= 0.98) {
 			this.stopPulse();
-			this.setTint(0xff4a4a);
+			this.setTint(0x1d1b1a);
 			this.setAlpha(0.95);
 			this.setScale(this.baseScale + 0.08);
 			return;
@@ -61,6 +66,10 @@ export default class AlertPrefab extends Phaser.GameObjects.Image {
 
 	private startPulse() {
 		this.stopPulse();
+		if (!this.scene) {
+			return;
+		}
+
 		this.pulseTween = this.scene.tweens.add({
 			targets: this,
 			alpha: { from: 0.3, to: 1 },
@@ -71,6 +80,11 @@ export default class AlertPrefab extends Phaser.GameObjects.Image {
 			repeat: -1,
 			ease: "Sine.InOut",
 		});
+	}
+
+	destroy(fromScene?: boolean) {
+		this.stopPulse();
+		super.destroy(fromScene);
 	}
 
 	/* END-USER-CODE */

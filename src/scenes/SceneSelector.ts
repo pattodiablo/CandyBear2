@@ -723,6 +723,28 @@ export default class SceneSelector extends Phaser.Scene {
 			return soundManager.__candybearOriginalPlay(...args);
 		};
 		soundManager.__candybearFxGuard = true;
+
+		if (soundManager.__candybearDecodeGuard) {
+			return;
+		}
+
+		soundManager.__candybearDecodeGuard = true;
+		soundManager.on("decodeerror", (key: unknown) => {
+			const audioKey = Array.isArray(key) ? key.join(", ") : String(key ?? "audio");
+			console.warn(`[Audio] Error decodificando ${audioKey}; se desactiva el audio para esta sesión.`, key);
+
+			this.isMusicMuted = true;
+			this.isFxMuted = true;
+			this.writeStoredAudioFlag(MUSIC_MUTED_STORAGE_KEY, true);
+			this.writeStoredAudioFlag(FX_MUTED_STORAGE_KEY, true);
+			this.applyAudioButtonState();
+
+			if (this.backgroundMusic) {
+				this.backgroundMusic.stop();
+				this.backgroundMusic.destroy();
+				this.backgroundMusic = undefined;
+			}
+		});
 	}
 
 	private syncAudioStateFromStorage() {
