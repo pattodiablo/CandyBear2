@@ -127,14 +127,35 @@ export default class Level extends Phaser.Scene {
 		// toaster
 		const toaster = new ToasterPrefab(this, 827, 582);
 		this.add.existing(toaster);
+		toaster.setInteractive(
+			new Phaser.Geom.Rectangle(-70, -70, 140, 150),
+			Phaser.Geom.Rectangle.Contains
+		);
+		toaster.on(Phaser.Input.Events.POINTER_DOWN, () => {
+			this.tryAutoSendIdleSandwichesToAvailableToaster();
+		});
 
 		// fryer1
 		const fryer1 = new FryerPrefab(this, 390, 523);
 		this.add.existing(fryer1);
+		fryer1.setInteractive(
+			new Phaser.Geom.Rectangle(-70, -70, 140, 150),
+			Phaser.Geom.Rectangle.Contains
+		);
+		fryer1.on(Phaser.Input.Events.POINTER_DOWN, () => {
+			this.tryAutoSendIdleProductsToAvailableFryer("fryer1");
+		});
 
 		// fryer2
 		const fryer2 = new FryerPrefab(this, 390, 654);
 		this.add.existing(fryer2);
+		fryer2.setInteractive(
+			new Phaser.Geom.Rectangle(-70, -70, 140, 150),
+			Phaser.Geom.Rectangle.Contains
+		);
+		fryer2.on(Phaser.Input.Events.POINTER_DOWN, () => {
+			this.tryAutoSendIdleProductsToAvailableFryer("fryer2");
+		});
 
 		// holder1
 		const holder1 = this.add.image(80, 561, "Holder");
@@ -3157,6 +3178,117 @@ export default class Level extends Phaser.Scene {
 		if (fryerId === "fryer2") {
 			this.fryer2Occupied = false;
 		}
+	}
+
+	public tryAutoSendIdleProductsToAvailableFryer(fryerId?: "fryer1" | "fryer2") {
+		const idleProducts = this.getSceneProducts()
+			.filter((product) => product.isIdleOnHolder())
+			.sort((left, right) => left.y - right.y);
+
+		if (idleProducts.length === 0) {
+			return false;
+		}
+
+		const getProductKey = (product: AProduct) => (product.Raw.key ?? product.texture.key);
+		const findMatchingProduct = (prefix: "Product1" | "Product2") => (
+			idleProducts.find((product) => getProductKey(product).startsWith(prefix))
+		);
+
+		const resolveTarget = () => {
+			if (fryerId) {
+				if (fryerId === "fryer1" && this.fryer1Occupied) {
+					return undefined;
+				}
+				if (fryerId === "fryer2" && (!this.fryer2Enabled || this.fryer2Occupied)) {
+					return undefined;
+				}
+				return {
+					fryerId,
+					product: fryerId === "fryer1"
+						? (findMatchingProduct("Product1") ?? idleProducts[0])
+						: (findMatchingProduct("Product2") ?? idleProducts[0]),
+				};
+			}
+
+			if (!this.fryer1Occupied) {
+				return {
+					fryerId: "fryer1" as const,
+					product: findMatchingProduct("Product1") ?? idleProducts[0],
+				};
+			}
+
+			if (this.fryer2Enabled && !this.fryer2Occupied) {
+				return {
+					fryerId: "fryer2" as const,
+					product: findMatchingProduct("Product2") ?? idleProducts[0],
+				};
+			}
+
+			return undefined;
+		};
+
+		const target = resolveTarget();
+		if (!target) {
+			return false;
+		}
+
+		const targetFryer = this.getFryerById(target.fryerId);
+		if (!targetFryer?.active) {
+			return false;
+		}
+
+		let product = target.product;
+		if (!product || !product.active) {
+			return false;
+		}
+
+		const productKey = getProductKey(product);
+		if (target.fryerId === "fryer1" && !productKey.startsWith("Product1")) {
+			const product1 = findMatchingProduct("Product1");
+			if (!product1) {
+				return false;
+			}
+			product = product1;
+		}
+
+		if (target.fryerId === "fryer2" && !productKey.startsWith("Product2")) {
+			const product2 = findMatchingProduct("Product2");
+			if (!product2) {
+				return false;
+			}
+			product = product2;
+		}
+
+		const moveToFryer = (product as any).moveToFryer as (() => void) | undefined;
+		if (typeof moveToFryer !== "function") {
+			return false;
+		}
+
+		moveToFryer.call(product);
+		return true;
+	}
+
+	public tryAutoSendIdleSandwichesToAvailableToaster() {
+		if (!this.toasterEnabled || this.toasterSlotOccupied) {
+			return false;
+		}
+
+		const idleSandwiches = this.getSceneSandwiches()
+			.filter((sandwich) => sandwich.isIdleOnHolder())
+			.sort((left, right) => left.y - right.y);
+
+		if (idleSandwiches.length === 0) {
+			return false;
+		}
+
+		const sandwich = idleSandwiches[0];
+		const moveToToaster = (sandwich as any).moveToToaster as (() => void) | undefined;
+		if (typeof moveToToaster !== "function") {
+			return false;
+		}
+
+		moveToToaster.call(sandwich);
+		return true;
 	}
 
 	public playFryerAnimation(fryerId: "fryer1" | "fryer2", durationMs?: number) {

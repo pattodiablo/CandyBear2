@@ -194,6 +194,11 @@
             background: #fd7db6;
             color: #ffffff;
             border: 3px solid #3e0307;
+            width: min(180px, 58%);
+            padding: 10px 12px;
+            font-size: 14px;
+            line-height: 1.2;
+            align-self: center;
         }
 
         #mobile-flush-status {
@@ -216,7 +221,7 @@
             line-height: 1.4;
         }
     </style>
-<script defer src="phaser-69325db5484b60dded91.bundle.js"></script><script defer src="main-cf2dbc7f90788269dec7.bundle.js"></script></head>
+<script defer src="phaser-69325db5484b60dded91.bundle.js"></script><script defer src="main-453984bd2d3ed6ffaa5c.bundle.js"></script></head>
 
 <body>
     <div id="orientation-overlay" aria-live="polite">
@@ -373,7 +378,7 @@
 
             const flushStoredProgress = () => {
                 const confirmed = window.confirm(
-                    "Clear all saved progress? This removes unlocked levels, stars, and coins."
+                    "¿Seguro que quieres borrar todos los datos guardados?\n\nSe eliminarán niveles desbloqueados, estrellas, monedas y progreso."
                 );
 
                 if (!confirmed) {
@@ -381,7 +386,7 @@
                 }
 
                 clearStoredProgress();
-                flushStatus.textContent = "Saved data cleared. Tap play to start fresh.";
+                flushStatus.textContent = "Datos guardados borrados. Toca jugar para empezar de nuevo.";
             };
 
             const enableLaunchButtons = () => {

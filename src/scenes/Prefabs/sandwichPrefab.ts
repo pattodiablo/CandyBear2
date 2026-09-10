@@ -34,6 +34,7 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 		});
 		this.on(Phaser.Input.Events.POINTER_OVER, this.handlePointerOver, this);
 		this.on(Phaser.Input.Events.POINTER_DOWN, this.handlePointerDown, this);
+		this.on(Phaser.GameObjects.Events.DESTROY, this.handleDestroyCleanup, this);
 		this.playSpawnTween();
 		/* END-USER-CTR-CODE */
 	}
@@ -77,6 +78,10 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 	private traySlotY?: number;
 
 	private handlePointerOver() {
+		if (!this.input || !this.input.enabled) {
+			return;
+		}
+
 		if (this.isLaunching || this.isRaised || this.isSelectingDelivery) {
 			return;
 		}
@@ -85,6 +90,10 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 	}
 
 	private handlePointerDown() {
+		if (!this.input || !this.input.enabled) {
+			return;
+		}
+
 		if (this.isLaunching || this.isRaised || this.isSelectingDelivery) {
 			return;
 		}
@@ -135,8 +144,15 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 		});
 	}
 
+	private setPointerInteractionEnabled(enabled: boolean) {
+		if (this.input) {
+			this.input.enabled = enabled;
+		}
+	}
+
 	private raiseSandwich() {
 
+		this.setPointerInteractionEnabled(false);
 		this.clearActiveState();
 		this.scene.tweens.add({
 			targets: this,
@@ -155,6 +171,7 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 
 	private returnToBase() {
 
+		this.setPointerInteractionEnabled(false);
 		this.clearActiveState();
 		this.scene.tweens.add({
 			targets: this,
@@ -166,6 +183,7 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 				this.isRaised = false;
 				this.isLaunching = false;
 				this.angle = this.baseAngle;
+				this.setPointerInteractionEnabled(true);
 			}
 		});
 	}
@@ -212,6 +230,7 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 
 	private moveToToaster() {
 
+		this.setPointerInteractionEnabled(false);
 		const levelScene = this.scene as Level;
 		const targetSlot = levelScene.claimAvailableToasterSlot();
 
@@ -222,6 +241,7 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 		}
 
 		this.clearActiveState();
+		this.resetToasterFlags();
 		this.currentSlotId = targetSlot.id;
 		const replacementSandwich = new sandwichPrefab(this.scene, this.baseX, this.baseY, this.texture.key, this.frame.name);
 		this.scene.add.existing(replacementSandwich);
@@ -250,8 +270,16 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 		this.currentSlotId = slotId;
 		this.disableInteractive();
 		this.setVisible(false);
+		this.resetToasterFlags();
+		this.clearBurnState(true);
+
 		levelScene.toaster.roastSandwich(() => {
-			if (!this.active) {
+			if (!this.active || !this.scene) {
+				this.releaseToasterSlotIfNeeded();
+				this.resetToasterFlags();
+				this.clearBurnState(true);
+				this.burnAlert?.destroy();
+				this.burnAlert = undefined;
 				return;
 			}
 
@@ -267,6 +295,7 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 				hitAreaCallback: Phaser.Geom.Circle.Contains,
 				useHandCursor: true
 			});
+			this.setPointerInteractionEnabled(false);
 			this.isAtToaster = true;
 			this.isReadyForDelivery = true;
 			this.isBurned = false;
@@ -276,6 +305,7 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 			this.scene.sound.play(`pop${Phaser.Math.Between(1, 3)}`);
 			this.startBurnCountdown();
 			this.playReadyForDeliveryPop(() => {
+				this.setPointerInteractionEnabled(true);
 				// Feedback: estela hacia bandeja (click sin cliente → se guarda ahí).
 				if (this.active && this.isReadyForDelivery && this.isAtToaster) {
 					levelScene.launchTrayHintTrailFrom(this.x, this.y);
@@ -436,6 +466,7 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 	private startDeliverySelection() {
 
 		const levelScene = this.scene as Level;
+		this.setPointerInteractionEnabled(false);
 		this.clearBurnState();
 		this.isLaunching = true;
 		this.isAtToaster = false;
@@ -469,6 +500,7 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 		}
 
 		const levelScene = this.scene as Level;
+		this.setPointerInteractionEnabled(false);
 		this.clearBurnState();
 		this.clearSelectionTimeout();
 		levelScene.clearDeliverySelection(this);
@@ -570,6 +602,7 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 
 		const levelScene = this.scene as Level;
 		const trayId = this.currentTrayId;
+		this.setPointerInteractionEnabled(false);
 		this.clearBurnState();
 		this.clearSelectionTimeout();
 		levelScene.clearDeliverySelection(this);
@@ -661,6 +694,7 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 				this.isReadyForDelivery = true;
 				this.isBurned = false;
 				this.clearTint();
+				this.setPointerInteractionEnabled(true);
 
 				if (hasTraySlot) {
 					this.isAtToaster = false;
@@ -745,6 +779,7 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 
 	private fallOffscreen() {
 
+		this.setPointerInteractionEnabled(false);
 		this.clearBurnState();
 		this.isAtToaster = false;
 		this.isReadyForDelivery = false;
@@ -762,6 +797,36 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 				this.destroy();
 			}
 		});
+	}
+
+	private handleDestroyCleanup() {
+
+		this.clearSelectionTimeout();
+		this.clearActiveState();
+		this.clearBurnState(true);
+		this.releaseToasterSlotIfNeeded();
+		this.resetToasterFlags();
+		this.burnAlert?.destroy();
+		this.burnAlert = undefined;
+	}
+
+	private releaseToasterSlotIfNeeded() {
+
+		const levelScene = this.scene as Level | undefined;
+		if (this.currentSlotId && levelScene) {
+			levelScene.releaseToasterSlot(this.currentSlotId);
+		}
+		this.currentSlotId = undefined;
+	}
+
+	private resetToasterFlags() {
+
+		this.isAtToaster = false;
+		this.isReadyForDelivery = false;
+		this.isBurned = false;
+		this.isLaunching = false;
+		this.isRaised = false;
+		this.isSelectingDelivery = false;
 	}
 
 	private clearActiveState() {
@@ -809,6 +874,9 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 
 	private playReadyForDeliveryPop(onComplete?: () => void) {
 
+		if (!this.active || !this.scene) {
+			return;
+		}
 		this.scene.tweens.killTweensOf(this);
 		this.setScale(0, 0);
 
@@ -835,6 +903,9 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 
 	private playPopTween(onComplete?: () => void) {
 
+		if (!this.active || !this.scene) {
+			return;
+		}
 		this.scene.tweens.killTweensOf(this);
 		this.setScale(this.baseScaleX, this.baseScaleY);
 

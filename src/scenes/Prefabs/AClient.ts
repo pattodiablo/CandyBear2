@@ -270,7 +270,13 @@ export default class AClient extends Phaser.GameObjects.Container {
 			return;
 		}
 
-		this.scene.tweens.killTweensOf(this.cookieHintIcon);
+		const scene = this.scene as Phaser.Scene | undefined;
+		if (!scene) {
+			this.cookieHintIcon = undefined;
+			return;
+		}
+
+		scene.tweens.killTweensOf(this.cookieHintIcon);
 
 		if (this.cookieHintIcon.active) {
 			this.cookieHintIcon.destroy();
@@ -284,7 +290,10 @@ export default class AClient extends Phaser.GameObjects.Container {
 			return;
 		}
 
-		this.scene.tweens.killTweensOf(this.personalityDialogueText);
+		const scene = this.scene as Phaser.Scene | undefined;
+		if (scene) {
+			scene.tweens.killTweensOf(this.personalityDialogueText);
+		}
 		if (this.personalityDialogueText.active) {
 			this.personalityDialogueText.destroy();
 		}
@@ -296,8 +305,13 @@ export default class AClient extends Phaser.GameObjects.Container {
 			return;
 		}
 
+		const scene = this.scene as Phaser.Scene | undefined;
+		if (!scene || !this.active) {
+			return;
+		}
+
 		this.clearPersonalityDialogue();
-		const bubble = this.scene.add.text(0, -190, dialogue, {
+		const bubble = scene.add.text(0, -190, dialogue, {
 			fontSize: "28px",
 			fontFamily: "Klop",
 			fontStyle: "bold",
@@ -319,7 +333,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 		this.personalityDialogueText = bubble;
 		bubble.setAlpha(0);
 		bubble.setScale(0.7);
-		this.scene.tweens.add({
+		scene.tweens.add({
 			targets: bubble,
 			alpha: 1,
 			scaleX: 1,
@@ -328,11 +342,11 @@ export default class AClient extends Phaser.GameObjects.Container {
 			duration: 180,
 			ease: "Back.Out",
 		});
-		this.scene.time.delayedCall(1100, () => {
-			if (!bubble.active) {
+		scene.time.delayedCall(1100, () => {
+			if (!bubble.active || !this.active) {
 				return;
 			}
-			this.scene.tweens.add({
+			scene.tweens.add({
 				targets: bubble,
 				alpha: 0,
 				scaleX: 0.85,
