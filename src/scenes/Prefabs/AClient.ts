@@ -16,6 +16,7 @@ import {
 	type ClientRequestAppearance,
 } from "../clientOrderPool";
 import { getClientRequestWaitDurationMs } from "../momentUpgradeBonuses";
+import ConfettiPrefab from "./ConfettiPrefab";
 import SmallHeartBurst from "./SmallHeartBurst";
 /* END-USER-IMPORTS */
 
@@ -830,52 +831,84 @@ export default class AClient extends Phaser.GameObjects.Container {
 		this.questionRevealTimer = undefined;
 		this.clearRequestState();
 		this.applyClientAppearance(this.ClientBack);
-		this.clientBear.playAnimation("walk");
 		const exitX = this.x;
 		const levelScene = this.scene as Level;
-
 		const exitDuration = Math.max(0, ((AClient.EXIT_Y - this.y) / AClient.MOVE_SPEED) * 1000);
+		const danceHoldDurationMs = 3000;
+		const startExit = () => {
+			this.clientBear.playAnimation("walk");
+			this.scene.tweens.add({
+				targets: this,
+				y: AClient.EXIT_Y,
+				duration: exitDuration,
+				ease: "Sine.In",
+				onComplete: () => {
+					if (!showYum) {
+						levelScene.respawnClient(this);
+						return;
+					}
 
-		this.scene.tweens.add({
-			targets: this,
-			y: AClient.EXIT_Y,
-			duration: exitDuration,
-			ease: "Sine.In",
-			onComplete: () => {
-				if (!showYum) {
-					levelScene.respawnClient(this);
-					return;
+					levelScene.recordSuccessfulDelivery();
+					this.scene.sound.play(`eating${Phaser.Math.Between(1, 3)}`);
+
+					if (grantLike) {
+						const skinIndex = this.clientBear.getAppearanceVariantIndex();
+						levelScene.showLikeHeartAt(exitX, () => {
+							const tipCoins = levelScene.maybeAwardLikeTip(
+								exitX,
+								skinIndex,
+								wasQuickService,
+								this.clientBear.getTipChanceBonus(),
+								this.clientBear.getTipPayoutMultiplier(),
+							);
+							if (tipCoins > 0) {
+								this.scene.sound.play("coinDrop", { volume: 0.5 });
+							}
+
+							const yumPrefab = levelScene.showYumAt(exitX);
+							levelScene.queueAlmostAfterYum(yumPrefab, wasAlmostLeaving);
+							levelScene.respawnClient(this, yumPrefab);
+						}, skinIndex);
+						return;
+					}
+
+					const yumPrefab = levelScene.showYumAt(exitX);
+					levelScene.queueAlmostAfterYum(yumPrefab, wasAlmostLeaving);
+					levelScene.respawnClient(this, yumPrefab);
 				}
+			});
+		};
 
-				levelScene.recordSuccessfulDelivery();
-				this.scene.sound.play(`eating${Phaser.Math.Between(1, 3)}`);
+		if (grantLike) {
+			ConfettiPrefab.launchUnlockBurstAt(
+				this.scene,
+				this.x,
+				this.y - 30,
+				this.depth + 3
+			);
 
-				if (grantLike) {
-					const skinIndex = this.clientBear.getAppearanceVariantIndex();
-					levelScene.showLikeHeartAt(exitX, () => {
-						const tipCoins = levelScene.maybeAwardLikeTip(
-							exitX,
-							skinIndex,
-							wasQuickService,
-							this.clientBear.getTipChanceBonus(),
-							this.clientBear.getTipPayoutMultiplier(),
-						);
-						if (tipCoins > 0) {
-							this.scene.sound.play("coinDrop", { volume: 0.5 });
-						}
-
-						const yumPrefab = levelScene.showYumAt(exitX);
-						levelScene.queueAlmostAfterYum(yumPrefab, wasAlmostLeaving);
-						levelScene.respawnClient(this, yumPrefab);
-					}, skinIndex);
-					return;
-				}
-
-				const yumPrefab = levelScene.showYumAt(exitX);
-				levelScene.queueAlmostAfterYum(yumPrefab, wasAlmostLeaving);
-				levelScene.respawnClient(this, yumPrefab);
+			if (this.scene.cache.audio.exists("dancing")) {
+				this.scene.sound.play("dancing", { volume: 0.8 });
 			}
-		});
+
+			const riseY = this.y - 100;
+			this.clientBear.playAnimation("dance", true);
+			this.scene.tweens.add({
+				targets: this,
+				y: riseY,
+				duration: 260,
+				ease: "Cubic.Out",
+				onComplete: () => {
+					this.scene.time.delayedCall(danceHoldDurationMs, () => {
+						this.clientBear.playAnimation("walk", true);
+						startExit();
+					});
+				}
+			});
+			return;
+		}
+
+		startExit();
 	}
 
 	private clearRequestState() {

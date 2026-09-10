@@ -247,6 +247,9 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 		this.scene.add.existing(replacementSandwich);
 		levelScene.registerHolderProductReplacement(this, replacementSandwich);
 		this.playSwooshSound();
+		if (this.scene.cache.audio.exists("toaster")) {
+			this.scene.sound.play("toaster", { volume: 0.8 });
+		}
 
 		this.scene.tweens.add({
 			targets: this,
@@ -424,6 +427,43 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 			&& !this.isLaunching
 			&& !this.isSelectingDelivery
 			&& !!this.currentSlotId;
+	}
+
+	public recoverFromStaleTrayState(trayId?: "charola1" | "charola2", targetX?: number, targetY?: number) {
+		if (!this.active || !this.scene) {
+			return;
+		}
+
+		this.setPointerInteractionEnabled(true);
+		this.clearSelectionTimeout();
+		this.isLaunching = false;
+		this.isSelectingDelivery = false;
+		this.isReadyForDelivery = true;
+		this.isAtToaster = false;
+		this.clearBurnState();
+
+		if (trayId) {
+			this.currentTrayId = trayId;
+			if (targetX !== undefined) {
+				this.traySlotX = targetX;
+			}
+			if (targetY !== undefined) {
+				this.traySlotY = targetY;
+			}
+			if (this.traySlotX !== undefined && this.traySlotY !== undefined) {
+				this.setPosition(this.traySlotX, this.traySlotY);
+			}
+		} else {
+			this.currentTrayId = undefined;
+			this.traySlotX = undefined;
+			this.traySlotY = undefined;
+		}
+
+		this.setScale(this.baseScaleX, this.baseScaleY);
+	}
+
+	public isOnTray() {
+		return !!this.currentTrayId;
 	}
 
 	public isIdleOnHolder() {

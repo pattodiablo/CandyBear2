@@ -3924,6 +3924,8 @@ export default class Level extends Phaser.Scene {
 
 	public getDirectDeliveryTarget(product: AProduct | milkglass | sandwichPrefab) {
 
+		this.sanitizeStaleTrayProducts();
+
 		const matchingTargets = this.activeClients.filter((client) => {
 			return client.active && client.canReceiveDelivery() && client.matchesProduct(product);
 		});
@@ -4226,6 +4228,7 @@ export default class Level extends Phaser.Scene {
 			return false;
 		}
 
+		this.sanitizeStaleTrayProducts();
 		const readyTrayProducts = this.getReadyTrayProductsForOrders();
 
 		if (readyTrayProducts.length === 0) {
@@ -5461,6 +5464,53 @@ export default class Level extends Phaser.Scene {
 		}
 
 		return undefined;
+	}
+
+	private sanitizeStaleTrayProducts() {
+		for (const trayId of ["charola1", "charola2"] as const) {
+			const arr = trayId === "charola1" ? this.charola1Products : this.charola2Products;
+			for (let i = arr.length - 1; i >= 0; i--) {
+				const product = arr[i];
+				if (!product || !product.active || product.scene !== this) {
+					arr.splice(i, 1);
+					continue;
+				}
+
+				if (product.isChoosingDelivery() || !product.canReceiveDirectDelivery()) {
+					const slot = this.claimAvailableTraySlot(trayId);
+					if (slot) {
+						product.recoverFromStaleTrayState(trayId, slot.x, slot.y);
+						product.snapToTraySlot(trayId, slot.x, slot.y);
+					}
+				}
+			}
+		}
+
+		for (const product of [...this.getSceneProducts(), ...this.getSceneSandwiches()]) {
+			if (!product.active || !product.isOnTray()) {
+				continue;
+			}
+
+			const inTray1 = this.charola1Products.includes(product);
+			const inTray2 = this.charola2Products.includes(product);
+			if (inTray1 || inTray2) {
+				continue;
+			}
+
+			const trayId = this.trayHasFreeSlot("charola1") ? "charola1" : "charola2";
+			const slot = this.claimAvailableTraySlot(trayId);
+			if (!slot) {
+				continue;
+			}
+
+			product.recoverFromStaleTrayState(trayId, slot.x, slot.y);
+			product.snapToTraySlot(trayId, slot.x, slot.y);
+			if (trayId === "charola1") {
+				this.charola1Products.push(product);
+			} else {
+				this.charola2Products.push(product);
+			}
+		}
 	}
 
 	private getProductsOnTrays() {

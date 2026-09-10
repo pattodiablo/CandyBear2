@@ -249,6 +249,40 @@ export default class AProduct extends Phaser.GameObjects.Image {
 			&& !this.isSelectingDelivery;
 	}
 
+	public recoverFromStaleTrayState(trayId?: "charola1" | "charola2", targetX?: number, targetY?: number) {
+		if (!this.active || !this.scene) {
+			return;
+		}
+
+		this.setPointerInteractionEnabled(true);
+		this.clearSelectionTimeout();
+		this.isLaunching = false;
+		this.isSelectingDelivery = false;
+		this.isReadyForDelivery = true;
+		this.isAtWorkplace = false;
+		this.isBurned = false;
+		this.clearBurnState();
+
+		if (trayId) {
+			this.currentTrayId = trayId;
+			if (targetX !== undefined) {
+				this.traySlotX = targetX;
+			}
+			if (targetY !== undefined) {
+				this.traySlotY = targetY;
+			}
+			if (this.traySlotX !== undefined && this.traySlotY !== undefined) {
+				this.setPosition(this.traySlotX, this.traySlotY);
+			}
+		} else {
+			this.currentTrayId = undefined;
+			this.traySlotX = undefined;
+			this.traySlotY = undefined;
+		}
+
+		this.resetScaleToBase();
+	}
+
 	public isOnTray() {
 
 		return !!this.currentTrayId;
