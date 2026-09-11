@@ -314,7 +314,7 @@
             "x": 595,
             "y": 360,
             "visible": true,
-            "editorRender": false
+            "editorRender": true
         },
         {
             "type": "Image",

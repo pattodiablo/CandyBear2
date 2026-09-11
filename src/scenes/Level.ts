@@ -127,35 +127,14 @@ export default class Level extends Phaser.Scene {
 		// toaster
 		const toaster = new ToasterPrefab(this, 827, 582);
 		this.add.existing(toaster);
-		toaster.setInteractive(
-			new Phaser.Geom.Rectangle(-70, -70, 140, 150),
-			Phaser.Geom.Rectangle.Contains
-		);
-		toaster.on(Phaser.Input.Events.POINTER_DOWN, () => {
-			this.tryAutoSendIdleSandwichesToAvailableToaster();
-		});
 
 		// fryer1
 		const fryer1 = new FryerPrefab(this, 390, 523);
 		this.add.existing(fryer1);
-		fryer1.setInteractive(
-			new Phaser.Geom.Rectangle(-70, -70, 140, 150),
-			Phaser.Geom.Rectangle.Contains
-		);
-		fryer1.on(Phaser.Input.Events.POINTER_DOWN, () => {
-			this.tryAutoSendIdleProductsToAvailableFryer("fryer1");
-		});
 
 		// fryer2
 		const fryer2 = new FryerPrefab(this, 390, 654);
 		this.add.existing(fryer2);
-		fryer2.setInteractive(
-			new Phaser.Geom.Rectangle(-70, -70, 140, 150),
-			Phaser.Geom.Rectangle.Contains
-		);
-		fryer2.on(Phaser.Input.Events.POINTER_DOWN, () => {
-			this.tryAutoSendIdleProductsToAvailableFryer("fryer2");
-		});
 
 		// holder1
 		const holder1 = this.add.image(80, 561, "Holder");
@@ -187,10 +166,6 @@ export default class Level extends Phaser.Scene {
 		// candyicon
 		this.add.image(1174, 557, "candyicon");
 
-		// cookieJar
-		const cookieJar = new CookiesJar(this, 75, 455);
-		this.add.existing(cookieJar);
-
 		// charola1
 		const charola1 = this.add.image(927, 399, "Charola");
 		charola1.scaleX = 1.2;
@@ -198,6 +173,10 @@ export default class Level extends Phaser.Scene {
 		// charola2
 		const charola2 = this.add.image(315, 399, "Charola");
 		charola2.scaleX = 1.2;
+
+		// cookieJar
+		const cookieJar = new CookiesJar(this, 145, 455);
+		this.add.existing(cookieJar);
 
 		// lamp
 		this.add.image(193, 57, "lamp");
@@ -240,14 +219,10 @@ export default class Level extends Phaser.Scene {
 
 		// glace2
 		const glace2 = new FlavorBottle(this, 1145, 454);
-		glace2.setVisible(false);
-		glace2.setActive(false);
 		this.add.existing(glace2);
 
 		// glace1
 		const glace1 = new FlavorBottle(this, 1062, 458, "glace1");
-		glace1.setVisible(false);
-		glace1.setActive(false);
 		this.add.existing(glace1);
 
 		// overTrayIcon
@@ -319,9 +294,9 @@ export default class Level extends Phaser.Scene {
 		this.workplace2 = workplace2;
 		this.chocolateDip = chocolateDip;
 		this.candyDip = candyDip;
-		this.cookieJar = cookieJar;
 		this.charola1 = charola1;
 		this.charola2 = charola2;
+		this.cookieJar = cookieJar;
 		this.rawProduct1 = rawProduct1;
 		this.rawProduct2 = rawProduct2;
 		this.milkGlass = milkGlass;
@@ -358,9 +333,9 @@ export default class Level extends Phaser.Scene {
 	public workplace2!: Phaser.GameObjects.Image;
 	public chocolateDip!: Phaser.GameObjects.Image;
 	public candyDip!: Phaser.GameObjects.Image;
-	public cookieJar!: CookiesJar;
 	public charola1!: Phaser.GameObjects.Image;
 	public charola2!: Phaser.GameObjects.Image;
+	public cookieJar!: CookiesJar;
 	private rawProduct1!: AProduct;
 	private rawProduct2!: AProduct;
 	private milkGlass!: milkglass;
@@ -3453,7 +3428,6 @@ export default class Level extends Phaser.Scene {
 			return;
 		}
 		arr.splice(idx, 1);
-		this.reflowTrayProducts(trayId);
 		this.updateTrayInviteAttention();
 	}
 

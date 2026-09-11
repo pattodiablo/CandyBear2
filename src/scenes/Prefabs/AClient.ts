@@ -100,6 +100,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 	private productCarouselTimer?: Phaser.Time.TimerEvent;
 	/** Pedidos fijos (p. ej. clientes de limpieza de bandeja al final del día). */
 	private forcedOrders?: ClientRequestAppearance[];
+	private isFinalWavePickupClient = false;
 
 	private static readonly TARGET_Y = 370;
 	private static readonly EXIT_Y = 470;
@@ -383,10 +384,12 @@ export default class AClient extends Phaser.GameObjects.Container {
 	public assignForcedOrders(orders: ClientRequestAppearance[]) {
 		if (orders.length === 0) {
 			this.forcedOrders = undefined;
+			this.isFinalWavePickupClient = false;
 			return;
 		}
 
 		this.forcedOrders = orders.map((order) => ({ ...order }));
+		this.isFinalWavePickupClient = true;
 	}
 
 	private showClientQuestion() {
@@ -835,6 +838,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 		const levelScene = this.scene as Level;
 		const exitDuration = Math.max(0, ((AClient.EXIT_Y - this.y) / AClient.MOVE_SPEED) * 1000);
 		const danceHoldDurationMs = 3000;
+		const shouldDance = showYum && wasQuickService && grantLike && this.isFinalWavePickupClient;
 		const startExit = () => {
 			this.clientBear.playAnimation("walk");
 			this.scene.tweens.add({
@@ -879,7 +883,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 			});
 		};
 
-		if (grantLike) {
+		if (shouldDance) {
 			ConfettiPrefab.launchUnlockBurstAt(
 				this.scene,
 				this.x,

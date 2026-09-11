@@ -44,7 +44,7 @@ export default class AlertPrefab extends Phaser.GameObjects.Image {
 
 		if (normalized >= 0.98) {
 			this.stopPulse();
-			this.setTint(0x1d1b1a);
+			this.clearTint();
 			this.setAlpha(0.95);
 			this.setScale(this.baseScale + 0.08);
 			return;
