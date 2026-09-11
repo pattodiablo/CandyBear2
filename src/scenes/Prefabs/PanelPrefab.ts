@@ -554,7 +554,9 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 			duration: PanelPrefab.STAR_POP_DURATION,
 			ease: "Back.Out",
 			onComplete: () => {
-				this.scene.sound.play(`pop${Phaser.Math.Between(1, 3)}`);
+				if (this.scene && this.scene.sys?.isActive() && this.scene.sound) {
+					this.scene.sound.play(`pop${Phaser.Math.Between(1, 3)}`);
+				}
 				this.scene.tweens.add({
 					targets: star,
 					scaleX: baseScale.scaleX,

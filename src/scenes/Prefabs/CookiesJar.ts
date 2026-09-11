@@ -289,12 +289,16 @@ export default class CookiesJar extends Phaser.GameObjects.Container {
 		const levelScene = this.scene as Level;
 
 		if (!levelScene.tryLaunchCookieReward(this.x, this.y)) {
-			this.scene.sound.play("deny");
+			if (this.scene && this.scene.sys?.isActive() && this.scene.sound) {
+				this.scene.sound.play("deny");
+			}
 			return;
 		}
 
 		this.isPressed = true;
-		this.scene.sound.play("pop3");
+		if (this.scene && this.scene.sys?.isActive() && this.scene.sound) {
+			this.scene.sound.play("pop3");
+		}
 		this.animateScale(
 			this.baseScaleX * CookiesJar.PRESSED_SCALE,
 			this.baseScaleY * CookiesJar.PRESSED_SCALE,

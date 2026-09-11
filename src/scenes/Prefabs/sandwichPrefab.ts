@@ -248,7 +248,9 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 		levelScene.registerHolderProductReplacement(this, replacementSandwich);
 		this.playSwooshSound();
 		if (this.scene.cache.audio.exists("toaster")) {
-			this.scene.sound.play("toaster", { volume: 0.8 });
+			if (this.scene && this.scene.sys?.isActive() && this.scene.sound) {
+				this.scene.sound.play("toaster", { volume: 0.8 });
+			}
 		}
 
 		this.scene.tweens.add({
@@ -305,7 +307,9 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 			this.isLaunching = false;
 			this.isRaised = false;
 			this.clearTint();
+			if (this.scene && this.scene.sys?.isActive() && this.scene.sound) {
 			this.scene.sound.play(`pop${Phaser.Math.Between(1, 3)}`);
+		}
 			this.startBurnCountdown();
 			this.playReadyForDeliveryPop(() => {
 				this.setPointerInteractionEnabled(true);
@@ -687,7 +691,9 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 					if (isOrderComplete) {
 						client.consumeRequestAndExit(true);
 					} else {
-						this.scene.sound.play(`eating${Phaser.Math.Between(1, 3)}`);
+						if (this.scene && this.scene.sys?.isActive() && this.scene.sound) {
+							this.scene.sound.play(`eating${Phaser.Math.Between(1, 3)}`);
+						}
 					}
 
 					this.destroy();
@@ -965,7 +971,9 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 	private playSwooshSound() {
 
 		const swooshSoundKey = Phaser.Math.Between(0, 1) === 0 ? "swoosh" : "swoosh2";
-		this.scene.sound.play(swooshSoundKey);
+		if (this.scene && this.scene.sys?.isActive() && this.scene.sound) {
+			this.scene.sound.play(swooshSoundKey);
+		}
 	}
 
 	/* END-USER-CODE */

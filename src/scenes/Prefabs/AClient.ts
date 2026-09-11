@@ -380,8 +380,8 @@ export default class AClient extends Phaser.GameObjects.Container {
 		});
 	}
 
-	/** Asigna un pedido concreto antes de revelar la pregunta (limpieza de bandejas). */
-	public assignForcedOrders(orders: ClientRequestAppearance[]) {
+	/** Asigna un pedido concreto antes de revelar la pregunta. */
+	public assignForcedOrders(orders: ClientRequestAppearance[], isFinalWavePickup = false) {
 		if (orders.length === 0) {
 			this.forcedOrders = undefined;
 			this.isFinalWavePickupClient = false;
@@ -389,7 +389,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 		}
 
 		this.forcedOrders = orders.map((order) => ({ ...order }));
-		this.isFinalWavePickupClient = true;
+		this.isFinalWavePickupClient = isFinalWavePickup;
 	}
 
 	private showClientQuestion() {
@@ -820,7 +820,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 		const wasAlmostLeaving = showYum && this.wasAlmostLeavingWhenServed();
 
 		// Solo al irse sin su pedido (timeout o rechazo), no en entrega exitosa.
-		if (!showYum && this.scene.cache.audio.exists("angry")) {
+		if (!showYum && this.scene && this.scene.sys?.isActive() && this.scene.sound && this.scene.cache.audio.exists("angry")) {
 			this.scene.sound.play("angry");
 		}
 
@@ -865,7 +865,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 								this.clientBear.getTipChanceBonus(),
 								this.clientBear.getTipPayoutMultiplier(),
 							);
-							if (tipCoins > 0) {
+							if (tipCoins > 0 && this.scene && this.scene.sys?.isActive() && this.scene.sound) {
 								this.scene.sound.play("coinDrop", { volume: 0.5 });
 							}
 
@@ -891,7 +891,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 				this.depth + 3
 			);
 
-			if (this.scene.cache.audio.exists("dancing")) {
+			if (this.scene && this.scene.sys?.isActive() && this.scene.sound && this.scene.cache.audio.exists("dancing")) {
 				this.scene.sound.play("dancing", { volume: 0.8 });
 			}
 

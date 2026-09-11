@@ -498,8 +498,8 @@ export default class Level extends Phaser.Scene {
 	private queuedClientEntries = 0;
 	/** Clientes extra por productos listos en bandeja al final de las oleadas. */
 	private extraClientsSpawned = 0;
-	/** Cola de pedidos forzados (uno por cliente) para la limpieza de bandejas. */
-	private forcedClientOrderQueue: ClientRequestAppearance[][] = [];
+	/** Cola de pedidos forzados (uno por cliente) para eventos especiales. */
+	private forcedClientOrderQueue: Array<{ orders: ClientRequestAppearance[]; isFinalWavePickup: boolean }> = [];
 	private waveSpawnTimers: Phaser.Time.TimerEvent[] = [];
 	private levelPrepTimer?: Phaser.Time.TimerEvent;
 	private prepMessageText?: Phaser.GameObjects.Text;
@@ -796,14 +796,18 @@ export default class Level extends Phaser.Scene {
 	 * (quemado, vaso sin cliente, cliente se va, entrega incorrecta, etc.).
 	 */
 	public playCanceledOrderSound() {
+		if (!this.sys?.isActive() || !this.sound) {
+			return;
+		}
+
 		if (this.cache.audio.exists("canceled")) {
-			this.sound.play("canceled");
+			this.sound?.play("canceled");
 			return;
 		}
 
 		// Fallback por si el pack aún no tiene el asset en alguna build.
 		if (this.cache.audio.exists("looseMoney")) {
-			this.sound.play("looseMoney");
+			this.sound?.play("looseMoney");
 		}
 	}
 
@@ -3415,8 +3419,16 @@ export default class Level extends Phaser.Scene {
 		if (arr.length >= Level.TRAY_CAPACITY) {
 			return;
 		}
+
 		arr.push(product);
-		this.reflowTrayProducts(trayId);
+		const productIndex = arr.length - 1;
+		const slot = this.getTraySlotPosition(trayId, productIndex);
+		if (!slot) {
+			return;
+		}
+
+		product.setDepth((trayId === "charola1" ? this.charola1 : this.charola2)?.depth ?? 0 + 2 + productIndex);
+		product.snapToTraySlot(trayId, slot.x, slot.y);
 		this.updateTrayInviteAttention();
 	}
 
@@ -3431,30 +3443,41 @@ export default class Level extends Phaser.Scene {
 		this.updateTrayInviteAttention();
 	}
 
+	private getTraySlotPosition(trayId: "charola1" | "charola2", index: number) {
+		const tray = trayId === "charola1" ? this.charola1 : this.charola2;
+		if (!tray) {
+			return null;
+		}
+
+		const baseX = tray.x;
+		const baseY = tray.y + 8;
+		const offsets = (() => {
+			if (index === 0) {
+				return [0];
+			}
+			if (index === 1) {
+				return [-Level.TRAY_SLOT_OFFSET / 2, Level.TRAY_SLOT_OFFSET / 2];
+			}
+			return [-Level.TRAY_SLOT_OFFSET, 0, Level.TRAY_SLOT_OFFSET];
+		})();
+
+		return {
+			x: baseX + (offsets[index] ?? 0),
+			y: baseY,
+		};
+	}
+
 	private reflowTrayProducts(trayId: "charola1" | "charola2") {
 		this.sanitizeTrayProductArray(trayId);
 		const arr = trayId === "charola1" ? this.charola1Products : this.charola2Products;
-		const tray = trayId === "charola1" ? this.charola1 : this.charola2;
-		if (!tray) {
-			return;
-		}
-		const baseX = tray.x;
-		const baseY = tray.y + 8;
-		const offsets = [] as number[];
-		if (arr.length === 1) {
-			offsets.push(0);
-		} else if (arr.length === 2) {
-			offsets.push(-Level.TRAY_SLOT_OFFSET / 2, Level.TRAY_SLOT_OFFSET / 2);
-		} else {
-			offsets.push(-Level.TRAY_SLOT_OFFSET, 0, Level.TRAY_SLOT_OFFSET);
-		}
-
 		for (let i = 0; i < arr.length; i++) {
-			const prod = arr[i];
-			const x = baseX + (offsets[i] ?? 0);
-			const y = baseY;
-			prod.setDepth(tray.depth + 2 + i);
-			prod.snapToTraySlot(trayId, x, y);
+			const product = arr[i];
+			const slot = this.getTraySlotPosition(trayId, i);
+			if (!slot) {
+				continue;
+			}
+			product.setDepth((trayId === "charola1" ? this.charola1 : this.charola2)?.depth ?? 0 + 2 + i);
+			product.snapToTraySlot(trayId, slot.x, slot.y);
 		}
 	}
 
@@ -4062,7 +4085,7 @@ export default class Level extends Phaser.Scene {
 		almost.setDepth(Math.max(this.workstation.depth + 50, 1000));
 		almost.setScrollFactor(0);
 
-		if (this.cache.audio.exists("pop1")) {
+		if (this.sys?.isActive() && this.sound && this.sys?.isActive() && this.sound && this.cache.audio.exists("pop1")) {
 			this.sound.play("pop1", { volume: 0.5 });
 		}
 
@@ -4072,7 +4095,9 @@ export default class Level extends Phaser.Scene {
 	public showCoinsAt(x: number, amount: number) {
 
 		const coinDropSoundKey = Phaser.Math.Between(0, 1) === 0 ? "coinDrop" : "coinDrop2";
-		this.sound.play(coinDropSoundKey);
+		if (this.sys?.isActive() && this.sound) {
+			this.sound.play(coinDropSoundKey);
+		}
 		const coinOffsets = this.getCoinOffsets(amount);
 		const frontCoinDepth = Math.max(this.workstation.depth + 50, 900);
 
@@ -4217,7 +4242,10 @@ export default class Level extends Phaser.Scene {
 		this.time.delayedCall(2500, () => {
 			for (const product of readyTrayProducts) {
 				const appearance = this.getRequestAppearanceFromTrayProduct(product);
-				this.forcedClientOrderQueue.push([appearance]);
+				this.forcedClientOrderQueue.push({
+					orders: [appearance],
+					isFinalWavePickup: true,
+				});
 				this.extraClientsSpawned++;
 				this.clientsRemainingInLevel++;
 				this.queuedClientEntries++;
@@ -4528,10 +4556,11 @@ export default class Level extends Phaser.Scene {
 	private spawnClient(spawnX: number) {
 
 		const client = new AClient(this, spawnX, this.clientSpawnY);
-		const forcedOrders = this.forcedClientOrderQueue.shift();
+		const forcedEntry = this.forcedClientOrderQueue.shift();
+		const forcedOrders = forcedEntry?.orders ?? [];
 
-		if (forcedOrders && forcedOrders.length > 0) {
-			client.assignForcedOrders(forcedOrders);
+		if (forcedOrders.length > 0) {
+			client.assignForcedOrders(forcedOrders, forcedEntry?.isFinalWavePickup ?? false);
 		}
 
 		this.add.existing(client);
@@ -4658,11 +4687,11 @@ export default class Level extends Phaser.Scene {
 		}
 
 		this.forcedClientOrderQueue = [
-			[{ key: "Product1Chocolate" }],
-			[{ key: "Product1Candy" }],
-			[{ key: "Product1Chocolate" }],
-			[{ key: "Product1Candy" }],
-			[{ key: "Product1Chocolate" }],
+			{ orders: [{ key: "Product1Chocolate" }], isFinalWavePickup: false },
+			{ orders: [{ key: "Product1Candy" }], isFinalWavePickup: false },
+			{ orders: [{ key: "Product1Chocolate" }], isFinalWavePickup: false },
+			{ orders: [{ key: "Product1Candy" }], isFinalWavePickup: false },
+			{ orders: [{ key: "Product1Chocolate" }], isFinalWavePickup: false },
 		];
 	}
 

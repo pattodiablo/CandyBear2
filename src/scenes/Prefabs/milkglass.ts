@@ -705,7 +705,9 @@ export default class milkglass extends Phaser.GameObjects.Image {
 	private playSwooshSound() {
 
 		const swooshSoundKey = Phaser.Math.Between(0, 1) === 0 ? "swoosh" : "swoosh2";
-		this.scene.sound.play(swooshSoundKey);
+		if (this.scene && this.scene.sys?.isActive() && this.scene.sound) {
+			this.scene.sound.play(swooshSoundKey);
+		}
 	}
 
 	// Write your code here.

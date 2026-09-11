@@ -639,7 +639,9 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		this.setPointerInteractionEnabled(true);
 		this.applyAppearance(this.Cooked);
 		this.clearTint();
-		this.scene.sound.play(`pop${Phaser.Math.Between(1, 3)}`);
+		if (this.scene && this.scene.sys?.isActive() && this.scene.sound) {
+			this.scene.sound.play(`pop${Phaser.Math.Between(1, 3)}`);
+		}
 		this.startBurnCountdown();
 		this.playPopTween();
 	}
@@ -1043,7 +1045,9 @@ export default class AProduct extends Phaser.GameObjects.Image {
 					if (isOrderComplete) {
 						client.consumeRequestAndExit(true);
 					} else {
-						this.scene.sound.play(`eating${Phaser.Math.Between(1, 3)}`);
+						if (this.scene && this.scene.sys?.isActive() && this.scene.sound) {
+							this.scene.sound.play(`eating${Phaser.Math.Between(1, 3)}`);
+						}
 					}
 
 					this.destroy();
@@ -1261,7 +1265,9 @@ export default class AProduct extends Phaser.GameObjects.Image {
 	private playSwooshSound() {
 
 		const swooshSoundKey = Phaser.Math.Between(0, 1) === 0 ? "swoosh" : "swoosh2";
-		this.scene.sound.play(swooshSoundKey);
+		if (this.scene && this.scene.sys?.isActive() && this.scene.sound) {
+			this.scene.sound.play(swooshSoundKey);
+		}
 	}
 
 	public matchesAppearance(appearance: { key: string; frame?: string | number }) {
