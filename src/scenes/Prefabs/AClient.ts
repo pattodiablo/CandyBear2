@@ -102,8 +102,8 @@ export default class AClient extends Phaser.GameObjects.Container {
 	private forcedOrders?: ClientRequestAppearance[];
 	private isFinalWavePickupClient = false;
 
-	private static readonly TARGET_Y = 370;
-	private static readonly EXIT_Y = 470;
+	private static readonly TARGET_Y = 330;
+	private static readonly EXIT_Y = 430;
 	private static readonly MOVE_SPEED = 120;
 	private static readonly QUESTION_FLOAT_DISTANCE = 12;
 	private static readonly QUESTION_EARLY_MAX = 900;

@@ -1326,6 +1326,8 @@ export default class Level extends Phaser.Scene {
 		this.clearProgressionLockIcons();
 		this.applyProductSlotProgression();
 		this.applyWorkstationProgression();
+		this.refreshCookieJarVisuals();
+		this.updateCookieJarAttention();
 		if (Level.ENABLE_PROGRESSION_LOCKS) {
 			this.updateProgressionLockAffordance();
 		}
@@ -2847,6 +2849,8 @@ export default class Level extends Phaser.Scene {
 				return this.holder3;
 			case "holder4":
 				return this.holder4;
+			case "cookieJar":
+				return this.cookieJar;
 			default:
 				return undefined;
 		}
@@ -2861,7 +2865,16 @@ export default class Level extends Phaser.Scene {
 			scaleY: number;
 			active: boolean;
 			setScale: (x: number, y?: number) => unknown;
+			setVisible?: (value: boolean) => unknown;
+			setActive?: (value: boolean) => void;
 		};
+
+		if (typeof display.setVisible === "function") {
+			display.setVisible(true);
+		}
+		if (typeof display.setActive === "function") {
+			display.setActive(true);
+		}
 
 		if (typeof display.x !== "number" || typeof display.y !== "number") {
 			return;
@@ -3719,8 +3732,7 @@ export default class Level extends Phaser.Scene {
 	}
 
 	private refreshCookieJarVisuals() {
-
-		if (!this.cookieJar?.active) {
+		if (!this.cookieJar || !this.sys.isActive() || !this.cookieJar.scene || !this.cookieJar.scene.sys?.isActive()) {
 			return;
 		}
 
@@ -3731,6 +3743,8 @@ export default class Level extends Phaser.Scene {
 		if (!isUnlocked) {
 			this.cookieJar.setAttentionPulse(false);
 			this.cookieJar.setSandClockUrgent(false);
+			this.cookieJar.setTexture(Level.EMPTY_COOKIE_JAR_TEXTURE);
+			this.cookieJar.setRemainingCookies(0);
 			return;
 		}
 
@@ -3740,7 +3754,7 @@ export default class Level extends Phaser.Scene {
 				? Level.COOKIE_JAR_TEXTURE
 				: Level.EMPTY_COOKIE_JAR_TEXTURE
 		);
-		this.updateCookieJarBadge();
+		this.cookieJar.setRemainingCookies(this.cookieStock);
 	}
 
 	private updateCookieJarBadge() {
@@ -4039,8 +4053,8 @@ export default class Level extends Phaser.Scene {
 	}
 
 	/**
-	 * Con probabilidad según el tier del osito, lanza confeti hacia el tarro
-	 * y al llegar suma 1 galleta con un pulso de feedback.
+	 * Cada like añade exactamente 1 galleta al tarro; el premio se dispara de forma
+	 * determinista y no depende del skin ni de la suerte.
 	 */
 	private maybeLaunchLikeCookieTrail(fromX: number, fromY: number, skinIndex: number) {
 
@@ -4953,6 +4967,41 @@ export default class Level extends Phaser.Scene {
 		this.candyDip.setInteractive({ useHandCursor: true });
 		this.candyDip.on(Phaser.Input.Events.POINTER_DOWN, () => {
 			this.resolveDipSelection("candy");
+		});
+	}
+
+	private setupMachineInputs() {
+		this.fryer1.setInteractive(
+			new Phaser.Geom.Rectangle(-72, -68, 144, 160),
+			Phaser.Geom.Rectangle.Contains
+		);
+		this.fryer1.on(Phaser.Input.Events.POINTER_DOWN, () => {
+			if (this.fryer1Occupied || !this.hasAvailableFryer()) {
+				return;
+			}
+			this.tryAutoSendIdleProductsToAvailableFryer("fryer1");
+		});
+
+		this.fryer2.setInteractive(
+			new Phaser.Geom.Rectangle(-72, -68, 144, 160),
+			Phaser.Geom.Rectangle.Contains
+		);
+		this.fryer2.on(Phaser.Input.Events.POINTER_DOWN, () => {
+			if (!this.fryer2Enabled || this.fryer2Occupied || !this.hasAvailableFryer()) {
+				return;
+			}
+			this.tryAutoSendIdleProductsToAvailableFryer("fryer2");
+		});
+
+		this.toaster.setInteractive(
+			new Phaser.Geom.Rectangle(-100, -90, 200, 190),
+			Phaser.Geom.Rectangle.Contains
+		);
+		this.toaster.on(Phaser.Input.Events.POINTER_DOWN, () => {
+			if (!this.toasterEnabled || this.toasterSlotOccupied) {
+				return;
+			}
+			this.tryAutoSendIdleSandwichesToAvailableToaster();
 		});
 	}
 
@@ -6003,6 +6052,7 @@ export default class Level extends Phaser.Scene {
 		this.initializeDayIndicator();
 		this.initializeClientsLeftIndicator();
 		this.setupDipInputs();
+		this.setupMachineInputs();
 		this.setupTrayInputs();
 		this.setupIntroOverlay();
 		this.setupMenuButton();

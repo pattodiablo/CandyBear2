@@ -9,7 +9,6 @@ import CredictsScene from "./scenes/CredictsScene";
 declare global {
 	interface Window {
 		bootCandyBearGame?: () => void;
-		refreshCandyBearGameScale?: () => void;
 	}
 }
 
@@ -30,44 +29,7 @@ class Boot extends Phaser.Scene {
 	}
 }
 
-function isMobileDevice() {
-	return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
-		|| (navigator.maxTouchPoints > 0 && Math.min(window.screen.width, window.screen.height) < 1024);
-}
-
 let game: Phaser.Game | undefined;
-
-function getViewportSize() {
-	const viewport = window.visualViewport;
-	if (viewport) {
-		return {
-			width: Math.max(1, Math.round(viewport.width)),
-			height: Math.max(1, Math.round(viewport.height))
-		};
-	}
-
-	return {
-		width: window.innerWidth,
-		height: window.innerHeight
-	};
-}
-
-function refreshGameScale() {
-	if (!game || !isMobileDevice()) {
-		return;
-	}
-
-	const { width, height } = getViewportSize();
-	const ratio = Math.min(width / 1280, height / 720);
-	const targetWidth = Math.max(1, Math.round(1280 * ratio));
-	const targetHeight = Math.max(1, Math.round(720 * ratio));
-
-	if (game.scale && typeof game.scale.resize === "function") {
-		game.scale.resize(targetWidth, targetHeight);
-	}
-
-	game.scale.refresh();
-}
 
 /** true solo si la pestaña está visible y la ventana tiene foco. */
 function isGameWindowActive() {
@@ -160,28 +122,12 @@ function bootGame() {
 		setupFocusPause(game);
 		installAudioUnlockHandlers();
 		game.scene.start("Boot");
-
-		if (isMobileDevice()) {
-			window.addEventListener("resize", refreshGameScale);
-			window.addEventListener("orientationchange", () => {
-				window.setTimeout(refreshGameScale, 150);
-				window.setTimeout(refreshGameScale, 400);
-			});
-		}
-	}
-
-	if (isMobileDevice()) {
-		refreshGameScale();
 	}
 }
 
 window.bootCandyBearGame = bootGame;
-window.refreshCandyBearGameScale = refreshGameScale;
 
 window.addEventListener("load", () => {
 	window.dispatchEvent(new Event("candybear-game-ready"));
-
-	if (!isMobileDevice()) {
-		bootGame();
-	}
+	bootGame();
 });

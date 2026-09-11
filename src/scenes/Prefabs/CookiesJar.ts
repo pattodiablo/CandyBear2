@@ -77,16 +77,23 @@ export default class CookiesJar extends Phaser.GameObjects.Container {
 	private badgeText?: Phaser.GameObjects.Text;
 
 	public setTexture(textureKey: string) {
+		if (!this.jarImage || !this.scene || !this.scene.sys?.isActive()) {
+			return;
+		}
+
 		this.jarImage.setTexture(textureKey);
 	}
 
 	public setRemainingCookies(remaining: number) {
+		if (!this.badgeText || !this.badgeBackground || !this.scene || !this.scene.sys?.isActive()) {
+			return;
+		}
 
 		const normalizedRemaining = Math.max(0, Math.floor(remaining));
 
-		this.badgeText?.setText(String(normalizedRemaining));
-		this.badgeBackground?.setVisible(true);
-		this.badgeText?.setVisible(true);
+		this.badgeText.setText(String(normalizedRemaining));
+		this.badgeBackground.setVisible(true);
+		this.badgeText.setVisible(true);
 	}
 
 	/**

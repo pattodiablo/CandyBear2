@@ -1,4 +1,5 @@
 import { BODY_SKIN_MAX_INDEX } from "./clientBearCatalog";
+import { isCookieJarAcquired } from "./unlockCatalog";
 
 /** Stock persistente del tarro de galletas (se acumula entre niveles). */
 export const COOKIE_STOCK_STORAGE_KEY = "candybear2-cookie-stock";
@@ -10,19 +11,18 @@ export const MAX_COOKIE_STOCK = 30;
 export const COOKIES_PER_STAR = 1;
 
 /**
- * Chance de que un like envíe **1** galleta al tarro (nunca más de una por like).
- * Skins bajos (tempranos): un poco más fiables. Skins altos: más raros.
- * Valores bajos a propósito: el tarro debe llenarse lento.
+ * Regla simple: cada like añade exactamente 1 galleta al tarro, siempre que
+ * la jar esté desbloqueada y aún no haya llegado al tope.
  */
-export const LIKE_COOKIE_CHANCE_LOW_SKIN = 0.18;
-export const LIKE_COOKIE_CHANCE_HIGH_SKIN = 0.08;
+export const LIKE_COOKIE_CHANCE_LOW_SKIN = 1;
+export const LIKE_COOKIE_CHANCE_HIGH_SKIN = 1;
 
 function clampStock(value: number) {
 	return Math.min(MAX_COOKIE_STOCK, Math.max(0, Math.floor(value)));
 }
 
 export function getCookieStock() {
-	if (typeof window === "undefined") {
+	if (typeof window === "undefined" || !isCookieJarAcquired()) {
 		return 0;
 	}
 
@@ -32,7 +32,7 @@ export function getCookieStock() {
 }
 
 export function setCookieStock(stock: number) {
-	if (typeof window === "undefined") {
+	if (typeof window === "undefined" || !isCookieJarAcquired()) {
 		return 0;
 	}
 
@@ -46,6 +46,10 @@ export function setCookieStock(stock: number) {
  * @returns cantidad realmente añadida
  */
 export function addCookies(amount: number) {
+	if (!isCookieJarAcquired()) {
+		return 0;
+	}
+
 	const normalizedAmount = Math.max(0, Math.floor(amount));
 
 	if (normalizedAmount <= 0) {
@@ -63,6 +67,10 @@ export function addCookies(amount: number) {
  * @returns true si se pudo gastar
  */
 export function spendCookie() {
+	if (!isCookieJarAcquired()) {
+		return false;
+	}
+
 	const currentStock = getCookieStock();
 
 	if (currentStock <= 0) {
@@ -74,17 +82,10 @@ export function spendCookie() {
 }
 
 /**
- * Probabilidad de que un like del osito (skinIndex) sume 1 galleta al tarro.
- * No es garantizado: varía con el nivel/tier del personaje.
+ * Un like siempre equivale a 1 galleta, sin probabilidades ni diferencias por skin.
  */
-export function shouldLikeGrantCookie(skinIndex: number) {
-	const normalizedIndex = Math.max(0, Math.min(BODY_SKIN_MAX_INDEX, Math.floor(skinIndex)));
-	const progress = BODY_SKIN_MAX_INDEX > 0
-		? normalizedIndex / BODY_SKIN_MAX_INDEX
-		: 0;
-	const chance = LIKE_COOKIE_CHANCE_LOW_SKIN
-		+ (LIKE_COOKIE_CHANCE_HIGH_SKIN - LIKE_COOKIE_CHANCE_LOW_SKIN) * progress;
-	return Math.random() < chance;
+export function shouldLikeGrantCookie(_skinIndex: number) {
+	return isCookieJarAcquired();
 }
 
 /**
