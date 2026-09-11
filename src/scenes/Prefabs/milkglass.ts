@@ -69,6 +69,7 @@ export default class milkglass extends Phaser.GameObjects.Image {
 	private activeTimer?: Phaser.Time.TimerEvent;
 	private danceTween?: Phaser.Tweens.Tween;
 	private selectionTimeout?: Phaser.Time.TimerEvent;
+	private rejectedTrayRecoveryTimer?: Phaser.Time.TimerEvent;
 	private blockedMoveTween?: Phaser.Tweens.Tween;
 	private currentSlotId?: MilkSlotId;
 	private flavorType?: FlavorType;
@@ -108,7 +109,7 @@ export default class milkglass extends Phaser.GameObjects.Image {
 				return;
 			}
 
-			this.discardUnrequestedGlass();
+			this.playNoAvailableRecipientFeedback();
 			return;
 		}
 
@@ -399,6 +400,7 @@ export default class milkglass extends Phaser.GameObjects.Image {
 				this.startSelectionTimeout(() => {
 					this.cancelDeliverySelection();
 				});
+				this.queueRejectedTrayRecovery();
 			}
 		});
 	}
@@ -545,33 +547,93 @@ export default class milkglass extends Phaser.GameObjects.Image {
 		this.selectionTimeout = this.scene.time.delayedCall(milkglass.SELECTION_TIMEOUT, onTimeout);
 	}
 
+	private queueRejectedTrayRecovery() {
+
+		this.rejectedTrayRecoveryTimer?.remove(false);
+		this.rejectedTrayRecoveryTimer = this.scene.time.delayedCall(2200, () => {
+			if (!this.active || !this.scene || !this.isSelectingDelivery) {
+				return;
+			}
+			this.cancelDeliverySelection();
+		});
+	}
+
 	private clearSelectionTimeout() {
 
 		this.selectionTimeout?.remove(false);
 		this.selectionTimeout = undefined;
+		this.rejectedTrayRecoveryTimer?.remove(false);
+		this.rejectedTrayRecoveryTimer = undefined;
 	}
 
-	private discardUnrequestedGlass() {
+	private playNoAvailableRecipientFeedback() {
+
+		if (!this.active || !this.scene) {
+			return;
+		}
 
 		const levelScene = this.scene as Level;
-		const slotId = this.currentSlotId;
+		const originalX = this.x;
+		const originalY = this.y;
+		const originalAngle = this.angle;
+		const slotTarget = this.currentSlotId
+			? levelScene.milkmachine.getSlotTarget(this.currentSlotId)
+			: { x: originalX, y: originalY };
 
 		this.clearActiveState();
 		this.clearSelectionTimeout();
 		levelScene.clearDeliverySelection(this);
+		this.isLaunching = true;
+		this.isReadyForDelivery = true;
+		this.isAtMachine = true;
+		this.setPosition(originalX, originalY);
 
-		if (slotId) {
-			levelScene.releaseMilkSlot(slotId);
-			this.currentSlotId = undefined;
-		}
-
-		this.disableInteractive();
-		levelScene.showProductDiscardLossAt(
-			this.x,
-			this.y,
-			getProductCoinReward("holder4", { isFlavored: this.hasFlavor() })
-		);
-		this.fallOffscreen();
+		this.scene.tweens.add({
+			targets: this,
+			y: originalY - 18,
+			duration: 120,
+			ease: "Sine.Out",
+			onComplete: () => {
+				this.scene.tweens.add({
+					targets: this,
+					angle: { from: originalAngle, to: -30 },
+					duration: 90,
+					ease: "Sine.InOut",
+					onComplete: () => {
+						this.scene.tweens.add({
+							targets: this,
+							angle: { from: -30, to: 30 },
+							duration: 90,
+							ease: "Sine.InOut",
+							onComplete: () => {
+								this.scene.tweens.add({
+									targets: this,
+									angle: { from: 30, to: -30 },
+									duration: 90,
+									ease: "Sine.InOut",
+									onComplete: () => {
+										this.scene.tweens.add({
+											targets: this,
+											angle: { from: -30, to: 0 },
+											y: { from: this.y, to: originalY },
+											duration: 140,
+											ease: "Sine.InOut",
+											onComplete: () => {
+												this.setPosition(slotTarget.x, slotTarget.y);
+												this.angle = originalAngle;
+												this.isLaunching = false;
+												this.isAtMachine = true;
+												this.isReadyForDelivery = true;
+											}
+										});
+									}
+								});
+							}
+						});
+					}
+				});
+			}
+		});
 	}
 
 	private fallOffscreen() {

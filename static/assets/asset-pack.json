@@ -197,6 +197,13 @@
                 "key": "cookieJar"
             },
             {
+                "url": [
+                    "assets/audio/dancing.mp3"
+                ],
+                "type": "audio",
+                "key": "dancing"
+            },
+            {
                 "url": "assets/dayHolder.png",
                 "type": "image",
                 "key": "dayHolder"
@@ -715,6 +722,13 @@
                 "url": "assets/toaster.png",
                 "type": "image",
                 "key": "toaster"
+            },
+            {
+                "url": [
+                    "assets/audio/toaster.mp3"
+                ],
+                "type": "audio",
+                "key": "toaster_1"
             },
             {
                 "url": "assets/toasterAnim.png",

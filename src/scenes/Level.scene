@@ -180,18 +180,6 @@
             "y": 557
         },
         {
-            "prefabId": "b0d15b23-4665-49f4-96f8-b2e2e8911f58",
-            "id": "95cb15be-730b-4a7c-8197-7e3dfc28e356",
-            "unlock": [
-                "x",
-                "y"
-            ],
-            "label": "cookieJar",
-            "scope": "PUBLIC",
-            "x": 75,
-            "y": 455
-        },
-        {
             "type": "Image",
             "id": "cdbfca69-069d-47c6-bc09-667d5c46a320",
             "label": "charola1",
@@ -214,6 +202,18 @@
             "x": 315,
             "y": 399,
             "scaleX": 1.2
+        },
+        {
+            "prefabId": "b0d15b23-4665-49f4-96f8-b2e2e8911f58",
+            "id": "95cb15be-730b-4a7c-8197-7e3dfc28e356",
+            "unlock": [
+                "x",
+                "y"
+            ],
+            "label": "cookieJar",
+            "scope": "PUBLIC",
+            "x": 145,
+            "y": 455
         },
         {
             "type": "Image",
@@ -314,7 +314,7 @@
             "x": 595,
             "y": 360,
             "visible": true,
-            "editorRender": false
+            "editorRender": true
         },
         {
             "type": "Image",

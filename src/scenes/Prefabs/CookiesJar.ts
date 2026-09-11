@@ -5,6 +5,7 @@
 
 /* START-USER-IMPORTS */
 import Phaser from "phaser";
+import AlertPrefab from "./AlertPrefab";
 import type Level from "../Level";
 /* END-USER-IMPORTS */
 
@@ -23,8 +24,14 @@ export default class CookiesJar extends Phaser.GameObjects.Container {
 		sandClock.setAlpha(0);
 		this.add(sandClock);
 
+		const alertMarker = new AlertPrefab(scene, 0, -82);
+		alertMarker.setVisible(false);
+		alertMarker.setAlpha(0);
+		this.add(alertMarker);
+
 		this.jarImage = jarImage;
 		this.sandClock = sandClock;
+		this.alertMarker = alertMarker;
 
 		/* START-USER-CTR-CODE */
 		this.baseScaleX = this.scaleX;
@@ -39,6 +46,7 @@ export default class CookiesJar extends Phaser.GameObjects.Container {
 
 	private jarImage: Phaser.GameObjects.Image;
 	public sandClock: Phaser.GameObjects.Image;
+	private alertMarker: AlertPrefab;
 
 	/* START-USER-CODE */
 	private static readonly HOVER_SCALE = 1.08;
@@ -128,10 +136,12 @@ export default class CookiesJar extends Phaser.GameObjects.Container {
 	public setSandClockUrgent(active: boolean) {
 		if (active) {
 			this.startSandClockUrgent();
+			this.alertMarker.updateBurnProgress(1);
 			return;
 		}
 
 		this.stopSandClockUrgent();
+		this.alertMarker.updateBurnProgress(0);
 	}
 
 	private startSandClockUrgent() {

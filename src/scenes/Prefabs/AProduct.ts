@@ -126,6 +126,10 @@ export default class AProduct extends Phaser.GameObjects.Image {
 	}
 
 	private handlePointerOver() {
+		if (!this.input || !this.input.enabled) {
+			return;
+		}
+
 		if (this.isLaunching || this.isRaised || this.isCooking || this.isSelectingDip || this.isSelectingDelivery) {
 			return;
 		}
@@ -134,6 +138,10 @@ export default class AProduct extends Phaser.GameObjects.Image {
 	}
 
 	private handlePointerDown() {
+		if (!this.input || !this.input.enabled) {
+			return;
+		}
+
 		if (this.isLaunching || this.isRaised || this.isCooking || this.isSelectingDip || this.isSelectingDelivery) {
 			return;
 		}
@@ -239,6 +247,40 @@ export default class AProduct extends Phaser.GameObjects.Image {
 			&& !this.isLaunching
 			&& !this.isSelectingDip
 			&& !this.isSelectingDelivery;
+	}
+
+	public recoverFromStaleTrayState(trayId?: "charola1" | "charola2", targetX?: number, targetY?: number) {
+		if (!this.active || !this.scene) {
+			return;
+		}
+
+		this.setPointerInteractionEnabled(true);
+		this.clearSelectionTimeout();
+		this.isLaunching = false;
+		this.isSelectingDelivery = false;
+		this.isReadyForDelivery = true;
+		this.isAtWorkplace = false;
+		this.isBurned = false;
+		this.clearBurnState();
+
+		if (trayId) {
+			this.currentTrayId = trayId;
+			if (targetX !== undefined) {
+				this.traySlotX = targetX;
+			}
+			if (targetY !== undefined) {
+				this.traySlotY = targetY;
+			}
+			if (this.traySlotX !== undefined && this.traySlotY !== undefined) {
+				this.setPosition(this.traySlotX, this.traySlotY);
+			}
+		} else {
+			this.currentTrayId = undefined;
+			this.traySlotX = undefined;
+			this.traySlotY = undefined;
+		}
+
+		this.resetScaleToBase();
 	}
 
 	public isOnTray() {
@@ -381,6 +423,12 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		});
 	}
 
+	private setPointerInteractionEnabled(enabled: boolean) {
+		if (this.input) {
+			this.input.enabled = enabled;
+		}
+	}
+
 	private raiseProduct() {
 
 		const scene = this.getSafeScene();
@@ -388,6 +436,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 			return;
 		}
 
+		this.setPointerInteractionEnabled(false);
 		this.clearActiveState();
 		scene.tweens.add({
 			targets: this,
@@ -414,6 +463,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 			return;
 		}
 
+		this.setPointerInteractionEnabled(false);
 		this.clearActiveState();
 		scene.tweens.add({
 			targets: this,
@@ -428,6 +478,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 				this.isRaised = false;
 				this.isLaunching = false;
 				this.angle = this.baseAngle;
+				this.setPointerInteractionEnabled(true);
 			}
 		});
 	}
@@ -501,6 +552,11 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		}
 
 		this.clearActiveState();
+		this.setPointerInteractionEnabled(false);
+		this.isRaised = false;
+		this.isLaunching = true;
+		this.isReadyForDelivery = false;
+		this.isAtWorkplace = false;
 		const replacementProduct = new AProduct(scene, this.baseX, this.baseY, this.Raw.key, this.Raw.frame);
 		replacementProduct.Raw = { ...this.Raw };
 		replacementProduct.Cooked = { ...this.Cooked };
@@ -522,6 +578,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 				this.isLaunching = false;
 				this.currentFryerId = targetFryer.id;
 				this.angle = this.baseAngle;
+				this.setPointerInteractionEnabled(true);
 				this.startFrying(targetFryer.target.y - AProduct.FRYER_OFFSET_Y);
 			}
 		});
@@ -579,6 +636,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		this.isCooked = true;
 		this.isBurned = false;
 		this.isReadyForDelivery = false;
+		this.setPointerInteractionEnabled(true);
 		this.applyAppearance(this.Cooked);
 		this.clearTint();
 		this.scene.sound.play(`pop${Phaser.Math.Between(1, 3)}`);
@@ -662,6 +720,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 			return;
 		}
 
+		this.setPointerInteractionEnabled(false);
 		this.clearWorkplaceTransferRetry();
 		this.isWaitingForWorkplaceRetry = false;
 		this.clearBurnState();
@@ -755,6 +814,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		}
 
 		const levelScene = scene as Level;
+		this.setPointerInteractionEnabled(false);
 		this.isLaunching = true;
 		this.isAtWorkplace = false;
 		scene.tweens.add({
@@ -785,6 +845,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		}
 
 		const levelScene = scene as Level;
+		this.setPointerInteractionEnabled(false);
 		this.isLaunching = true;
 		this.isAtWorkplace = false;
 		this.isReadyForDelivery = false;
@@ -826,6 +887,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		}
 
 		const levelScene = this.scene as Level;
+		this.setPointerInteractionEnabled(false);
 		this.isAtWorkplace = false;
 		this.isSelectingDip = true;
 		levelScene.beginDipSelection(this);
@@ -911,6 +973,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 			return;
 		}
 
+		this.setPointerInteractionEnabled(false);
 		const levelScene = scene as Level;
 		const workplace = this.currentWorkplaceId === "workplace1" ? levelScene.workplace1 : levelScene.workplace2;
 
@@ -927,6 +990,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 				this.isLaunching = false;
 				this.isAtWorkplace = true;
 				this.isReadyForDelivery = true;
+				this.setPointerInteractionEnabled(true);
 				levelScene.launchTrayHintTrailFrom(this.x, this.y);
 			}
 		});
@@ -939,6 +1003,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		}
 
 		const levelScene = this.scene as Level;
+		this.setPointerInteractionEnabled(false);
 		const trayId = this.currentTrayId;
 		this.clearSelectionTimeout();
 		levelScene.clearDeliverySelection(this);
@@ -1010,6 +1075,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		const fallbackX = hasTraySlot ? this.traySlotX : workplace?.x ?? this.x;
 		const fallbackY = hasTraySlot ? this.traySlotY : workplace?.y ?? this.y;
 
+		this.setPointerInteractionEnabled(false);
 		this.clearSelectionTimeout();
 		levelScene?.clearDeliverySelection(this);
 		this.isSelectingDelivery = false;
@@ -1027,6 +1093,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 				this.isLaunching = false;
 				this.isAtWorkplace = !this.currentTrayId;
 				this.isReadyForDelivery = true;
+				this.setPointerInteractionEnabled(true);
 			}
 		});
 	}
@@ -1038,6 +1105,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		}
 
 		const levelScene = this.scene as Level;
+		this.setPointerInteractionEnabled(false);
 		this.clearSelectionTimeout();
 		levelScene.clearDeliverySelection(this);
 		levelScene.releaseWorkplace(this.currentWorkplaceId);
@@ -1091,6 +1159,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		const levelScene = this.scene as Level;
 		const workplace = this.currentWorkplaceId === "workplace1" ? levelScene.workplace1 : levelScene.workplace2;
 
+		this.setPointerInteractionEnabled(false);
 		this.clearSelectionTimeout();
 		levelScene.clearDipSelection(this);
 		this.isSelectingDip = false;
@@ -1215,6 +1284,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 			return;
 		}
 
+		this.setPointerInteractionEnabled(false);
 		this.isCooked = false;
 		this.isBurned = false;
 		this.isReadyForDelivery = false;

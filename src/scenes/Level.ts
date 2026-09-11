@@ -167,10 +167,6 @@ export default class Level extends Phaser.Scene {
 		// candyicon
 		this.add.image(1174, 557, "candyicon");
 
-		// cookieJar
-		const cookieJar = new CookiesJar(this, 75, 455);
-		this.add.existing(cookieJar);
-
 		// charola1
 		const charola1 = this.add.image(927, 399, "Charola");
 		charola1.scaleX = 1.2;
@@ -178,6 +174,10 @@ export default class Level extends Phaser.Scene {
 		// charola2
 		const charola2 = this.add.image(315, 399, "Charola");
 		charola2.scaleX = 1.2;
+
+		// cookieJar
+		const cookieJar = new CookiesJar(this, 145, 455);
+		this.add.existing(cookieJar);
 
 		// lamp
 		this.add.image(193, 57, "lamp");
@@ -220,14 +220,10 @@ export default class Level extends Phaser.Scene {
 
 		// glace2
 		const glace2 = new FlavorBottle(this, 1145, 454);
-		glace2.setVisible(false);
-		glace2.setActive(false);
 		this.add.existing(glace2);
 
 		// glace1
 		const glace1 = new FlavorBottle(this, 1062, 458, "glace1");
-		glace1.setVisible(false);
-		glace1.setActive(false);
 		this.add.existing(glace1);
 
 		// overTrayIcon
@@ -299,9 +295,9 @@ export default class Level extends Phaser.Scene {
 		this.workplace2 = workplace2;
 		this.chocolateDip = chocolateDip;
 		this.candyDip = candyDip;
-		this.cookieJar = cookieJar;
 		this.charola1 = charola1;
 		this.charola2 = charola2;
+		this.cookieJar = cookieJar;
 		this.rawProduct1 = rawProduct1;
 		this.rawProduct2 = rawProduct2;
 		this.milkGlass = milkGlass;
@@ -341,9 +337,9 @@ export default class Level extends Phaser.Scene {
 	public workplace2!: Phaser.GameObjects.Image;
 	public chocolateDip!: Phaser.GameObjects.Image;
 	public candyDip!: Phaser.GameObjects.Image;
-	public cookieJar!: CookiesJar;
 	public charola1!: Phaser.GameObjects.Image;
 	public charola2!: Phaser.GameObjects.Image;
+	public cookieJar!: CookiesJar;
 	private rawProduct1!: AProduct;
 	private rawProduct2!: AProduct;
 	private milkGlass!: milkglass;
@@ -3176,6 +3172,117 @@ export default class Level extends Phaser.Scene {
 		}
 	}
 
+	public tryAutoSendIdleProductsToAvailableFryer(fryerId?: "fryer1" | "fryer2") {
+		const idleProducts = this.getSceneProducts()
+			.filter((product) => product.isIdleOnHolder())
+			.sort((left, right) => left.y - right.y);
+
+		if (idleProducts.length === 0) {
+			return false;
+		}
+
+		const getProductKey = (product: AProduct) => (product.Raw.key ?? product.texture.key);
+		const findMatchingProduct = (prefix: "Product1" | "Product2") => (
+			idleProducts.find((product) => getProductKey(product).startsWith(prefix))
+		);
+
+		const resolveTarget = () => {
+			if (fryerId) {
+				if (fryerId === "fryer1" && this.fryer1Occupied) {
+					return undefined;
+				}
+				if (fryerId === "fryer2" && (!this.fryer2Enabled || this.fryer2Occupied)) {
+					return undefined;
+				}
+				return {
+					fryerId,
+					product: fryerId === "fryer1"
+						? (findMatchingProduct("Product1") ?? idleProducts[0])
+						: (findMatchingProduct("Product2") ?? idleProducts[0]),
+				};
+			}
+
+			if (!this.fryer1Occupied) {
+				return {
+					fryerId: "fryer1" as const,
+					product: findMatchingProduct("Product1") ?? idleProducts[0],
+				};
+			}
+
+			if (this.fryer2Enabled && !this.fryer2Occupied) {
+				return {
+					fryerId: "fryer2" as const,
+					product: findMatchingProduct("Product2") ?? idleProducts[0],
+				};
+			}
+
+			return undefined;
+		};
+
+		const target = resolveTarget();
+		if (!target) {
+			return false;
+		}
+
+		const targetFryer = this.getFryerById(target.fryerId);
+		if (!targetFryer?.active) {
+			return false;
+		}
+
+		let product = target.product;
+		if (!product || !product.active) {
+			return false;
+		}
+
+		const productKey = getProductKey(product);
+		if (target.fryerId === "fryer1" && !productKey.startsWith("Product1")) {
+			const product1 = findMatchingProduct("Product1");
+			if (!product1) {
+				return false;
+			}
+			product = product1;
+		}
+
+		if (target.fryerId === "fryer2" && !productKey.startsWith("Product2")) {
+			const product2 = findMatchingProduct("Product2");
+			if (!product2) {
+				return false;
+			}
+			product = product2;
+		}
+
+		const moveToFryer = (product as any).moveToFryer as (() => void) | undefined;
+		if (typeof moveToFryer !== "function") {
+			return false;
+		}
+
+		moveToFryer.call(product);
+		return true;
+	}
+
+	public tryAutoSendIdleSandwichesToAvailableToaster() {
+		if (!this.toasterEnabled || this.toasterSlotOccupied) {
+			return false;
+		}
+
+		const idleSandwiches = this.getSceneSandwiches()
+			.filter((sandwich) => sandwich.isIdleOnHolder())
+			.sort((left, right) => left.y - right.y);
+
+		if (idleSandwiches.length === 0) {
+			return false;
+		}
+
+		const sandwich = idleSandwiches[0];
+		const moveToToaster = (sandwich as any).moveToToaster as (() => void) | undefined;
+		if (typeof moveToToaster !== "function") {
+			return false;
+		}
+
+		moveToToaster.call(sandwich);
+		return true;
+	}
+
 	public playFryerAnimation(fryerId: "fryer1" | "fryer2", durationMs?: number) {
 
 		this.getFryerById(fryerId)?.playFryAnimation();
@@ -3317,6 +3424,7 @@ export default class Level extends Phaser.Scene {
 	}
 
 	public reserveTraySlot(trayId: "charola1" | "charola2", product: AProduct | sandwichPrefab) {
+		this.sanitizeTrayProductArray(trayId);
 		const arr = trayId === "charola1" ? this.charola1Products : this.charola2Products;
 		if (arr.includes(product)) {
 			return;
@@ -3330,17 +3438,18 @@ export default class Level extends Phaser.Scene {
 	}
 
 	public releaseTraySlot(trayId: "charola1" | "charola2", product: AProduct | sandwichPrefab) {
+		this.sanitizeTrayProductArray(trayId);
 		const arr = trayId === "charola1" ? this.charola1Products : this.charola2Products;
 		const idx = arr.indexOf(product);
 		if (idx === -1) {
 			return;
 		}
 		arr.splice(idx, 1);
-		this.reflowTrayProducts(trayId);
 		this.updateTrayInviteAttention();
 	}
 
 	private reflowTrayProducts(trayId: "charola1" | "charola2") {
+		this.sanitizeTrayProductArray(trayId);
 		const arr = trayId === "charola1" ? this.charola1Products : this.charola2Products;
 		const tray = trayId === "charola1" ? this.charola1 : this.charola2;
 		if (!tray) {
@@ -3809,6 +3918,8 @@ export default class Level extends Phaser.Scene {
 
 	public getDirectDeliveryTarget(product: AProduct | milkglass | sandwichPrefab) {
 
+		this.sanitizeStaleTrayProducts();
+
 		const matchingTargets = this.activeClients.filter((client) => {
 			return client.active && client.canReceiveDelivery() && client.matchesProduct(product);
 		});
@@ -4111,6 +4222,7 @@ export default class Level extends Phaser.Scene {
 			return false;
 		}
 
+		this.sanitizeStaleTrayProducts();
 		const readyTrayProducts = this.getReadyTrayProductsForOrders();
 
 		if (readyTrayProducts.length === 0) {
@@ -4803,9 +4915,31 @@ export default class Level extends Phaser.Scene {
 		}
 	}
 
+	private sanitizeTrayProductArray(trayId: "charola1" | "charola2") {
+		const arr = trayId === "charola1" ? this.charola1Products : this.charola2Products;
+		const seen = new Set<AProduct | sandwichPrefab>();
+
+		for (let i = arr.length - 1; i >= 0; i--) {
+			const product = arr[i];
+			const anyProduct = product as any;
+			if (!product || !product.active || product.scene !== this || anyProduct.isDestroyed || anyProduct.currentTrayId !== trayId) {
+				arr.splice(i, 1);
+				continue;
+			}
+
+			if (seen.has(product)) {
+				arr.splice(i, 1);
+				continue;
+			}
+
+			seen.add(product);
+		}
+	}
+
 	public claimAvailableTraySlot(trayId: "charola1" | "charola2") {
 		const arr = trayId === "charola1" ? this.charola1Products : this.charola2Products;
 		const tray = trayId === "charola1" ? this.charola1 : this.charola2;
+		this.sanitizeTrayProductArray(trayId);
 
 		if (!tray) {
 			return null;
@@ -5346,6 +5480,53 @@ export default class Level extends Phaser.Scene {
 		}
 
 		return undefined;
+	}
+
+	private sanitizeStaleTrayProducts() {
+		for (const trayId of ["charola1", "charola2"] as const) {
+			const arr = trayId === "charola1" ? this.charola1Products : this.charola2Products;
+			for (let i = arr.length - 1; i >= 0; i--) {
+				const product = arr[i];
+				if (!product || !product.active || product.scene !== this) {
+					arr.splice(i, 1);
+					continue;
+				}
+
+				if (product.isChoosingDelivery() || !product.canReceiveDirectDelivery()) {
+					const slot = this.claimAvailableTraySlot(trayId);
+					if (slot) {
+						product.recoverFromStaleTrayState(trayId, slot.x, slot.y);
+						product.snapToTraySlot(trayId, slot.x, slot.y);
+					}
+				}
+			}
+		}
+
+		for (const product of [...this.getSceneProducts(), ...this.getSceneSandwiches()]) {
+			if (!product.active || !product.isOnTray()) {
+				continue;
+			}
+
+			const inTray1 = this.charola1Products.includes(product);
+			const inTray2 = this.charola2Products.includes(product);
+			if (inTray1 || inTray2) {
+				continue;
+			}
+
+			const trayId = this.trayHasFreeSlot("charola1") ? "charola1" : "charola2";
+			const slot = this.claimAvailableTraySlot(trayId);
+			if (!slot) {
+				continue;
+			}
+
+			product.recoverFromStaleTrayState(trayId, slot.x, slot.y);
+			product.snapToTraySlot(trayId, slot.x, slot.y);
+			if (trayId === "charola1") {
+				this.charola1Products.push(product);
+			} else {
+				this.charola2Products.push(product);
+			}
+		}
 	}
 
 	private getProductsOnTrays() {

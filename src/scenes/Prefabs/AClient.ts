@@ -16,6 +16,7 @@ import {
 	type ClientRequestAppearance,
 } from "../clientOrderPool";
 import { getClientRequestWaitDurationMs } from "../momentUpgradeBonuses";
+import ConfettiPrefab from "./ConfettiPrefab";
 import SmallHeartBurst from "./SmallHeartBurst";
 /* END-USER-IMPORTS */
 
@@ -99,6 +100,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 	private productCarouselTimer?: Phaser.Time.TimerEvent;
 	/** Pedidos fijos (p. ej. clientes de limpieza de bandeja al final del día). */
 	private forcedOrders?: ClientRequestAppearance[];
+	private isFinalWavePickupClient = false;
 
 	private static readonly TARGET_Y = 370;
 	private static readonly EXIT_Y = 470;
@@ -270,7 +272,13 @@ export default class AClient extends Phaser.GameObjects.Container {
 			return;
 		}
 
-		this.scene.tweens.killTweensOf(this.cookieHintIcon);
+		const scene = this.scene as Phaser.Scene | undefined;
+		if (!scene) {
+			this.cookieHintIcon = undefined;
+			return;
+		}
+
+		scene.tweens.killTweensOf(this.cookieHintIcon);
 
 		if (this.cookieHintIcon.active) {
 			this.cookieHintIcon.destroy();
@@ -284,7 +292,10 @@ export default class AClient extends Phaser.GameObjects.Container {
 			return;
 		}
 
-		this.scene.tweens.killTweensOf(this.personalityDialogueText);
+		const scene = this.scene as Phaser.Scene | undefined;
+		if (scene) {
+			scene.tweens.killTweensOf(this.personalityDialogueText);
+		}
 		if (this.personalityDialogueText.active) {
 			this.personalityDialogueText.destroy();
 		}
@@ -296,8 +307,13 @@ export default class AClient extends Phaser.GameObjects.Container {
 			return;
 		}
 
+		const scene = this.scene as Phaser.Scene | undefined;
+		if (!scene || !this.active) {
+			return;
+		}
+
 		this.clearPersonalityDialogue();
-		const bubble = this.scene.add.text(0, -190, dialogue, {
+		const bubble = scene.add.text(0, -190, dialogue, {
 			fontSize: "28px",
 			fontFamily: "Klop",
 			fontStyle: "bold",
@@ -319,7 +335,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 		this.personalityDialogueText = bubble;
 		bubble.setAlpha(0);
 		bubble.setScale(0.7);
-		this.scene.tweens.add({
+		scene.tweens.add({
 			targets: bubble,
 			alpha: 1,
 			scaleX: 1,
@@ -328,11 +344,11 @@ export default class AClient extends Phaser.GameObjects.Container {
 			duration: 180,
 			ease: "Back.Out",
 		});
-		this.scene.time.delayedCall(1100, () => {
-			if (!bubble.active) {
+		scene.time.delayedCall(1100, () => {
+			if (!bubble.active || !this.active) {
 				return;
 			}
-			this.scene.tweens.add({
+			scene.tweens.add({
 				targets: bubble,
 				alpha: 0,
 				scaleX: 0.85,
@@ -368,10 +384,12 @@ export default class AClient extends Phaser.GameObjects.Container {
 	public assignForcedOrders(orders: ClientRequestAppearance[]) {
 		if (orders.length === 0) {
 			this.forcedOrders = undefined;
+			this.isFinalWavePickupClient = false;
 			return;
 		}
 
 		this.forcedOrders = orders.map((order) => ({ ...order }));
+		this.isFinalWavePickupClient = true;
 	}
 
 	private showClientQuestion() {
@@ -816,52 +834,85 @@ export default class AClient extends Phaser.GameObjects.Container {
 		this.questionRevealTimer = undefined;
 		this.clearRequestState();
 		this.applyClientAppearance(this.ClientBack);
-		this.clientBear.playAnimation("walk");
 		const exitX = this.x;
 		const levelScene = this.scene as Level;
-
 		const exitDuration = Math.max(0, ((AClient.EXIT_Y - this.y) / AClient.MOVE_SPEED) * 1000);
+		const danceHoldDurationMs = 3000;
+		const shouldDance = showYum && wasQuickService && grantLike && this.isFinalWavePickupClient;
+		const startExit = () => {
+			this.clientBear.playAnimation("walk");
+			this.scene.tweens.add({
+				targets: this,
+				y: AClient.EXIT_Y,
+				duration: exitDuration,
+				ease: "Sine.In",
+				onComplete: () => {
+					if (!showYum) {
+						levelScene.respawnClient(this);
+						return;
+					}
 
-		this.scene.tweens.add({
-			targets: this,
-			y: AClient.EXIT_Y,
-			duration: exitDuration,
-			ease: "Sine.In",
-			onComplete: () => {
-				if (!showYum) {
-					levelScene.respawnClient(this);
-					return;
+					levelScene.recordSuccessfulDelivery();
+					this.scene.sound.play(`eating${Phaser.Math.Between(1, 3)}`);
+
+					if (grantLike) {
+						const skinIndex = this.clientBear.getAppearanceVariantIndex();
+						levelScene.showLikeHeartAt(exitX, () => {
+							const tipCoins = levelScene.maybeAwardLikeTip(
+								exitX,
+								skinIndex,
+								wasQuickService,
+								this.clientBear.getTipChanceBonus(),
+								this.clientBear.getTipPayoutMultiplier(),
+							);
+							if (tipCoins > 0) {
+								this.scene.sound.play("coinDrop", { volume: 0.5 });
+							}
+
+							const yumPrefab = levelScene.showYumAt(exitX);
+							levelScene.queueAlmostAfterYum(yumPrefab, wasAlmostLeaving);
+							levelScene.respawnClient(this, yumPrefab);
+						}, skinIndex);
+						return;
+					}
+
+					const yumPrefab = levelScene.showYumAt(exitX);
+					levelScene.queueAlmostAfterYum(yumPrefab, wasAlmostLeaving);
+					levelScene.respawnClient(this, yumPrefab);
 				}
+			});
+		};
 
-				levelScene.recordSuccessfulDelivery();
-				this.scene.sound.play(`eating${Phaser.Math.Between(1, 3)}`);
+		if (shouldDance) {
+			ConfettiPrefab.launchUnlockBurstAt(
+				this.scene,
+				this.x,
+				this.y - 30,
+				this.depth + 3
+			);
 
-				if (grantLike) {
-					const skinIndex = this.clientBear.getAppearanceVariantIndex();
-					levelScene.showLikeHeartAt(exitX, () => {
-						const tipCoins = levelScene.maybeAwardLikeTip(
-							exitX,
-							skinIndex,
-							wasQuickService,
-							this.clientBear.getTipChanceBonus(),
-							this.clientBear.getTipPayoutMultiplier(),
-						);
-						if (tipCoins > 0) {
-							this.scene.sound.play("coinDrop", { volume: 0.5 });
-						}
-
-						const yumPrefab = levelScene.showYumAt(exitX);
-						levelScene.queueAlmostAfterYum(yumPrefab, wasAlmostLeaving);
-						levelScene.respawnClient(this, yumPrefab);
-					}, skinIndex);
-					return;
-				}
-
-				const yumPrefab = levelScene.showYumAt(exitX);
-				levelScene.queueAlmostAfterYum(yumPrefab, wasAlmostLeaving);
-				levelScene.respawnClient(this, yumPrefab);
+			if (this.scene.cache.audio.exists("dancing")) {
+				this.scene.sound.play("dancing", { volume: 0.8 });
 			}
-		});
+
+			const riseY = this.y - 100;
+			this.clientBear.playAnimation("dance", true);
+			this.scene.tweens.add({
+				targets: this,
+				y: riseY,
+				duration: 260,
+				ease: "Cubic.Out",
+				onComplete: () => {
+					this.scene.time.delayedCall(danceHoldDurationMs, () => {
+						this.clientBear.playAnimation("walk", true);
+						startExit();
+					});
+				}
+			});
+			return;
+		}
+
+		startExit();
 	}
 
 	private clearRequestState() {
