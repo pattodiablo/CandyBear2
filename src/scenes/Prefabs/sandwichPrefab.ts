@@ -539,7 +539,7 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 
 	public placeInTray(trayId: "charola1" | "charola2", targetX: number, targetY: number) {
 
-		if (!this.isSelectingDelivery) {
+		if (!this.isSelectingDelivery || this.currentTrayId) {
 			return;
 		}
 

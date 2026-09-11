@@ -27,7 +27,8 @@ type TranslationKey =
 	| "dayShort"
 	| "earningsToday"
 	| "buy"
-	| "coins";
+	| "coins"
+	| "waitCookie";
 
 const STRINGS: Record<GameLanguage, Record<TranslationKey, string>> = {
 	en: {
@@ -58,6 +59,7 @@ const STRINGS: Record<GameLanguage, Record<TranslationKey, string>> = {
 		earningsToday: "Earnings today",
 		buy: "BUY",
 		coins: "coins",
+		waitCookie: "Wait Cookie",
 	},
 	es: {
 		prepare: "Clientes llegando",
@@ -87,6 +89,7 @@ const STRINGS: Record<GameLanguage, Record<TranslationKey, string>> = {
 		earningsToday: "Ganancias de hoy",
 		buy: "COMPRAR",
 		coins: "monedas",
+		waitCookie: "Galleta de espera",
 	},
 };
 

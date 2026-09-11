@@ -5,9 +5,11 @@ import {
 	getClientBearName,
 	getBodySkinUnlockLevel,
 } from "./clientBearCatalog";
+import { t } from "./i18n";
 
 export type ClientUnlockId = `clientSkin${number}`;
-export type UnlockId = Exclude<ProductSlotId, "holder1"> | WorkstationId | ClientUnlockId;
+export type CookieJarUnlockId = "cookieJar";
+export type UnlockId = Exclude<ProductSlotId, "holder1"> | WorkstationId | ClientUnlockId | CookieJarUnlockId;
 
 export interface UnlockCatalogEntry {
 	id: UnlockId;
@@ -52,6 +54,13 @@ export const UNLOCK_CATALOG: Record<UnlockId, UnlockCatalogEntry> = {
 		coinCost: 9,
 		unlockLevel: 4,
 	},
+	cookieJar: {
+		id: "cookieJar",
+		displayName: t("waitCookie"),
+		previewTextureKey: "cookieJarThumb",
+		coinCost: 14,
+		unlockLevel: 4,
+	},
 	toaster: {
 		id: "toaster",
 		displayName: "Toaster",
@@ -93,6 +102,7 @@ export const UNLOCK_CATALOG: Record<UnlockId, UnlockCatalogEntry> = {
 export const UNLOCK_ORDER: UnlockId[] = [
 	"holder2",
 	"workplace2",
+	"cookieJar",
 	"toaster",
 	"milkmachine",
 	"fryer2",
@@ -107,6 +117,7 @@ export const UNLOCK_ORDER: UnlockId[] = [
 
 const UNLOCK_COST_PROGRESSIVE_GROWTH = 0.18;
 const ACQUIRED_CLIENT_UNLOCKS_STORAGE_KEY = "candybear2-acquired-client-unlocks";
+const ACQUIRED_COOKIE_JAR_STORAGE_KEY = "candybear2-acquired-cookie-jar";
 
 export function getAcquiredClientUnlocks() {
 	if (typeof window === "undefined") {
@@ -136,8 +147,36 @@ export function isClientUnlockId(unlockId: UnlockId): unlockId is ClientUnlockId
 	return typeof unlockId === "string" && unlockId.startsWith("clientSkin");
 }
 
+export function isCookieJarUnlockId(unlockId: UnlockId): unlockId is CookieJarUnlockId {
+	return unlockId === "cookieJar";
+}
+
 export function isClientUnlockAcquired(unlockId: ClientUnlockId) {
 	return getAcquiredClientUnlocks().includes(unlockId);
+}
+
+export function isCookieJarAcquired() {
+	if (typeof window === "undefined") {
+		return false;
+	}
+
+	try {
+		return window.localStorage.getItem(ACQUIRED_COOKIE_JAR_STORAGE_KEY) === "1";
+	} catch {
+		return false;
+	}
+}
+
+export function storeCookieJarAcquired() {
+	if (typeof window === "undefined") {
+		return;
+	}
+
+	try {
+		window.localStorage.setItem(ACQUIRED_COOKIE_JAR_STORAGE_KEY, "1");
+	} catch {
+		// noop
+	}
 }
 
 export function storeClientUnlockAcquired(unlockId: ClientUnlockId) {
@@ -162,6 +201,7 @@ export function getPurchasedUnlockCount() {
 		...getAcquiredProductSlots().filter((slotId): slotId is Exclude<ProductSlotId, "holder1"> => slotId !== "holder1"),
 		...getAcquiredWorkstations(),
 		...getAcquiredClientUnlocks(),
+		...(isCookieJarAcquired() ? ["cookieJar" as const] : []),
 	]);
 
 	return UNLOCK_ORDER.filter((unlockId) => acquiredUnlocks.has(unlockId)).length;

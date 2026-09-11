@@ -57,10 +57,13 @@ import {
 	getUnlockCatalogEntry,
 	isClientUnlockAcquired,
 	isClientUnlockId,
+	isCookieJarAcquired,
+	isCookieJarUnlockId,
 	isProductUnlockId,
 	isUnlockAvailableAtLevel,
 	shouldShowWorkstationLockIcon,
 	storeClientUnlockAcquired,
+	storeCookieJarAcquired,
 	UNLOCK_ORDER,
 	type UnlockId,
 } from "./unlockCatalog";
@@ -177,6 +180,7 @@ export default class Level extends Phaser.Scene {
 		// cookieJar
 		const cookieJar = new CookiesJar(this, 145, 455);
 		this.add.existing(cookieJar);
+		cookieJar.visible = false;
 
 		// lamp
 		this.add.image(193, 57, "lamp");
@@ -372,6 +376,8 @@ export default class Level extends Phaser.Scene {
 	private static readonly WAVE_SIZE_GROWTH_FACTOR = 0.4;
 	private static readonly WAVE_SIZE_OSCILLATION_BOOST = 0.5;
 	private static readonly TRAY_CAPACITY = 3;
+	/** Posiciones fijas horizontales de la bandeja: izquierda, centro, derecha. */
+	private static readonly TRAY_SLOT_OFFSETS: ReadonlyArray<number> = [-88, 0, 88];
 	/** Separación horizontal entre productos en la bandeja (más espacio = más fácil click, mejor para sándwiches). */
 	private static readonly TRAY_SLOT_OFFSET = 88;
 	/** Latido de escala cuando conviene guardar un producto en la charola. */
@@ -2314,7 +2320,9 @@ export default class Level extends Phaser.Scene {
 			? isProductAcquired(unlockId)
 			: isClientUnlockId(unlockId)
 				? isClientUnlockAcquired(unlockId)
-				: isWorkstationAcquired(unlockId);
+				: isCookieJarUnlockId(unlockId)
+					? isCookieJarAcquired()
+					: isWorkstationAcquired(unlockId);
 
 		if (isAlreadyOwned) {
 			return;
@@ -2409,8 +2417,9 @@ export default class Level extends Phaser.Scene {
 		return UNLOCK_ORDER.filter((unlockId) => {
 			const isProduct = isProductUnlockId(unlockId);
 			const isClient = isClientUnlockId(unlockId);
-			const isWorkstation = !isProduct && !isClient;
-			const shouldShow = isProduct || isClient || (isWorkstation && shouldShowWorkstationLockIcon(unlockId));
+			const isCookieJar = isCookieJarUnlockId(unlockId);
+			const isWorkstation = !isProduct && !isClient && !isCookieJar;
+			const shouldShow = isProduct || isClient || isCookieJar || (isWorkstation && shouldShowWorkstationLockIcon(unlockId));
 
 			if (!shouldShow) {
 				return false;
@@ -2420,7 +2429,9 @@ export default class Level extends Phaser.Scene {
 				? isProductAcquired(unlockId)
 				: isClient
 					? isClientUnlockAcquired(unlockId)
-					: isWorkstationAcquired(unlockId);
+					: isCookieJar
+						? isCookieJarAcquired()
+						: isWorkstationAcquired(unlockId);
 
 			if (isAcquired) {
 				return false;
@@ -2434,8 +2445,9 @@ export default class Level extends Phaser.Scene {
 		return UNLOCK_ORDER.filter((unlockId) => {
 			const isProduct = isProductUnlockId(unlockId);
 			const isClient = isClientUnlockId(unlockId);
-			const isWorkstation = !isProduct && !isClient;
-			const shouldShow = isProduct || isClient || (isWorkstation && shouldShowWorkstationLockIcon(unlockId));
+			const isCookieJar = isCookieJarUnlockId(unlockId);
+			const isWorkstation = !isProduct && !isClient && !isCookieJar;
+			const shouldShow = isProduct || isClient || isCookieJar || (isWorkstation && shouldShowWorkstationLockIcon(unlockId));
 
 			if (!shouldShow) {
 				return false;
@@ -2445,7 +2457,9 @@ export default class Level extends Phaser.Scene {
 				? isProductAcquired(unlockId)
 				: isClient
 					? isClientUnlockAcquired(unlockId)
-					: isWorkstationAcquired(unlockId);
+					: isCookieJar
+						? isCookieJarAcquired()
+						: isWorkstationAcquired(unlockId);
 
 			return !isAcquired;
 		}).slice(0, 5);
@@ -2508,6 +2522,8 @@ export default class Level extends Phaser.Scene {
 			}
 		} else if (isClientUnlockId(unlockId)) {
 			storeClientUnlockAcquired(unlockId);
+		} else if (isCookieJarUnlockId(unlockId)) {
+			storeCookieJarAcquired();
 		} else {
 			storeWorkstationAcquired(unlockId);
 		}
@@ -3420,14 +3436,18 @@ export default class Level extends Phaser.Scene {
 			return;
 		}
 
+		const slotIndex = this.getFirstAvailableTraySlotIndex(trayId, arr);
+		if (slotIndex === null) {
+			return;
+		}
+
 		arr.push(product);
-		const productIndex = arr.length - 1;
-		const slot = this.getTraySlotPosition(trayId, productIndex);
+		const slot = this.getTraySlotPosition(trayId, slotIndex);
 		if (!slot) {
 			return;
 		}
 
-		product.setDepth((trayId === "charola1" ? this.charola1 : this.charola2)?.depth ?? 0 + 2 + productIndex);
+		product.setDepth((trayId === "charola1" ? this.charola1 : this.charola2)?.depth ?? 0 + 2 + slotIndex);
 		product.snapToTraySlot(trayId, slot.x, slot.y);
 		this.updateTrayInviteAttention();
 	}
@@ -3443,6 +3463,32 @@ export default class Level extends Phaser.Scene {
 		this.updateTrayInviteAttention();
 	}
 
+	private getFirstAvailableTraySlotIndex(
+		trayId: "charola1" | "charola2",
+		arr: Array<AProduct | sandwichPrefab>
+	) {
+		const occupiedIndexes = new Set<number>();
+		for (const product of arr) {
+			const productAny = product as any;
+			const trayX = productAny.traySlotX ?? product.x;
+			const tray = trayId === "charola1" ? this.charola1 : this.charola2;
+			const slotIndex = Level.TRAY_SLOT_OFFSETS.findIndex((offset) => {
+				return Math.abs((tray?.x ?? 0) + offset - trayX) < 4;
+			});
+			if (slotIndex >= 0) {
+				occupiedIndexes.add(slotIndex);
+			}
+		}
+
+		for (let i = 0; i < Level.TRAY_SLOT_OFFSETS.length; i++) {
+			if (!occupiedIndexes.has(i)) {
+				return i;
+			}
+		}
+
+		return null;
+	}
+
 	private getTraySlotPosition(trayId: "charola1" | "charola2", index: number) {
 		const tray = trayId === "charola1" ? this.charola1 : this.charola2;
 		if (!tray) {
@@ -3451,18 +3497,10 @@ export default class Level extends Phaser.Scene {
 
 		const baseX = tray.x;
 		const baseY = tray.y + 8;
-		const offsets = (() => {
-			if (index === 0) {
-				return [0];
-			}
-			if (index === 1) {
-				return [-Level.TRAY_SLOT_OFFSET / 2, Level.TRAY_SLOT_OFFSET / 2];
-			}
-			return [-Level.TRAY_SLOT_OFFSET, 0, Level.TRAY_SLOT_OFFSET];
-		})();
+		const slotIndex = Math.max(0, Math.min(index, Level.TRAY_SLOT_OFFSETS.length - 1));
 
 		return {
-			x: baseX + (offsets[index] ?? 0),
+			x: baseX + Level.TRAY_SLOT_OFFSETS[slotIndex],
 			y: baseY,
 		};
 	}
@@ -3664,7 +3702,8 @@ export default class Level extends Phaser.Scene {
 
 	public canUseCookieJar() {
 
-		return !this.isGameplayPaused
+		return isCookieJarAcquired()
+			&& !this.isGameplayPaused
 			&& !this.isExitConfirmVisible
 			&& !this.isUnlockPanelVisible
 			&& !this.panel.visible
@@ -3682,6 +3721,16 @@ export default class Level extends Phaser.Scene {
 	private refreshCookieJarVisuals() {
 
 		if (!this.cookieJar?.active) {
+			return;
+		}
+
+		const isUnlocked = isCookieJarAcquired();
+		this.cookieJar.setVisible(isUnlocked);
+		this.cookieJar.setActive(isUnlocked);
+
+		if (!isUnlocked) {
+			this.cookieJar.setAttentionPulse(false);
+			this.cookieJar.setSandClockUrgent(false);
 			return;
 		}
 
@@ -4957,23 +5006,12 @@ export default class Level extends Phaser.Scene {
 			return null;
 		}
 
-		if (arr.length >= Level.TRAY_CAPACITY) {
+		const slotIndex = this.getFirstAvailableTraySlotIndex(trayId, arr);
+		if (slotIndex === null || arr.length >= Level.TRAY_CAPACITY) {
 			return null;
 		}
 
-		const finalCount = arr.length + 1;
-		let offsets: number[] = [];
-
-		if (finalCount === 1) {
-			offsets = [0];
-		} else if (finalCount === 2) {
-			offsets = [-Level.TRAY_SLOT_OFFSET / 2, Level.TRAY_SLOT_OFFSET / 2];
-		} else {
-			offsets = [-Level.TRAY_SLOT_OFFSET, 0, Level.TRAY_SLOT_OFFSET];
-		}
-
-		const index = arr.length;
-		const x = tray.x + (offsets[index] ?? 0);
+		const x = tray.x + Level.TRAY_SLOT_OFFSETS[slotIndex];
 		const y = tray.y + 8;
 		return { x, y };
 	}
@@ -5049,6 +5087,12 @@ export default class Level extends Phaser.Scene {
 	}
 
 	private resolveTrayPlacement(trayId: "charola1" | "charola2") {
+		const selected = this.selectedDeliveryProduct as any;
+		if (selected && selected.isOnTray?.()) {
+			selected.cancelDeliverySelection();
+			return;
+		}
+
 		const slot = this.claimAvailableTraySlot(trayId);
 		if (!slot) {
 			this.sound.play("deny");
@@ -5504,11 +5548,18 @@ export default class Level extends Phaser.Scene {
 					continue;
 				}
 
+				if (product.isOnTray()) {
+					continue;
+				}
+
 				if (product.isChoosingDelivery() || !product.canReceiveDirectDelivery()) {
-					const slot = this.claimAvailableTraySlot(trayId);
-					if (slot) {
-						product.recoverFromStaleTrayState(trayId, slot.x, slot.y);
-						product.snapToTraySlot(trayId, slot.x, slot.y);
+					const productAny = product as any;
+					const tray = productAny.currentTrayId as "charola1" | "charola2" | undefined;
+					const slotX = productAny.traySlotX as number | undefined;
+					const slotY = productAny.traySlotY as number | undefined;
+					if (tray && slotX !== undefined && slotY !== undefined) {
+						product.recoverFromStaleTrayState(tray, slotX, slotY);
+						product.snapToTraySlot(tray, slotX, slotY);
 					}
 				}
 			}
@@ -5525,14 +5576,16 @@ export default class Level extends Phaser.Scene {
 				continue;
 			}
 
-			const trayId = this.trayHasFreeSlot("charola1") ? "charola1" : "charola2";
-			const slot = this.claimAvailableTraySlot(trayId);
-			if (!slot) {
+			const productAny = product as any;
+			const trayId = productAny.currentTrayId as "charola1" | "charola2" | undefined;
+			const slotX = productAny.traySlotX as number | undefined;
+			const slotY = productAny.traySlotY as number | undefined;
+			if (!trayId || slotX === undefined || slotY === undefined) {
 				continue;
 			}
 
-			product.recoverFromStaleTrayState(trayId, slot.x, slot.y);
-			product.snapToTraySlot(trayId, slot.x, slot.y);
+			product.recoverFromStaleTrayState(trayId, slotX, slotY);
+			product.snapToTraySlot(trayId, slotX, slotY);
 			if (trayId === "charola1") {
 				this.charola1Products.push(product);
 			} else {
