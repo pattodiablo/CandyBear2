@@ -3432,6 +3432,7 @@ export default class Level extends Phaser.Scene {
 	}
 
 	public reserveTraySlot(trayId: "charola1" | "charola2", product: AProduct | sandwichPrefab) {
+		this.sanitizeTrayProductArray(trayId);
 		const arr = trayId === "charola1" ? this.charola1Products : this.charola2Products;
 		if (arr.includes(product)) {
 			return;
@@ -3445,6 +3446,7 @@ export default class Level extends Phaser.Scene {
 	}
 
 	public releaseTraySlot(trayId: "charola1" | "charola2", product: AProduct | sandwichPrefab) {
+		this.sanitizeTrayProductArray(trayId);
 		const arr = trayId === "charola1" ? this.charola1Products : this.charola2Products;
 		const idx = arr.indexOf(product);
 		if (idx === -1) {
@@ -3456,6 +3458,7 @@ export default class Level extends Phaser.Scene {
 	}
 
 	private reflowTrayProducts(trayId: "charola1" | "charola2") {
+		this.sanitizeTrayProductArray(trayId);
 		const arr = trayId === "charola1" ? this.charola1Products : this.charola2Products;
 		const tray = trayId === "charola1" ? this.charola1 : this.charola2;
 		if (!tray) {
@@ -4921,9 +4924,31 @@ export default class Level extends Phaser.Scene {
 		}
 	}
 
+	private sanitizeTrayProductArray(trayId: "charola1" | "charola2") {
+		const arr = trayId === "charola1" ? this.charola1Products : this.charola2Products;
+		const seen = new Set<AProduct | sandwichPrefab>();
+
+		for (let i = arr.length - 1; i >= 0; i--) {
+			const product = arr[i];
+			const anyProduct = product as any;
+			if (!product || !product.active || product.scene !== this || anyProduct.isDestroyed || anyProduct.currentTrayId !== trayId) {
+				arr.splice(i, 1);
+				continue;
+			}
+
+			if (seen.has(product)) {
+				arr.splice(i, 1);
+				continue;
+			}
+
+			seen.add(product);
+		}
+	}
+
 	public claimAvailableTraySlot(trayId: "charola1" | "charola2") {
 		const arr = trayId === "charola1" ? this.charola1Products : this.charola2Products;
 		const tray = trayId === "charola1" ? this.charola1 : this.charola2;
+		this.sanitizeTrayProductArray(trayId);
 
 		if (!tray) {
 			return null;
