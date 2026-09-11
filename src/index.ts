@@ -37,8 +37,36 @@ function isMobileDevice() {
 
 let game: Phaser.Game | undefined;
 
+function getViewportSize() {
+	const viewport = window.visualViewport;
+	if (viewport) {
+		return {
+			width: Math.max(1, Math.round(viewport.width)),
+			height: Math.max(1, Math.round(viewport.height))
+		};
+	}
+
+	return {
+		width: window.innerWidth,
+		height: window.innerHeight
+	};
+}
+
 function refreshGameScale() {
-	game?.scale.refresh();
+	if (!game) {
+		return;
+	}
+
+	const { width, height } = getViewportSize();
+	const ratio = Math.min(width / 1280, height / 720);
+	const targetWidth = Math.max(1, Math.round(1280 * ratio));
+	const targetHeight = Math.max(1, Math.round(720 * ratio));
+
+	if (game.scale && typeof game.scale.resize === "function") {
+		game.scale.resize(targetWidth, targetHeight);
+	}
+
+	game.scale.refresh();
 }
 
 /** true solo si la pestaña está visible y la ventana tiene foco. */
@@ -93,6 +121,8 @@ function createGame() {
 			mode: Phaser.Scale.ScaleModes.FIT,
 			autoCenter: Phaser.Scale.Center.CENTER_BOTH,
 			resizeInterval: 250,
+			width: 1280,
+			height: 720,
 		},
 		scene: [Boot, Preload, Level, SceneSelector, CredictsScene]
 	});
