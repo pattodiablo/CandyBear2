@@ -53,7 +53,7 @@ function getViewportSize() {
 }
 
 function refreshGameScale() {
-	if (!game) {
+	if (!game || !isMobileDevice()) {
 		return;
 	}
 
@@ -161,14 +161,18 @@ function bootGame() {
 		installAudioUnlockHandlers();
 		game.scene.start("Boot");
 
-		window.addEventListener("resize", refreshGameScale);
-		window.addEventListener("orientationchange", () => {
-			window.setTimeout(refreshGameScale, 150);
-			window.setTimeout(refreshGameScale, 400);
-		});
+		if (isMobileDevice()) {
+			window.addEventListener("resize", refreshGameScale);
+			window.addEventListener("orientationchange", () => {
+				window.setTimeout(refreshGameScale, 150);
+				window.setTimeout(refreshGameScale, 400);
+			});
+		}
 	}
 
-	refreshGameScale();
+	if (isMobileDevice()) {
+		refreshGameScale();
+	}
 }
 
 window.bootCandyBearGame = bootGame;
