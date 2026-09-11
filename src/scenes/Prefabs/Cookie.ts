@@ -56,7 +56,9 @@ export default class Cookie extends Phaser.GameObjects.Image {
 							client.receiveCookieTreat();
 
 							if (client.extendRequestWaitTime(bonusWaitMs)) {
-								this.scene.sound.play(`eating${Phaser.Math.Between(1, 3)}`);
+								if (this.scene && this.scene.sys?.isActive() && this.scene.sound) {
+									this.scene.sound.play(`eating${Phaser.Math.Between(1, 3)}`);
+								}
 								SmallHeartBurst.launchAt(
 									this.scene,
 									client.x,
@@ -86,7 +88,9 @@ export default class Cookie extends Phaser.GameObjects.Image {
 
 	private playSwooshSound() {
 		const swooshSoundKey = Phaser.Math.Between(0, 1) === 0 ? "swoosh" : "swoosh2";
-		this.scene.sound.play(swooshSoundKey);
+		if (this.scene && this.scene.sys?.isActive() && this.scene.sound) {
+			this.scene.sound.play(swooshSoundKey);
+		}
 	}
 
 	/* END-USER-CODE */

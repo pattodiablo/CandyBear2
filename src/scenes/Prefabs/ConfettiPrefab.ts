@@ -137,7 +137,9 @@ export default class ConfettiPrefab extends Phaser.GameObjects.Image {
 		const baseBurstCount = Math.floor(ConfettiPrefab.TOTAL_PARTICLE_COUNT / textureKeys.length);
 		let remainingParticles = ConfettiPrefab.TOTAL_PARTICLE_COUNT;
 
-		this.scene.sound.play("cheersSound", { volume: ConfettiPrefab.CHEERS_VOLUME });
+		if (this.scene && this.scene.sys?.isActive() && this.scene.sound) {
+			this.scene.sound.play("cheersSound", { volume: ConfettiPrefab.CHEERS_VOLUME });
+		}
 		this.setPosition(emitterX, emitterY);
 
 		textureKeys.forEach((textureKey, index) => {
@@ -189,7 +191,9 @@ export default class ConfettiPrefab extends Phaser.GameObjects.Image {
 
 	private playUnlockBurst() {
 		if (this.scene.cache.audio.exists("cheersSound")) {
-			this.scene.sound.play("cheersSound", { volume: ConfettiPrefab.UNLOCK_CHEERS_VOLUME });
+			if (this.scene && this.scene.sys?.isActive() && this.scene.sound) {
+				this.scene.sound.play("cheersSound", { volume: ConfettiPrefab.UNLOCK_CHEERS_VOLUME });
+			}
 		}
 
 		this.playLocalBurst({

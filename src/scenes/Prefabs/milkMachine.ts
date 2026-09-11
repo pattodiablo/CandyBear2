@@ -103,7 +103,9 @@ export default class milkMachine extends Phaser.GameObjects.Container {
 		slotSprite.setTexture("GlassAnim", milkMachine.DEFAULT_FRAME);
 		slotSprite.stop();
 		slotSprite.removeAllListeners(Phaser.Animations.Events.ANIMATION_COMPLETE);
-		this.scene.sound.play("MilkRefill");
+		if (this.scene && this.scene.sys?.isActive() && this.scene.sound) {
+			this.scene.sound.play("MilkRefill");
+		}
 
 		const finishRefill = () => {
 			slotSprite.anims.timeScale = 1;

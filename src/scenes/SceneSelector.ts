@@ -444,7 +444,9 @@ export default class SceneSelector extends Phaser.Scene {
 			return;
 		}
 
-		this.sound.play("likeSound");
+		if (this.sys?.isActive() && this.sound) {
+			this.sound.play("likeSound");
+		}
 		this.updatePlayerStats();
 		card.beginPurchaseFlip();
 	}
@@ -511,7 +513,9 @@ export default class SceneSelector extends Phaser.Scene {
 		card.pauseFloatAnimation();
 
 		const swooshSoundKey = Phaser.Math.Between(0, 1) === 0 ? "swoosh" : "swoosh2";
-		this.sound.play(swooshSoundKey);
+		if (this.sys?.isActive() && this.sound) {
+			this.sound.play(swooshSoundKey);
+		}
 
 		this.focusedCard = card;
 		this.focusedCardRestState = {

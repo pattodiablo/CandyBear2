@@ -197,6 +197,11 @@
                 "key": "cookieJar"
             },
             {
+                "url": "assets/cookieJarThumb.png",
+                "type": "image",
+                "key": "cookieJarThumb"
+            },
+            {
                 "url": [
                     "assets/audio/dancing.mp3"
                 ],

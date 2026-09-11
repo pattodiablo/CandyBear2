@@ -77,16 +77,23 @@ export default class CookiesJar extends Phaser.GameObjects.Container {
 	private badgeText?: Phaser.GameObjects.Text;
 
 	public setTexture(textureKey: string) {
+		if (!this.jarImage || !this.scene || !this.scene.sys?.isActive()) {
+			return;
+		}
+
 		this.jarImage.setTexture(textureKey);
 	}
 
 	public setRemainingCookies(remaining: number) {
+		if (!this.badgeText || !this.badgeBackground || !this.scene || !this.scene.sys?.isActive()) {
+			return;
+		}
 
 		const normalizedRemaining = Math.max(0, Math.floor(remaining));
 
-		this.badgeText?.setText(String(normalizedRemaining));
-		this.badgeBackground?.setVisible(true);
-		this.badgeText?.setVisible(true);
+		this.badgeText.setText(String(normalizedRemaining));
+		this.badgeBackground.setVisible(true);
+		this.badgeText.setVisible(true);
 	}
 
 	/**
@@ -289,12 +296,16 @@ export default class CookiesJar extends Phaser.GameObjects.Container {
 		const levelScene = this.scene as Level;
 
 		if (!levelScene.tryLaunchCookieReward(this.x, this.y)) {
-			this.scene.sound.play("deny");
+			if (this.scene && this.scene.sys?.isActive() && this.scene.sound) {
+				this.scene.sound.play("deny");
+			}
 			return;
 		}
 
 		this.isPressed = true;
-		this.scene.sound.play("pop3");
+		if (this.scene && this.scene.sys?.isActive() && this.scene.sound) {
+			this.scene.sound.play("pop3");
+		}
 		this.animateScale(
 			this.baseScaleX * CookiesJar.PRESSED_SCALE,
 			this.baseScaleY * CookiesJar.PRESSED_SCALE,

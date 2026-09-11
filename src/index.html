@@ -18,6 +18,9 @@
             height: 100%;
             min-height: 100dvh;
             overflow: hidden;
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+            box-sizing: border-box;
         }
 
         body {
@@ -249,6 +252,7 @@
         (function () {
             const isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
                 || (navigator.maxTouchPoints > 0 && Math.min(screen.width, screen.height) < 1024);
+            const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
             if (!isMobileDevice) {
                 return;
@@ -273,14 +277,25 @@
             const flushButton = document.getElementById("mobile-flush-button");
             const flushStatus = document.getElementById("mobile-flush-status");
 
+            const getViewportSize = () => {
+                const viewport = window.visualViewport;
+                return {
+                    width: viewport ? viewport.width : window.innerWidth,
+                    height: viewport ? viewport.height : window.innerHeight
+                };
+            };
+
             const syncOrientationOverlay = () => {
-                const isPortrait = window.innerHeight >= window.innerWidth;
+                const { width, height } = getViewportSize();
+                const isPortrait = height >= width;
                 orientationOverlay.classList.toggle("visible", isPortrait);
             };
 
             syncOrientationOverlay();
             window.addEventListener("resize", syncOrientationOverlay, { passive: true });
             window.addEventListener("orientationchange", syncOrientationOverlay, { passive: true });
+            window.visualViewport?.addEventListener("resize", syncOrientationOverlay, { passive: true });
+            window.visualViewport?.addEventListener("scroll", syncOrientationOverlay, { passive: true });
 
             const clearStoredProgress = () => {
                 for (const storageKey of GAME_STORAGE_KEYS) {
@@ -392,11 +407,11 @@
             const enableLaunchButtons = () => {
                 launchButton.disabled = false;
                 skipButton.disabled = false;
-                launchButton.textContent = "Tap To Play Fullscreen";
+                launchButton.textContent = isIOS ? "Tap To Play" : "Tap To Play Fullscreen";
             };
 
             overlay.classList.add("visible");
-            launchButton.addEventListener("click", () => launchGame(true), { once: true });
+            launchButton.addEventListener("click", () => launchGame(!isIOS), { once: true });
             skipButton.addEventListener("click", () => launchGame(false), { once: true });
             flushButton.addEventListener("click", flushStoredProgress);
 

@@ -208,12 +208,14 @@
             "id": "95cb15be-730b-4a7c-8197-7e3dfc28e356",
             "unlock": [
                 "x",
-                "y"
+                "y",
+                "visible"
             ],
             "label": "cookieJar",
             "scope": "PUBLIC",
             "x": 145,
-            "y": 455
+            "y": 455,
+            "visible": false
         },
         {
             "type": "Image",
@@ -314,7 +316,7 @@
             "x": 595,
             "y": 360,
             "visible": true,
-            "editorRender": true
+            "editorRender": false
         },
         {
             "type": "Image",

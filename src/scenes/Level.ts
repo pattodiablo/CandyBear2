@@ -57,10 +57,13 @@ import {
 	getUnlockCatalogEntry,
 	isClientUnlockAcquired,
 	isClientUnlockId,
+	isCookieJarAcquired,
+	isCookieJarUnlockId,
 	isProductUnlockId,
 	isUnlockAvailableAtLevel,
 	shouldShowWorkstationLockIcon,
 	storeClientUnlockAcquired,
+	storeCookieJarAcquired,
 	UNLOCK_ORDER,
 	type UnlockId,
 } from "./unlockCatalog";
@@ -178,6 +181,7 @@ export default class Level extends Phaser.Scene {
 		// cookieJar
 		const cookieJar = new CookiesJar(this, 145, 455);
 		this.add.existing(cookieJar);
+		cookieJar.visible = false;
 
 		// lamp
 		this.add.image(193, 57, "lamp");
@@ -376,6 +380,8 @@ export default class Level extends Phaser.Scene {
 	private static readonly WAVE_SIZE_GROWTH_FACTOR = 0.4;
 	private static readonly WAVE_SIZE_OSCILLATION_BOOST = 0.5;
 	private static readonly TRAY_CAPACITY = 3;
+	/** Posiciones fijas horizontales de la bandeja: izquierda, centro, derecha. */
+	private static readonly TRAY_SLOT_OFFSETS: ReadonlyArray<number> = [-88, 0, 88];
 	/** Separación horizontal entre productos en la bandeja (más espacio = más fácil click, mejor para sándwiches). */
 	private static readonly TRAY_SLOT_OFFSET = 88;
 	/** Latido de escala cuando conviene guardar un producto en la charola. */
@@ -502,8 +508,8 @@ export default class Level extends Phaser.Scene {
 	private queuedClientEntries = 0;
 	/** Clientes extra por productos listos en bandeja al final de las oleadas. */
 	private extraClientsSpawned = 0;
-	/** Cola de pedidos forzados (uno por cliente) para la limpieza de bandejas. */
-	private forcedClientOrderQueue: ClientRequestAppearance[][] = [];
+	/** Cola de pedidos forzados (uno por cliente) para eventos especiales. */
+	private forcedClientOrderQueue: Array<{ orders: ClientRequestAppearance[]; isFinalWavePickup: boolean }> = [];
 	private waveSpawnTimers: Phaser.Time.TimerEvent[] = [];
 	private levelPrepTimer?: Phaser.Time.TimerEvent;
 	private prepMessageText?: Phaser.GameObjects.Text;
@@ -800,14 +806,18 @@ export default class Level extends Phaser.Scene {
 	 * (quemado, vaso sin cliente, cliente se va, entrega incorrecta, etc.).
 	 */
 	public playCanceledOrderSound() {
+		if (!this.sys?.isActive() || !this.sound) {
+			return;
+		}
+
 		if (this.cache.audio.exists("canceled")) {
-			this.sound.play("canceled");
+			this.sound?.play("canceled");
 			return;
 		}
 
 		// Fallback por si el pack aún no tiene el asset en alguna build.
 		if (this.cache.audio.exists("looseMoney")) {
-			this.sound.play("looseMoney");
+			this.sound?.play("looseMoney");
 		}
 	}
 
@@ -1320,6 +1330,8 @@ export default class Level extends Phaser.Scene {
 		this.clearProgressionLockIcons();
 		this.applyProductSlotProgression();
 		this.applyWorkstationProgression();
+		this.refreshCookieJarVisuals();
+		this.updateCookieJarAttention();
 		if (Level.ENABLE_PROGRESSION_LOCKS) {
 			this.updateProgressionLockAffordance();
 		}
@@ -2314,7 +2326,9 @@ export default class Level extends Phaser.Scene {
 			? isProductAcquired(unlockId)
 			: isClientUnlockId(unlockId)
 				? isClientUnlockAcquired(unlockId)
-				: isWorkstationAcquired(unlockId);
+				: isCookieJarUnlockId(unlockId)
+					? isCookieJarAcquired()
+					: isWorkstationAcquired(unlockId);
 
 		if (isAlreadyOwned) {
 			return;
@@ -2409,8 +2423,9 @@ export default class Level extends Phaser.Scene {
 		return UNLOCK_ORDER.filter((unlockId) => {
 			const isProduct = isProductUnlockId(unlockId);
 			const isClient = isClientUnlockId(unlockId);
-			const isWorkstation = !isProduct && !isClient;
-			const shouldShow = isProduct || isClient || (isWorkstation && shouldShowWorkstationLockIcon(unlockId));
+			const isCookieJar = isCookieJarUnlockId(unlockId);
+			const isWorkstation = !isProduct && !isClient && !isCookieJar;
+			const shouldShow = isProduct || isClient || isCookieJar || (isWorkstation && shouldShowWorkstationLockIcon(unlockId));
 
 			if (!shouldShow) {
 				return false;
@@ -2420,7 +2435,9 @@ export default class Level extends Phaser.Scene {
 				? isProductAcquired(unlockId)
 				: isClient
 					? isClientUnlockAcquired(unlockId)
-					: isWorkstationAcquired(unlockId);
+					: isCookieJar
+						? isCookieJarAcquired()
+						: isWorkstationAcquired(unlockId);
 
 			if (isAcquired) {
 				return false;
@@ -2434,8 +2451,9 @@ export default class Level extends Phaser.Scene {
 		return UNLOCK_ORDER.filter((unlockId) => {
 			const isProduct = isProductUnlockId(unlockId);
 			const isClient = isClientUnlockId(unlockId);
-			const isWorkstation = !isProduct && !isClient;
-			const shouldShow = isProduct || isClient || (isWorkstation && shouldShowWorkstationLockIcon(unlockId));
+			const isCookieJar = isCookieJarUnlockId(unlockId);
+			const isWorkstation = !isProduct && !isClient && !isCookieJar;
+			const shouldShow = isProduct || isClient || isCookieJar || (isWorkstation && shouldShowWorkstationLockIcon(unlockId));
 
 			if (!shouldShow) {
 				return false;
@@ -2445,7 +2463,9 @@ export default class Level extends Phaser.Scene {
 				? isProductAcquired(unlockId)
 				: isClient
 					? isClientUnlockAcquired(unlockId)
-					: isWorkstationAcquired(unlockId);
+					: isCookieJar
+						? isCookieJarAcquired()
+						: isWorkstationAcquired(unlockId);
 
 			return !isAcquired;
 		}).slice(0, 5);
@@ -2508,6 +2528,8 @@ export default class Level extends Phaser.Scene {
 			}
 		} else if (isClientUnlockId(unlockId)) {
 			storeClientUnlockAcquired(unlockId);
+		} else if (isCookieJarUnlockId(unlockId)) {
+			storeCookieJarAcquired();
 		} else {
 			storeWorkstationAcquired(unlockId);
 		}
@@ -2831,6 +2853,8 @@ export default class Level extends Phaser.Scene {
 				return this.holder3;
 			case "holder4":
 				return this.holder4;
+			case "cookieJar":
+				return this.cookieJar;
 			default:
 				return undefined;
 		}
@@ -2845,7 +2869,16 @@ export default class Level extends Phaser.Scene {
 			scaleY: number;
 			active: boolean;
 			setScale: (x: number, y?: number) => unknown;
+			setVisible?: (value: boolean) => unknown;
+			setActive?: (value: boolean) => void;
 		};
+
+		if (typeof display.setVisible === "function") {
+			display.setVisible(true);
+		}
+		if (typeof display.setActive === "function") {
+			display.setActive(true);
+		}
 
 		if (typeof display.x !== "number" || typeof display.y !== "number") {
 			return;
@@ -3432,8 +3465,20 @@ export default class Level extends Phaser.Scene {
 		if (arr.length >= Level.TRAY_CAPACITY) {
 			return;
 		}
+
+		const slotIndex = this.getFirstAvailableTraySlotIndex(trayId, arr);
+		if (slotIndex === null) {
+			return;
+		}
+
 		arr.push(product);
-		this.reflowTrayProducts(trayId);
+		const slot = this.getTraySlotPosition(trayId, slotIndex);
+		if (!slot) {
+			return;
+		}
+
+		product.setDepth((trayId === "charola1" ? this.charola1 : this.charola2)?.depth ?? 0 + 2 + slotIndex);
+		product.snapToTraySlot(trayId, slot.x, slot.y);
 		this.updateTrayInviteAttention();
 	}
 
@@ -3448,30 +3493,59 @@ export default class Level extends Phaser.Scene {
 		this.updateTrayInviteAttention();
 	}
 
+	private getFirstAvailableTraySlotIndex(
+		trayId: "charola1" | "charola2",
+		arr: Array<AProduct | sandwichPrefab>
+	) {
+		const occupiedIndexes = new Set<number>();
+		for (const product of arr) {
+			const productAny = product as any;
+			const trayX = productAny.traySlotX ?? product.x;
+			const tray = trayId === "charola1" ? this.charola1 : this.charola2;
+			const slotIndex = Level.TRAY_SLOT_OFFSETS.findIndex((offset) => {
+				return Math.abs((tray?.x ?? 0) + offset - trayX) < 4;
+			});
+			if (slotIndex >= 0) {
+				occupiedIndexes.add(slotIndex);
+			}
+		}
+
+		for (let i = 0; i < Level.TRAY_SLOT_OFFSETS.length; i++) {
+			if (!occupiedIndexes.has(i)) {
+				return i;
+			}
+		}
+
+		return null;
+	}
+
+	private getTraySlotPosition(trayId: "charola1" | "charola2", index: number) {
+		const tray = trayId === "charola1" ? this.charola1 : this.charola2;
+		if (!tray) {
+			return null;
+		}
+
+		const baseX = tray.x;
+		const baseY = tray.y + 8;
+		const slotIndex = Math.max(0, Math.min(index, Level.TRAY_SLOT_OFFSETS.length - 1));
+
+		return {
+			x: baseX + Level.TRAY_SLOT_OFFSETS[slotIndex],
+			y: baseY,
+		};
+	}
+
 	private reflowTrayProducts(trayId: "charola1" | "charola2") {
 		this.sanitizeTrayProductArray(trayId);
 		const arr = trayId === "charola1" ? this.charola1Products : this.charola2Products;
-		const tray = trayId === "charola1" ? this.charola1 : this.charola2;
-		if (!tray) {
-			return;
-		}
-		const baseX = tray.x;
-		const baseY = tray.y + 8;
-		const offsets = [] as number[];
-		if (arr.length === 1) {
-			offsets.push(0);
-		} else if (arr.length === 2) {
-			offsets.push(-Level.TRAY_SLOT_OFFSET / 2, Level.TRAY_SLOT_OFFSET / 2);
-		} else {
-			offsets.push(-Level.TRAY_SLOT_OFFSET, 0, Level.TRAY_SLOT_OFFSET);
-		}
-
 		for (let i = 0; i < arr.length; i++) {
-			const prod = arr[i];
-			const x = baseX + (offsets[i] ?? 0);
-			const y = baseY;
-			prod.setDepth(tray.depth + 2 + i);
-			prod.snapToTraySlot(trayId, x, y);
+			const product = arr[i];
+			const slot = this.getTraySlotPosition(trayId, i);
+			if (!slot) {
+				continue;
+			}
+			product.setDepth((trayId === "charola1" ? this.charola1 : this.charola2)?.depth ?? 0 + 2 + i);
+			product.snapToTraySlot(trayId, slot.x, slot.y);
 		}
 	}
 
@@ -3658,7 +3732,8 @@ export default class Level extends Phaser.Scene {
 
 	public canUseCookieJar() {
 
-		return !this.isGameplayPaused
+		return isCookieJarAcquired()
+			&& !this.isGameplayPaused
 			&& !this.isExitConfirmVisible
 			&& !this.isUnlockPanelVisible
 			&& !this.panel.visible
@@ -3674,8 +3749,19 @@ export default class Level extends Phaser.Scene {
 	}
 
 	private refreshCookieJarVisuals() {
+		if (!this.cookieJar || !this.sys.isActive() || !this.cookieJar.scene || !this.cookieJar.scene.sys?.isActive()) {
+			return;
+		}
 
-		if (!this.cookieJar?.active) {
+		const isUnlocked = isCookieJarAcquired();
+		this.cookieJar.setVisible(isUnlocked);
+		this.cookieJar.setActive(isUnlocked);
+
+		if (!isUnlocked) {
+			this.cookieJar.setAttentionPulse(false);
+			this.cookieJar.setSandClockUrgent(false);
+			this.cookieJar.setTexture(Level.EMPTY_COOKIE_JAR_TEXTURE);
+			this.cookieJar.setRemainingCookies(0);
 			return;
 		}
 
@@ -3685,7 +3771,7 @@ export default class Level extends Phaser.Scene {
 				? Level.COOKIE_JAR_TEXTURE
 				: Level.EMPTY_COOKIE_JAR_TEXTURE
 		);
-		this.updateCookieJarBadge();
+		this.cookieJar.setRemainingCookies(this.cookieStock);
 	}
 
 	private updateCookieJarBadge() {
@@ -3984,8 +4070,8 @@ export default class Level extends Phaser.Scene {
 	}
 
 	/**
-	 * Con probabilidad según el tier del osito, lanza confeti hacia el tarro
-	 * y al llegar suma 1 galleta con un pulso de feedback.
+	 * Cada like añade exactamente 1 galleta al tarro; el premio se dispara de forma
+	 * determinista y no depende del skin ni de la suerte.
 	 */
 	private maybeLaunchLikeCookieTrail(fromX: number, fromY: number, skinIndex: number) {
 
@@ -4079,7 +4165,7 @@ export default class Level extends Phaser.Scene {
 		almost.setDepth(Math.max(this.workstation.depth + 50, 1000));
 		almost.setScrollFactor(0);
 
-		if (this.cache.audio.exists("pop1")) {
+		if (this.sys?.isActive() && this.sound && this.sys?.isActive() && this.sound && this.cache.audio.exists("pop1")) {
 			this.sound.play("pop1", { volume: 0.5 });
 		}
 
@@ -4089,7 +4175,9 @@ export default class Level extends Phaser.Scene {
 	public showCoinsAt(x: number, amount: number) {
 
 		const coinDropSoundKey = Phaser.Math.Between(0, 1) === 0 ? "coinDrop" : "coinDrop2";
-		this.sound.play(coinDropSoundKey);
+		if (this.sys?.isActive() && this.sound) {
+			this.sound.play(coinDropSoundKey);
+		}
 		const coinOffsets = this.getCoinOffsets(amount);
 		const frontCoinDepth = Math.max(this.workstation.depth + 50, 900);
 
@@ -4234,7 +4322,10 @@ export default class Level extends Phaser.Scene {
 		this.time.delayedCall(2500, () => {
 			for (const product of readyTrayProducts) {
 				const appearance = this.getRequestAppearanceFromTrayProduct(product);
-				this.forcedClientOrderQueue.push([appearance]);
+				this.forcedClientOrderQueue.push({
+					orders: [appearance],
+					isFinalWavePickup: true,
+				});
 				this.extraClientsSpawned++;
 				this.clientsRemainingInLevel++;
 				this.queuedClientEntries++;
@@ -4545,10 +4636,11 @@ export default class Level extends Phaser.Scene {
 	private spawnClient(spawnX: number) {
 
 		const client = new AClient(this, spawnX, this.clientSpawnY);
-		const forcedOrders = this.forcedClientOrderQueue.shift();
+		const forcedEntry = this.forcedClientOrderQueue.shift();
+		const forcedOrders = forcedEntry?.orders ?? [];
 
-		if (forcedOrders && forcedOrders.length > 0) {
-			client.assignForcedOrders(forcedOrders);
+		if (forcedOrders.length > 0) {
+			client.assignForcedOrders(forcedOrders, forcedEntry?.isFinalWavePickup ?? false);
 		}
 
 		this.add.existing(client);
@@ -4675,11 +4767,11 @@ export default class Level extends Phaser.Scene {
 		}
 
 		this.forcedClientOrderQueue = [
-			[{ key: "Product1Chocolate" }],
-			[{ key: "Product1Candy" }],
-			[{ key: "Product1Chocolate" }],
-			[{ key: "Product1Candy" }],
-			[{ key: "Product1Chocolate" }],
+			{ orders: [{ key: "Product1Chocolate" }], isFinalWavePickup: false },
+			{ orders: [{ key: "Product1Candy" }], isFinalWavePickup: false },
+			{ orders: [{ key: "Product1Chocolate" }], isFinalWavePickup: false },
+			{ orders: [{ key: "Product1Candy" }], isFinalWavePickup: false },
+			{ orders: [{ key: "Product1Chocolate" }], isFinalWavePickup: false },
 		];
 	}
 
@@ -4895,6 +4987,41 @@ export default class Level extends Phaser.Scene {
 		});
 	}
 
+	private setupMachineInputs() {
+		this.fryer1.setInteractive(
+			new Phaser.Geom.Rectangle(-72, -68, 144, 160),
+			Phaser.Geom.Rectangle.Contains
+		);
+		this.fryer1.on(Phaser.Input.Events.POINTER_DOWN, () => {
+			if (this.fryer1Occupied || !this.hasAvailableFryer()) {
+				return;
+			}
+			this.tryAutoSendIdleProductsToAvailableFryer("fryer1");
+		});
+
+		this.fryer2.setInteractive(
+			new Phaser.Geom.Rectangle(-72, -68, 144, 160),
+			Phaser.Geom.Rectangle.Contains
+		);
+		this.fryer2.on(Phaser.Input.Events.POINTER_DOWN, () => {
+			if (!this.fryer2Enabled || this.fryer2Occupied || !this.hasAvailableFryer()) {
+				return;
+			}
+			this.tryAutoSendIdleProductsToAvailableFryer("fryer2");
+		});
+
+		this.toaster.setInteractive(
+			new Phaser.Geom.Rectangle(-100, -90, 200, 190),
+			Phaser.Geom.Rectangle.Contains
+		);
+		this.toaster.on(Phaser.Input.Events.POINTER_DOWN, () => {
+			if (!this.toasterEnabled || this.toasterSlotOccupied) {
+				return;
+			}
+			this.tryAutoSendIdleSandwichesToAvailableToaster();
+		});
+	}
+
 	private setupTrayInputs() {
 		if (this.charola1) {
 			this.charola1BaseScaleX = this.charola1.scaleX;
@@ -4945,23 +5072,12 @@ export default class Level extends Phaser.Scene {
 			return null;
 		}
 
-		if (arr.length >= Level.TRAY_CAPACITY) {
+		const slotIndex = this.getFirstAvailableTraySlotIndex(trayId, arr);
+		if (slotIndex === null || arr.length >= Level.TRAY_CAPACITY) {
 			return null;
 		}
 
-		const finalCount = arr.length + 1;
-		let offsets: number[] = [];
-
-		if (finalCount === 1) {
-			offsets = [0];
-		} else if (finalCount === 2) {
-			offsets = [-Level.TRAY_SLOT_OFFSET / 2, Level.TRAY_SLOT_OFFSET / 2];
-		} else {
-			offsets = [-Level.TRAY_SLOT_OFFSET, 0, Level.TRAY_SLOT_OFFSET];
-		}
-
-		const index = arr.length;
-		const x = tray.x + (offsets[index] ?? 0);
+		const x = tray.x + Level.TRAY_SLOT_OFFSETS[slotIndex];
 		const y = tray.y + 8;
 		return { x, y };
 	}
@@ -5037,6 +5153,12 @@ export default class Level extends Phaser.Scene {
 	}
 
 	private resolveTrayPlacement(trayId: "charola1" | "charola2") {
+		const selected = this.selectedDeliveryProduct as any;
+		if (selected && selected.isOnTray?.()) {
+			selected.cancelDeliverySelection();
+			return;
+		}
+
 		const slot = this.claimAvailableTraySlot(trayId);
 		if (!slot) {
 			this.sound.play("deny");
@@ -5492,11 +5614,18 @@ export default class Level extends Phaser.Scene {
 					continue;
 				}
 
+				if (product.isOnTray()) {
+					continue;
+				}
+
 				if (product.isChoosingDelivery() || !product.canReceiveDirectDelivery()) {
-					const slot = this.claimAvailableTraySlot(trayId);
-					if (slot) {
-						product.recoverFromStaleTrayState(trayId, slot.x, slot.y);
-						product.snapToTraySlot(trayId, slot.x, slot.y);
+					const productAny = product as any;
+					const tray = productAny.currentTrayId as "charola1" | "charola2" | undefined;
+					const slotX = productAny.traySlotX as number | undefined;
+					const slotY = productAny.traySlotY as number | undefined;
+					if (tray && slotX !== undefined && slotY !== undefined) {
+						product.recoverFromStaleTrayState(tray, slotX, slotY);
+						product.snapToTraySlot(tray, slotX, slotY);
 					}
 				}
 			}
@@ -5513,14 +5642,16 @@ export default class Level extends Phaser.Scene {
 				continue;
 			}
 
-			const trayId = this.trayHasFreeSlot("charola1") ? "charola1" : "charola2";
-			const slot = this.claimAvailableTraySlot(trayId);
-			if (!slot) {
+			const productAny = product as any;
+			const trayId = productAny.currentTrayId as "charola1" | "charola2" | undefined;
+			const slotX = productAny.traySlotX as number | undefined;
+			const slotY = productAny.traySlotY as number | undefined;
+			if (!trayId || slotX === undefined || slotY === undefined) {
 				continue;
 			}
 
-			product.recoverFromStaleTrayState(trayId, slot.x, slot.y);
-			product.snapToTraySlot(trayId, slot.x, slot.y);
+			product.recoverFromStaleTrayState(trayId, slotX, slotY);
+			product.snapToTraySlot(trayId, slotX, slotY);
 			if (trayId === "charola1") {
 				this.charola1Products.push(product);
 			} else {
@@ -5938,6 +6069,7 @@ export default class Level extends Phaser.Scene {
 		this.initializeDayIndicator();
 		this.initializeClientsLeftIndicator();
 		this.setupDipInputs();
+		this.setupMachineInputs();
 		this.setupTrayInputs();
 		this.setupIntroOverlay();
 		this.setupMenuButton();
