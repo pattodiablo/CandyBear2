@@ -10,6 +10,53 @@ export const MAX_STARS_PER_LEVEL = 3;
 export interface SpecialLevelRequirements {
 	stars: number;
 	likes: number;
+	coins: number;
+}
+
+const SPECIAL_LEVEL_PAID_STORAGE_KEY = "candybear2-special-gate-paid-levels";
+
+function readPaidSpecialGateLevels() {
+	if (typeof window === "undefined") {
+		return {} as Record<string, number>;
+	}
+
+	try {
+		const storedValue = window.localStorage.getItem(SPECIAL_LEVEL_PAID_STORAGE_KEY);
+		if (!storedValue) {
+			return {} as Record<string, number>;
+		}
+
+		const parsedValue = JSON.parse(storedValue) as Record<string, unknown>;
+		return Object.fromEntries(
+			Object.entries(parsedValue)
+				.map(([levelKey, value]) => [levelKey, Number(value)] as const)
+				.filter(([, value]) => Number.isFinite(value) && value >= 0)
+		) as Record<string, number>;
+	} catch {
+		return {} as Record<string, number>;
+	}
+}
+
+export function hasPaidSpecialGateEntry(levelNumber: number) {
+	if (!isSpecialGateLevel(levelNumber)) {
+		return true;
+	}
+
+	if (typeof window === "undefined") {
+		return false;
+	}
+
+	return Boolean(readPaidSpecialGateLevels()[String(Math.floor(levelNumber))]);
+}
+
+export function markSpecialGateEntryPaid(levelNumber: number) {
+	if (typeof window === "undefined" || !isSpecialGateLevel(levelNumber)) {
+		return;
+	}
+
+	const paidLevels = readPaidSpecialGateLevels();
+	paidLevels[String(Math.floor(levelNumber))] = 1;
+	window.localStorage.setItem(SPECIAL_LEVEL_PAID_STORAGE_KEY, JSON.stringify(paidLevels));
 }
 
 /** True para niveles 5, 10, 15, … */
@@ -52,7 +99,7 @@ export function getTotalCampaignStars(maxLevel = 40) {
  */
 export function getSpecialLevelRequirements(levelNumber: number): SpecialLevelRequirements {
 	if (!isSpecialGateLevel(levelNumber)) {
-		return { stars: 0, likes: 0 };
+		return { stars: 0, likes: 0, coins: 0 };
 	}
 
 	const gateIndex = Math.floor(levelNumber / SPECIAL_LEVEL_GATE_INTERVAL);
@@ -68,21 +115,26 @@ export function getSpecialLevelRequirements(levelNumber: number): SpecialLevelRe
 		1,
 		Math.round(gateIndex * 2.5 + gateIndex * gateIndex * 0.5)
 	);
+	// Costo de entrada por nivel especial: se paga 1 sola vez y no se vuelve a cobrar al reingresar.
+	const coins = Math.max(25, Math.round(gateIndex * 14 + gateIndex * gateIndex * 4));
 
-	return { stars, likes };
+	return { stars, likes, coins };
 }
 
 export function meetsSpecialLevelRequirements(
 	levelNumber: number,
 	totalStars = getTotalCampaignStars(),
 	totalLikes = getTotalLikes(),
+	totalCoins = 0,
 ) {
 	if (!isSpecialGateLevel(levelNumber)) {
 		return true;
 	}
 
 	const requirements = getSpecialLevelRequirements(levelNumber);
-	return totalStars >= requirements.stars && totalLikes >= requirements.likes;
+	return totalStars >= requirements.stars
+		&& totalLikes >= requirements.likes
+		&& totalCoins >= requirements.coins;
 }
 
 /** Puede entrar al nivel (progreso de campaña + gate especial si aplica). */
@@ -91,10 +143,15 @@ export function canEnterLevel(
 	highestUnlockedLevel: number,
 	totalStars = getTotalCampaignStars(),
 	totalLikes = getTotalLikes(),
+	totalCoins = 0,
 ) {
 	if (levelNumber > highestUnlockedLevel) {
 		return false;
 	}
 
-	return meetsSpecialLevelRequirements(levelNumber, totalStars, totalLikes);
+	if (hasPaidSpecialGateEntry(levelNumber)) {
+		return true;
+	}
+
+	return meetsSpecialLevelRequirements(levelNumber, totalStars, totalLikes, totalCoins);
 }

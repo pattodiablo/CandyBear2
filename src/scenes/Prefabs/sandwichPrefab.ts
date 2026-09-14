@@ -492,7 +492,16 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 		return this.isSelectingDelivery;
 	}
 
-	public directDeliverToClient(client: { x: number; y: number; matchesProduct(product: sandwichPrefab): boolean; canReceiveDelivery(): boolean; receiveProductDelivery(product: sandwichPrefab): boolean; consumeRequestAndExit(showYum?: boolean): void; }) {
+	public directDeliverToClient(client: {
+		x: number;
+		y: number;
+		matchesProduct(product: sandwichPrefab): boolean;
+		canReceiveDelivery(): boolean;
+		reserveMatchingProduct(product: sandwichPrefab): number;
+		clearMatchingProductReservation(product: sandwichPrefab): void;
+		receiveProductDelivery(product: sandwichPrefab, reservedIndex?: number): boolean;
+		consumeRequestAndExit(showYum?: boolean): void;
+	}) {
 
 		if (!this.canReceiveDirectDelivery()) {
 			return;
@@ -638,7 +647,16 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 		this.setScale(this.baseScaleX, this.baseScaleY);
 	}
 
-	public deliverToClient(client: { x: number; y: number; matchesProduct(product: sandwichPrefab): boolean; canReceiveDelivery(): boolean; receiveProductDelivery(product: sandwichPrefab): boolean; consumeRequestAndExit(showYum?: boolean): void; }) {
+	public deliverToClient(client: {
+		x: number;
+		y: number;
+		matchesProduct(product: sandwichPrefab): boolean;
+		canReceiveDelivery(): boolean;
+		reserveMatchingProduct(product: sandwichPrefab): number;
+		clearMatchingProductReservation(product: sandwichPrefab): void;
+		receiveProductDelivery(product: sandwichPrefab, reservedIndex?: number): boolean;
+		consumeRequestAndExit(showYum?: boolean): void;
+	}) {
 
 		if (!this.isSelectingDelivery) {
 			return;
@@ -684,9 +702,10 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 					return;
 				}
 
-				if (client.matchesProduct(this)) {
+				const matchedIndex = client.reserveMatchingProduct(this);
+				if (matchedIndex >= 0) {
 					levelScene.showCoinsAt(client.x, getProductCoinReward("holder3"));
-					const isOrderComplete = client.receiveProductDelivery(this);
+					const isOrderComplete = client.receiveProductDelivery(this, matchedIndex);
 
 					if (isOrderComplete) {
 						client.consumeRequestAndExit(true);
@@ -699,6 +718,8 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 					this.destroy();
 					return;
 				}
+
+				client.clearMatchingProductReservation(this);
 
 				levelScene.showProductDiscardLossAt(client.x, client.y - 64);
 				client.consumeRequestAndExit();

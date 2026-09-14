@@ -216,6 +216,7 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 	private isNextDayButtonPressed = false;
 	private isLevelsButtonPressed = false;
 	private isLevelsUpgradeAttentionActive = false;
+	private readyButtonPulseTween?: Phaser.Tweens.Tween;
 	private upgradeAvailableMessage!: Phaser.GameObjects.Text;
 	private levelsUpgradeMessageToggleTimer?: Phaser.Time.TimerEvent;
 	private levelsButtonAttentionScaleTween?: Phaser.Tweens.Tween;
@@ -229,13 +230,16 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		this.readyBtn.setInteractive({ useHandCursor: true });
 		this.readyBtn.removeAllListeners();
 		this.isReadyButtonPressed = false;
+		this.stopReadyButtonHeartbeat();
 		this.animateReadyButton(this.readyBtnBaseScaleX, this.readyBtnBaseScaleY, this.readyBtnBaseY);
+		this.startReadyButtonHeartbeat();
 
 		this.readyBtn.on(Phaser.Input.Events.POINTER_OVER, () => {
 			if (this.isReadyButtonPressed) {
 				return;
 			}
 
+			this.stopReadyButtonHeartbeat();
 			this.animateReadyButton(
 				this.readyBtnBaseScaleX * PanelPrefab.BUTTON_HOVER_SCALE_MULT,
 				this.readyBtnBaseScaleY * PanelPrefab.BUTTON_HOVER_SCALE_MULT,
@@ -248,18 +252,21 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 				return;
 			}
 
+			this.stopReadyButtonHeartbeat();
 			this.animateReadyButton(this.readyBtnBaseScaleX, this.readyBtnBaseScaleY, this.readyBtnBaseY);
+			this.startReadyButtonHeartbeat();
 		});
 
 		this.readyBtn.once(Phaser.Input.Events.POINTER_DOWN, () => {
 			this.isReadyButtonPressed = true;
+			this.stopReadyButtonHeartbeat();
 			this.animateReadyButton(
 				this.readyBtnBaseScaleX * PanelPrefab.BUTTON_PRESSED_SCALE_MULT,
 				this.readyBtnBaseScaleY * PanelPrefab.BUTTON_PRESSED_SCALE_MULT,
 				this.readyBtnBaseY + PanelPrefab.READY_BUTTON_PRESS_OFFSET_Y,
 				() => {
-			this.readyBtn.disableInteractive();
-			onClick();
+					this.readyBtn.disableInteractive();
+					onClick();
 				}
 			);
 		});
@@ -274,6 +281,7 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		this.readyBtn.disableInteractive();
 		this.readyBtn.removeAllListeners();
 		this.isReadyButtonPressed = false;
+		this.stopReadyButtonHeartbeat();
 		this.animateReadyButton(this.readyBtnBaseScaleX, this.readyBtnBaseScaleY, this.readyBtnBaseY);
 	}
 
@@ -587,6 +595,24 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 
 		this.dayLabelText.setText(text);
 		this.dayLabelText.setColor(color.startsWith("#") ? color : `#${color}`);
+	}
+
+	private startReadyButtonHeartbeat() {
+		this.stopReadyButtonHeartbeat();
+		this.readyButtonPulseTween = this.scene.tweens.add({
+			targets: this.readyBtn,
+			scaleX: { from: this.readyBtnBaseScaleX * 0.96, to: this.readyBtnBaseScaleX * 1.10 },
+			scaleY: { from: this.readyBtnBaseScaleY * 0.96, to: this.readyBtnBaseScaleY * 1.10 },
+			duration: 700,
+			yoyo: true,
+			repeat: -1,
+			ease: "Sine.InOut",
+		});
+	}
+
+	private stopReadyButtonHeartbeat() {
+		this.readyButtonPulseTween?.stop();
+		this.readyButtonPulseTween = undefined;
 	}
 
 	private animateReadyButton(scaleX: number, scaleY: number, y: number, onComplete?: () => void) {

@@ -32,7 +32,7 @@ type TranslationKey =
 
 const STRINGS: Record<GameLanguage, Record<TranslationKey, string>> = {
 	en: {
-		prepare: "Clients coming",
+		prepare: "Get ready for more clients",
 		perfect: "Perfect",
 		good: "Good",
 		ok: "OK",
@@ -62,7 +62,7 @@ const STRINGS: Record<GameLanguage, Record<TranslationKey, string>> = {
 		waitCookie: "Wait Cookie",
 	},
 	es: {
-		prepare: "Clientes llegando",
+		prepare: "Prepárate para más clientes",
 		perfect: "Perfect",
 		good: "Bien",
 		ok: "OK",

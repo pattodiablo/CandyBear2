@@ -202,7 +202,16 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		});
 	}
 
-	private startDirectDelivery(client: { x: number; y: number; matchesProduct(product: AProduct): boolean; canReceiveDelivery(): boolean; receiveProductDelivery(product: AProduct): boolean; consumeRequestAndExit(): void; }) {
+	private startDirectDelivery(client: {
+		x: number;
+		y: number;
+		matchesProduct(product: AProduct): boolean;
+		canReceiveDelivery(): boolean;
+		reserveMatchingProduct(product: AProduct): number;
+		clearMatchingProductReservation(product: AProduct): void;
+		receiveProductDelivery(product: AProduct, reservedIndex?: number): boolean;
+		consumeRequestAndExit(showYum?: boolean): void;
+	}) {
 
 		this.isAtWorkplace = false;
 		this.isReadyForDelivery = false;
@@ -364,7 +373,16 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		return this.isLaunching && !!this.currentWorkplaceId && !this.isAtWorkplace;
 	}
 
-	public directDeliverToClient(client: { x: number; y: number; matchesProduct(product: AProduct): boolean; canReceiveDelivery(): boolean; receiveProductDelivery(product: AProduct): boolean; consumeRequestAndExit(): void; }) {
+	public directDeliverToClient(client: {
+		x: number;
+		y: number;
+		matchesProduct(product: AProduct): boolean;
+		canReceiveDelivery(): boolean;
+		reserveMatchingProduct(product: AProduct): number;
+		clearMatchingProductReservation(product: AProduct): void;
+		receiveProductDelivery(product: AProduct, reservedIndex?: number): boolean;
+		consumeRequestAndExit(showYum?: boolean): void;
+	}) {
 
 		if (!this.canReceiveDirectDelivery()) {
 			return;
@@ -998,7 +1016,16 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		});
 	}
 
-	public deliverToClient(client: { x: number; y: number; matchesProduct(product: AProduct): boolean; canReceiveDelivery(): boolean; receiveProductDelivery(product: AProduct): boolean; consumeRequestAndExit(showYum?: boolean): void; }) {
+	public deliverToClient(client: {
+		x: number;
+		y: number;
+		matchesProduct(product: AProduct): boolean;
+		canReceiveDelivery(): boolean;
+		reserveMatchingProduct(product: AProduct): number;
+		clearMatchingProductReservation(product: AProduct): void;
+		receiveProductDelivery(product: AProduct, reservedIndex?: number): boolean;
+		consumeRequestAndExit(showYum?: boolean): void;
+	}) {
 
 		if (!this.isSelectingDelivery || !this.active || !this.scene) {
 			return;
@@ -1038,9 +1065,10 @@ export default class AProduct extends Phaser.GameObjects.Image {
 					return;
 				}
 
-				if (client.matchesProduct(this)) {
+				const matchedIndex = client.reserveMatchingProduct(this);
+				if (matchedIndex >= 0) {
 					levelScene.showCoinsAt(client.x, getProductCoinReward(this.getProductSlotId()));
-					const isOrderComplete = client.receiveProductDelivery(this);
+					const isOrderComplete = client.receiveProductDelivery(this, matchedIndex);
 
 					if (isOrderComplete) {
 						client.consumeRequestAndExit(true);
@@ -1053,6 +1081,8 @@ export default class AProduct extends Phaser.GameObjects.Image {
 					this.destroy();
 					return;
 				}
+
+				client.clearMatchingProductReservation(this);
 
 				// Producto incorrecto: el cliente rechaza y se va.
 				levelScene.showProductDiscardLossAt(client.x, client.y - 64);

@@ -32,7 +32,10 @@ import {
 import {
 	canEnterLevel,
 	getSpecialLevelRequirements,
+	getTotalCampaignStars,
+	hasPaidSpecialGateEntry,
 	isSpecialGateLevel,
+	markSpecialGateEntryPaid,
 } from "./levelGateProgress";
 import { isMomentCardBought } from "./momentProgress";
 import { applySoftRainbowCameraFilter } from "../filters/softRainbowCameraFilter";
@@ -281,11 +284,37 @@ export default class SceneSelector extends Phaser.Scene {
 	}
 
 	private tryStartLevel(levelNumber: number) {
-		if (!canEnterLevel(levelNumber, this.highestUnlockedLevel)) {
+		if (!isSpecialGateLevel(levelNumber)) {
+			this.startLevel(levelNumber);
+			return;
+		}
+
+		if (hasPaidSpecialGateEntry(levelNumber)) {
+			this.startLevel(levelNumber);
+			return;
+		}
+
+		const requirements = getSpecialLevelRequirements(levelNumber);
+		const hasEnoughCoins = getStoredTotalCoins() >= requirements.coins;
+		const hasEnoughLikes = getTotalLikes() >= requirements.likes;
+
+		if (!canEnterLevel(levelNumber, this.highestUnlockedLevel, getTotalCampaignStars(), getTotalLikes(), getStoredTotalCoins())) {
 			this.handleSpecialGateBlocked(levelNumber);
 			return;
 		}
 
+		if (!hasEnoughCoins || !hasEnoughLikes) {
+			this.handleSpecialGateBlocked(levelNumber);
+			return;
+		}
+
+		if (!spendTotalCoins(requirements.coins) || !spendTotalLikes(requirements.likes)) {
+			this.handleSpecialGateBlocked(levelNumber);
+			return;
+		}
+
+		markSpecialGateEntryPaid(levelNumber);
+		this.updatePlayerStats();
 		this.startLevel(levelNumber);
 	}
 

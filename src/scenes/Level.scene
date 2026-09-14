@@ -377,7 +377,8 @@
                 "key": "overTrayIcon"
             },
             "x": 312,
-            "y": 391
+            "y": 391,
+            "visible": false
         },
         {
             "type": "Image",
@@ -387,7 +388,8 @@
                 "key": "overTrayIcon"
             },
             "x": 928,
-            "y": 391
+            "y": 391,
+            "visible": false
         },
         {
             "prefabId": "11797a9c-9d69-4b7a-a2d1-023aa6922c6a",

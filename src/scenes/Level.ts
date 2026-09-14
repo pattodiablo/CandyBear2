@@ -230,10 +230,12 @@ export default class Level extends Phaser.Scene {
 		this.add.existing(glace1);
 
 		// overTrayIcon
-		this.add.image(312, 391, "overTrayIcon");
+		const overTrayIcon = this.add.image(312, 391, "overTrayIcon");
+		overTrayIcon.visible = false;
 
 		// overTrayIcon_1
-		this.add.image(928, 391, "overTrayIcon");
+		const overTrayIcon_1 = this.add.image(928, 391, "overTrayIcon");
+		overTrayIcon_1.visible = false;
 
 		// tutiorialHand
 		const tutiorialHand = new HelpHand(this, 377, 292);

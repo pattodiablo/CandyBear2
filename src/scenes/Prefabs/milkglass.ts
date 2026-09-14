@@ -366,7 +366,16 @@ export default class milkglass extends Phaser.GameObjects.Image {
 		return this.isLaunching;
 	}
 
-	public directDeliverToClient(client: { x: number; y: number; matchesProduct(product: milkglass): boolean; canReceiveDelivery(): boolean; receiveProductDelivery(product: milkglass): boolean; consumeRequestAndExit(showYum?: boolean): void; }) {
+	public directDeliverToClient(client: {
+		x: number;
+		y: number;
+		matchesProduct(product: milkglass): boolean;
+		canReceiveDelivery(): boolean;
+		reserveMatchingProduct(product: milkglass): number;
+		clearMatchingProductReservation(product: milkglass): void;
+		receiveProductDelivery(product: milkglass, reservedIndex?: number): boolean;
+		consumeRequestAndExit(showYum?: boolean): void;
+	}) {
 
 		if (!this.canReceiveDirectDelivery()) {
 			return;
@@ -405,7 +414,16 @@ export default class milkglass extends Phaser.GameObjects.Image {
 		});
 	}
 
-	public deliverToClient(client: { x: number; y: number; matchesProduct(product: milkglass): boolean; canReceiveDelivery(): boolean; receiveProductDelivery(product: milkglass): boolean; consumeRequestAndExit(showYum?: boolean): void; }) {
+	public deliverToClient(client: {
+		x: number;
+		y: number;
+		matchesProduct(product: milkglass): boolean;
+		canReceiveDelivery(): boolean;
+		reserveMatchingProduct(product: milkglass): number;
+		clearMatchingProductReservation(product: milkglass): void;
+		receiveProductDelivery(product: milkglass, reservedIndex?: number): boolean;
+		consumeRequestAndExit(showYum?: boolean): void;
+	}) {
 
 		if (!this.isSelectingDelivery || !this.currentSlotId) {
 			return;
@@ -441,12 +459,13 @@ export default class milkglass extends Phaser.GameObjects.Image {
 					return;
 				}
 
-				if (client.matchesProduct(this)) {
+				const matchedIndex = client.reserveMatchingProduct(this);
+				if (matchedIndex >= 0) {
 					levelScene.showCoinsAt(
 						client.x,
 						getProductCoinReward("holder4", { isFlavored: this.hasFlavor() })
 					);
-					const isOrderComplete = client.receiveProductDelivery(this);
+					const isOrderComplete = client.receiveProductDelivery(this, matchedIndex);
 
 					if (isOrderComplete) {
 						client.consumeRequestAndExit(true);
@@ -457,6 +476,8 @@ export default class milkglass extends Phaser.GameObjects.Image {
 					this.destroy();
 					return;
 				}
+
+				client.clearMatchingProductReservation(this);
 
 				levelScene.showProductDiscardLossAt(client.x, client.y - 64);
 				client.consumeRequestAndExit();
