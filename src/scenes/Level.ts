@@ -3020,6 +3020,42 @@ export default class Level extends Phaser.Scene {
 		this.finishIntroAndStartLevel();
 	}
 
+	private unlockEarlyCampaignMilestones() {
+		const levelNumber = this.getCurrentLevelNumber();
+		const autoUnlocksByLevel: Record<number, UnlockId[]> = {
+			3: ["holder2"],
+			4: ["fryer2"],
+			5: ["holder3"],
+		};
+
+		const unlocksToGrant = autoUnlocksByLevel[levelNumber] ?? [];
+		if (unlocksToGrant.length === 0) {
+			return;
+		}
+
+		for (const unlockId of unlocksToGrant) {
+			if (isProductUnlockId(unlockId) && !isProductAcquired(unlockId)) {
+				storeProductAcquired(unlockId);
+				for (const workstationId of getBundledWorkstationsForProductUnlock(unlockId)) {
+					if (!isWorkstationAcquired(workstationId)) {
+						storeWorkstationAcquired(workstationId);
+					}
+				}
+				continue;
+			}
+
+			const isWorkstationUnlock = unlockId === "fryer2"
+				|| unlockId === "milkmachine"
+				|| unlockId === "toaster"
+				|| unlockId === "workplace2";
+			if (isWorkstationUnlock && !isWorkstationAcquired(unlockId)) {
+				storeWorkstationAcquired(unlockId);
+			}
+		}
+
+		this.applyLevelProgression();
+	}
+
 	/** Cierra el blur del intro y arranca la prep del nivel. */
 	private finishIntroAndStartLevel() {
 		this.tweens.add({
@@ -3040,12 +3076,26 @@ export default class Level extends Phaser.Scene {
 
 	private playSceneIntro() {
 
+		this.cameras.main.fadeIn(350, 0, 0, 0);
+
+		const currentLevelNumber = this.getCurrentLevelNumber();
+		this.unlockEarlyCampaignMilestones();
+
 		const panelFinalY = this.panelRestY || this.panel.y;
 		const panelStartY = -this.panel.displayHeight - Level.INTRO_PANEL_START_OFFSET;
 		const availableUpgrades = this.getVisibleKitchenUpgradeChoices();
 		const affordableUpgrades = availableUpgrades.filter(
 			(unlockId) => this.coinCount >= getEffectiveUnlockCost(unlockId),
 		);
+
+		if (currentLevelNumber <= 5) {
+			this.panel.disableReadyButton();
+			this.panel.setVisible(false);
+			this.panel.setAlpha(0);
+			this.startBackgroundMusic();
+			this.finishIntroAndStartLevel();
+			return;
+		}
 
 		this.blurOverlay.setVisible(true);
 		this.blurOverlay.setAlpha(0);
@@ -4579,6 +4629,27 @@ export default class Level extends Phaser.Scene {
 		this.perfectMessageText = undefined;
 	}
 
+	private transitionToNextLevel(nextLevelNumber: number) {
+		const panelStartY = -this.panel.displayHeight - Level.INTRO_PANEL_START_OFFSET;
+		this.panel.disableNextDayButton();
+		this.panel.disableLevelsButton();
+		this.panel.setVisible(true);
+		this.panel.setAlpha(1);
+
+		this.tweens.add({
+			targets: this.panel,
+			y: panelStartY,
+			alpha: 0,
+			duration: Level.INTRO_PANEL_EXIT_DURATION,
+			ease: "Back.In",
+		});
+
+		this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
+			this.scene.start("Level", { levelNumber: nextLevelNumber });
+		});
+		this.cameras.main.fadeOut(420, 0, 0, 0);
+	}
+
 	private playLevelCompletePanel() {
 		const panelStartY = -this.panel.displayHeight - Level.INTRO_PANEL_START_OFFSET;
 		const nextLevelNumber = Phaser.Math.Clamp(
@@ -4637,7 +4708,7 @@ export default class Level extends Phaser.Scene {
 							return;
 						}
 
-						this.scene.start("Level", { levelNumber: nextLevelNumber });
+						this.transitionToNextLevel(nextLevelNumber);
 					},
 					() => {
 						this.confirmExitToSceneSelector();
