@@ -85,6 +85,11 @@ import {
 	recordLevelClearedWithoutUpgradePurchase,
 	shouldPromptBuyUpgrades,
 } from "./momentProgress";
+import {
+	canEnterLevel,
+	getTotalCampaignStars,
+	isSpecialGateLevel,
+} from "./levelGateProgress";
 interface LevelPlan {
 	levelNumber: number;
 	difficulty: number;
@@ -390,9 +395,9 @@ export default class Level extends Phaser.Scene {
 		(_, index) => Level.createLevelPlan(index + 1)
 	);
 	private static readonly INTRO_OVERLAY_FADE_IN_DURATION = 220;
-	private static readonly INTRO_OVERLAY_FADE_OUT_DURATION = 380;
-	private static readonly INTRO_PANEL_DROP_DURATION = 620;
-	private static readonly INTRO_PANEL_EXIT_DURATION = 300;
+	private static readonly INTRO_OVERLAY_FADE_OUT_DURATION = 320;
+	private static readonly INTRO_PANEL_DROP_DURATION = 420;
+	private static readonly INTRO_PANEL_EXIT_DURATION = 260;
 	private static readonly INTRO_PANEL_START_OFFSET = 220;
 	private static readonly CLIENT_SIDE_PADDING = 100;
 	private static readonly CLIENT_MIN_SPACING = 180;
@@ -409,8 +414,19 @@ export default class Level extends Phaser.Scene {
 	private static readonly TUTORIAL_LEVEL_PREP_DURATION_MS = 3000;
 	private static readonly TUTORIAL_CLIENT_SPAWN_INTERVAL_MS = 10000;
 	/** Prep entre oleadas. */
-	private static readonly WAVE_PREP_DURATION_MS = 9000;
+	private static readonly WAVE_PREP_DURATION_MS = 7000;
 	private static readonly PREP_MESSAGE_DEPTH = 1005;
+	private static getWavePrepDurationMs(levelNumber: number) {
+		const normalizedLevel = Math.max(1, Math.floor(levelNumber));
+
+		if (normalizedLevel <= 5) {
+			return 3000;
+		}
+
+		const gradualLevel = normalizedLevel - 5;
+		const gradualStep = gradualLevel * 500;
+		return Phaser.Math.Clamp(3000 + gradualStep, 3000, Level.WAVE_PREP_DURATION_MS);
+	}
 	private static readonly PREP_MESSAGE_Y = 120;
 	private static readonly PREP_MESSAGE_FONT_SIZE = "42px";
 	private static readonly HOLDER_PRODUCT_SPAWN_TOLERANCE = 48;
@@ -3045,8 +3061,7 @@ export default class Level extends Phaser.Scene {
 			ease: "Quad.Out"
 		});
 
-		// El panel solo debe mostrarse cuando el jugador pueda pagar al menos un unlock.
-		// Aun así se muestran todos los items disponibles, pero los no alcanzables quedan deshabilitados.
+		// Si hay upgrades comprables disponibles, mostramos el selector de upgrades.
 		if (affordableUpgrades.length > 0) {
 			this.panel.setVisible(false);
 			this.panel.setAlpha(0);
@@ -3057,7 +3072,17 @@ export default class Level extends Phaser.Scene {
 			return;
 		}
 
-		// Intro normal con panel del día + Ready.
+		const shouldShowReadyPanel = this.currentLevelPlan.isTutorial || this.getCurrentLevelNumber() === 1;
+		if (!shouldShowReadyPanel) {
+			this.panel.disableReadyButton();
+			this.panel.setVisible(false);
+			this.panel.setAlpha(0);
+			this.startBackgroundMusic();
+			this.finishIntroAndStartLevel();
+			return;
+		}
+
+		// Solo en el tutorial / primer nivel se muestra el panel de Ready.
 		this.panel.y = panelStartY;
 		this.panel.setAlpha(1);
 		this.panel.setVisible(true);
@@ -3729,7 +3754,7 @@ export default class Level extends Phaser.Scene {
 
 	private resetCookieJarState() {
 
-		this.cookieStock = getCookieStock();
+		this.cookieStock = isCookieJarAcquired() ? getCookieStock() : 0;
 		this.refreshCookieJarVisuals();
 	}
 
@@ -3741,6 +3766,7 @@ export default class Level extends Phaser.Scene {
 		const isUnlocked = isCookieJarAcquired();
 		this.cookieJar.setVisible(isUnlocked);
 		this.cookieJar.setActive(isUnlocked);
+		this.cookieJar.setAlpha(isUnlocked ? 1 : 0);
 
 		if (!isUnlocked) {
 			this.cookieJar.setAttentionPulse(false);
@@ -4583,21 +4609,26 @@ export default class Level extends Phaser.Scene {
 			duration: Level.INTRO_PANEL_DROP_DURATION,
 			ease: "Bounce.Out",
 			onComplete: () => {
-				const canAffordUpgrade = canAffordAnyMomentCard(this.coinCount, getTotalLikes());
-				const promptBuyUpgrades = shouldPromptBuyUpgrades(canAffordUpgrade);
-
 				this.panel.showFinalState(
 					this.getStarPerformance(),
 					() => {
-						// Si acaba de completar la campaña perfecta, créditos antes de seguir.
-						if (shouldShowCampaignCredits()) {
+						const nextLevelBlockedByProgress = isSpecialGateLevel(nextLevelNumber)
+							&& !canEnterLevel(
+								nextLevelNumber,
+								getHighestUnlockedLevel(Level.CAMPAIGN_LEVEL_COUNT),
+								getTotalCampaignStars(),
+								getTotalLikes(),
+								getStoredTotalCoins(),
+							);
+
+						if (nextLevelBlockedByProgress) {
 							this.confirmExitToSceneSelector();
 							return;
 						}
 
-						// Tras varios niveles sin upgradear pudiendo comprar → tienda de upgrades.
-						if (promptBuyUpgrades) {
-							this.confirmExitToSceneSelector({ openTab: "moments" });
+						// Si acaba de completar la campaña perfecta, créditos antes de seguir.
+						if (shouldShowCampaignCredits()) {
+							this.confirmExitToSceneSelector();
 							return;
 						}
 
@@ -4611,8 +4642,8 @@ export default class Level extends Phaser.Scene {
 					() => {
 						this.confirmExitToSceneSelector();
 					},
-					canAffordUpgrade,
-					promptBuyUpgrades ? "buyUpgrades" : "nextDay"
+					false,
+					"nextDay"
 				);
 			}
 		});
@@ -4646,7 +4677,7 @@ export default class Level extends Phaser.Scene {
 	private startLevelPreparation() {
 		const prepDuration = this.currentLevelPlan.levelNumber === 1
 			? Level.TUTORIAL_LEVEL_PREP_DURATION_MS
-			: Level.LEVEL_PREP_DURATION_MS;
+			: Level.getWavePrepDurationMs(this.currentLevelPlan.levelNumber);
 
 		this.beginPreparationPhase(prepDuration, () => {
 			this.spawnInitialClients();
@@ -4655,7 +4686,8 @@ export default class Level extends Phaser.Scene {
 
 	/** Tiempo entre oleadas para preparar productos en bandejas. */
 	private startWavePreparation() {
-		this.beginPreparationPhase(Level.WAVE_PREP_DURATION_MS, () => {
+		const prepDuration = Level.getWavePrepDurationMs(this.currentLevelPlan.levelNumber);
+		this.beginPreparationPhase(prepDuration, () => {
 			this.spawnNextClientWave();
 		});
 	}

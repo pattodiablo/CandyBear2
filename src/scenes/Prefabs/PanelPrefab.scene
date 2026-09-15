@@ -32,32 +32,6 @@
                 },
                 {
                     "type": "Image",
-                    "id": "6d7f7adc-5620-4bc8-9c03-0a55091af2c8",
-                    "label": "readyBtn",
-                    "scope": "CLASS",
-                    "texture": {
-                        "key": "readyBtn"
-                    },
-                    "x": 46,
-                    "y": 27,
-                    "scaleX": 0.7,
-                    "scaleY": 0.7
-                },
-                {
-                    "type": "Image",
-                    "id": "788c5e50-94b1-4de3-b62b-f4bd5cd9f2bd",
-                    "label": "nextdayBtn",
-                    "scope": "CLASS",
-                    "texture": {
-                        "key": "nextdayBtn"
-                    },
-                    "x": 43,
-                    "y": 155,
-                    "scaleX": 0.7,
-                    "scaleY": 0.7
-                },
-                {
-                    "type": "Image",
                     "id": "2431f633-42ef-4c88-bd3f-75331d978b73",
                     "label": "starHolder",
                     "texture": {
@@ -147,16 +121,79 @@
                 },
                 {
                     "type": "Image",
-                    "id": "489340a8-90b3-42e6-bfb7-f6b6cd5a17ee",
-                    "label": "levelsBtn",
+                    "id": "ba43bd72-05ae-487a-bfcd-05dc5750a873",
+                    "label": "ReadyBtn",
                     "scope": "CLASS",
                     "texture": {
-                        "key": "LevelsBtn"
+                        "key": "onBtn"
                     },
                     "x": 46,
-                    "y": 233,
-                    "scaleX": 0.5675480499648243,
-                    "scaleY": 0.5675480499648243
+                    "y": 23
+                },
+                {
+                    "type": "Image",
+                    "id": "474e4b36-7aa0-4518-a2dc-9406c33df717",
+                    "label": "NextdayBtn",
+                    "scope": "CLASS",
+                    "texture": {
+                        "key": "onBtn"
+                    },
+                    "x": 44,
+                    "y": 154
+                },
+                {
+                    "type": "Image",
+                    "id": "5898cfb1-27d7-4b4c-99d9-33de28ca926e",
+                    "label": "LevelsBtn",
+                    "scope": "CLASS",
+                    "texture": {
+                        "key": "onBtn"
+                    },
+                    "x": 46,
+                    "y": 232,
+                    "scaleY": 0.6
+                },
+                {
+                    "type": "Text",
+                    "id": "1dfcf65a-e48f-4aef-a4fa-11781ec76f3d",
+                    "label": "ReadyText",
+                    "scope": "CLASS",
+                    "x": 42,
+                    "y": 17,
+                    "originX": 0.5,
+                    "originY": 0.5,
+                    "text": "READY",
+                    "fontFamily": "Klop",
+                    "fontSize": "50px",
+                    "color": "#eedfccff"
+                },
+                {
+                    "type": "Text",
+                    "id": "cde37939-a002-4e8a-b88e-638f3aae47ac",
+                    "label": "NextDayText",
+                    "scope": "CLASS",
+                    "x": 44,
+                    "y": 151,
+                    "originX": 0.5,
+                    "originY": 0.5,
+                    "text": "NEXT DAY",
+                    "fontFamily": "Klop",
+                    "fontSize": "50px",
+                    "color": "#eedfccff"
+                },
+                {
+                    "type": "Text",
+                    "id": "bf5d93c0-e74e-4819-9096-782fa2713f94",
+                    "label": "LevelsText",
+                    "scope": "CLASS",
+                    "x": 43,
+                    "y": 228,
+                    "originX": 0.5,
+                    "originY": 0.5,
+                    "text": "Levels and upgrades",
+                    "fontFamily": "Klop",
+                    "fontSize": "25px",
+                    "color": "#eedfccff"
                 }
             ]
         }

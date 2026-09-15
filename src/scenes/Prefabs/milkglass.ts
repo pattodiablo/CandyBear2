@@ -219,7 +219,7 @@ export default class milkglass extends Phaser.GameObjects.Image {
 			x: restTarget.x,
 			y: restTarget.y,
 			angle: this.baseAngle + milkglass.SPIN_ANGLE,
-			duration: 420,
+			duration: 140,
 			ease: "Cubic.InOut",
 			onComplete: () => {
 				this.isRaised = false;
@@ -286,20 +286,32 @@ export default class milkglass extends Phaser.GameObjects.Image {
 
 	private playRefillPop(onComplete?: () => void) {
 
+		const scene = this.scene;
+		if (!scene || !scene.sys?.isActive()) {
+			onComplete?.();
+			return;
+		}
+
 		const timeScale = getMachineAnimationTimeScale(getMilkRefillSpeedBonus());
 		const riseDuration = milkglass.REFILL_POP_RISE_DURATION / timeScale;
 		const settleDuration = milkglass.REFILL_POP_SETTLE_DURATION / timeScale;
 
-		this.scene.tweens.killTweensOf(this);
+		scene.tweens.killTweensOf(this);
 		this.setScale(this.baseScaleX, this.baseScaleY);
-		this.scene.tweens.add({
+		scene.tweens.add({
 			targets: this,
 			scaleX: this.baseScaleX * milkglass.REFILL_POP_PEAK_SCALE,
 			scaleY: this.baseScaleY * milkglass.REFILL_POP_PEAK_SCALE,
 			duration: riseDuration,
 			ease: "Back.Out",
 			onComplete: () => {
-				this.scene.tweens.add({
+				const activeScene = this.scene;
+				if (!activeScene || !activeScene.sys?.isActive()) {
+					onComplete?.();
+					return;
+				}
+
+				activeScene.tweens.add({
 					targets: this,
 					scaleX: this.baseScaleX,
 					scaleY: this.baseScaleY,
@@ -443,7 +455,7 @@ export default class milkglass extends Phaser.GameObjects.Image {
 			x: client.x,
 			y: client.y,
 			angle: this.baseAngle + milkglass.SPIN_ANGLE,
-			duration: 360,
+			duration: 180,
 			ease: "Cubic.InOut",
 			onComplete: () => {
 				this.angle = this.baseAngle;
@@ -687,14 +699,24 @@ export default class milkglass extends Phaser.GameObjects.Image {
 
 	private playSpawnTween() {
 
-		this.scene.tweens.add({
+		const scene = this.scene;
+		if (!scene || !scene.sys?.isActive()) {
+			return;
+		}
+
+		scene.tweens.add({
 			targets: this,
 			scaleX: this.baseScaleX * 1.2,
 			scaleY: this.baseScaleY * 1.2,
 			duration: 120,
 			ease: "Back.Out",
 			onComplete: () => {
-				this.scene.tweens.add({
+				const activeScene = this.scene;
+				if (!activeScene || !activeScene.sys?.isActive()) {
+					return;
+				}
+
+				activeScene.tweens.add({
 					targets: this,
 					scaleX: this.baseScaleX,
 					scaleY: this.baseScaleY,

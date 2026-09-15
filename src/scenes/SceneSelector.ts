@@ -295,7 +295,7 @@ export default class SceneSelector extends Phaser.Scene {
 		}
 
 		const requirements = getSpecialLevelRequirements(levelNumber);
-		const hasEnoughCoins = getStoredTotalCoins() >= requirements.coins;
+		const hasEnoughStars = getTotalCampaignStars() >= requirements.stars;
 		const hasEnoughLikes = getTotalLikes() >= requirements.likes;
 
 		if (!canEnterLevel(levelNumber, this.highestUnlockedLevel, getTotalCampaignStars(), getTotalLikes(), getStoredTotalCoins())) {
@@ -303,17 +303,11 @@ export default class SceneSelector extends Phaser.Scene {
 			return;
 		}
 
-		if (!hasEnoughCoins || !hasEnoughLikes) {
+		if (!hasEnoughStars || !hasEnoughLikes) {
 			this.handleSpecialGateBlocked(levelNumber);
 			return;
 		}
 
-		if (!spendTotalCoins(requirements.coins) || !spendTotalLikes(requirements.likes)) {
-			this.handleSpecialGateBlocked(levelNumber);
-			return;
-		}
-
-		markSpecialGateEntryPaid(levelNumber);
 		this.updatePlayerStats();
 		this.startLevel(levelNumber);
 	}

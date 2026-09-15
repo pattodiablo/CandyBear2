@@ -690,7 +690,7 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 			x: client.x,
 			y: client.y,
 			angle: this.baseAngle + sandwichPrefab.SPIN_ANGLE,
-			duration: 360,
+			duration: 180,
 			ease: "Cubic.InOut",
 			onComplete: () => {
 				this.angle = this.baseAngle;

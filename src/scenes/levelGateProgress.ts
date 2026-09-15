@@ -10,7 +10,7 @@ export const MAX_STARS_PER_LEVEL = 3;
 export interface SpecialLevelRequirements {
 	stars: number;
 	likes: number;
-	coins: number;
+	coins: number; // legacy field retained for compatibility; special gates no longer charge coins
 }
 
 const SPECIAL_LEVEL_PAID_STORAGE_KEY = "candybear2-special-gate-paid-levels";
@@ -133,8 +133,7 @@ export function meetsSpecialLevelRequirements(
 
 	const requirements = getSpecialLevelRequirements(levelNumber);
 	return totalStars >= requirements.stars
-		&& totalLikes >= requirements.likes
-		&& totalCoins >= requirements.coins;
+		&& totalLikes >= requirements.likes;
 }
 
 /** Puede entrar al nivel (progreso de campaña + gate especial si aplica). */

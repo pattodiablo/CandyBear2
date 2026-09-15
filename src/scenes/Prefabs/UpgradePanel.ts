@@ -150,6 +150,7 @@ export default class UpgradePanel extends Phaser.GameObjects.Container {
 			const choice = choices[index];
 			card.setVisible(Boolean(choice));
 			card.setScale(1);
+			card.setPurchasePulse(false);
 			card.removeAllListeners();
 			card.hitAreaPanel.removeAllListeners();
 			card.hitAreaPanel.disableInteractive();
@@ -162,6 +163,7 @@ export default class UpgradePanel extends Phaser.GameObjects.Container {
 
 			const isAffordable = choice.isAffordable;
 			card.setAlpha(isAffordable ? 1 : 0.45);
+			card.setPurchasePulse(isAffordable);
 
 			if (choice.textureKey === "ClientBear" && typeof choice.id === "string" && choice.id.startsWith("clientSkin")) {
 				const skinIndex = Number.parseInt(choice.id.replace("clientSkin", ""), 10) || 0;
