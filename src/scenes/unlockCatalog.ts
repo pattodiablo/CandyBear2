@@ -117,7 +117,7 @@ export const UNLOCK_ORDER: UnlockId[] = [
 
 const UNLOCK_COST_PROGRESSIVE_GROWTH = 0.18;
 const ACQUIRED_CLIENT_UNLOCKS_STORAGE_KEY = "candybear2-acquired-client-unlocks";
-const ACQUIRED_COOKIE_JAR_STORAGE_KEY = "candybear2-acquired-cookie-jar";
+export const ACQUIRED_COOKIE_JAR_STORAGE_KEY = "candybear2-acquired-cookie-jar";
 
 export function getAcquiredClientUnlocks() {
 	if (typeof window === "undefined") {
@@ -174,6 +174,7 @@ export function storeCookieJarAcquired() {
 
 	try {
 		window.localStorage.setItem(ACQUIRED_COOKIE_JAR_STORAGE_KEY, "1");
+		window.localStorage.removeItem("candybear2-cookie-stock");
 	} catch {
 		// noop
 	}

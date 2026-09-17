@@ -24,6 +24,9 @@ type TranslationKey =
 	| "newUpgradesAwait"
 	| "play"
 	| "upgrades"
+	| "ready"
+	| "nextDay"
+	| "levelsAndUpgrades"
 	| "dayShort"
 	| "earningsToday"
 	| "buy"
@@ -32,7 +35,7 @@ type TranslationKey =
 
 const STRINGS: Record<GameLanguage, Record<TranslationKey, string>> = {
 	en: {
-		prepare: "Clients coming",
+		prepare: "Get ready for more clients",
 		perfect: "Perfect",
 		good: "Good",
 		ok: "OK",
@@ -55,6 +58,9 @@ const STRINGS: Record<GameLanguage, Record<TranslationKey, string>> = {
 		newUpgradesAwait: "New upgrades await in the\nmain menu!",
 		play: "Play",
 		upgrades: "Upgrades",
+		ready: "READY",
+		nextDay: "NEXT DAY",
+		levelsAndUpgrades: "Levels and upgrades",
 		dayShort: "DAY",
 		earningsToday: "Earnings today",
 		buy: "BUY",
@@ -62,7 +68,7 @@ const STRINGS: Record<GameLanguage, Record<TranslationKey, string>> = {
 		waitCookie: "Wait Cookie",
 	},
 	es: {
-		prepare: "Clientes llegando",
+		prepare: "Prepárate para más clientes",
 		perfect: "Perfect",
 		good: "Bien",
 		ok: "OK",
@@ -85,6 +91,9 @@ const STRINGS: Record<GameLanguage, Record<TranslationKey, string>> = {
 		newUpgradesAwait: "¡Hay nuevas mejoras en el\nmenú principal!",
 		play: "Jugar",
 		upgrades: "Mejoras",
+		ready: "LISTO",
+		nextDay: "SIGUIENTE DÍA",
+		levelsAndUpgrades: "Niveles y mejoras",
 		dayShort: "DÍA",
 		earningsToday: "Ganancias de hoy",
 		buy: "COMPRAR",

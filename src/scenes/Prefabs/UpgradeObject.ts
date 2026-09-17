@@ -64,8 +64,30 @@ export default class UpgradeObject extends Phaser.GameObjects.Container {
 	public itemCost: Phaser.GameObjects.Text;
 	public hitAreaPanel: Phaser.GameObjects.Rectangle;
 	public clientPreview?: SpineClient;
+	private purchasePulseTween?: Phaser.Tweens.Tween;
 
 	/* START-USER-CODE */
+
+	public setPurchasePulse(active: boolean) {
+		this.purchasePulseTween?.stop();
+		this.purchasePulseTween = undefined;
+
+		if (!active) {
+			this.setScale(1);
+			return;
+		}
+
+		this.setScale(1);
+		this.purchasePulseTween = this.scene.tweens.add({
+			targets: this,
+			scaleX: { from: 1, to: 1.08 },
+			scaleY: { from: 1, to: 1.08 },
+			duration: 620,
+			yoyo: true,
+			repeat: -1,
+			ease: "Sine.InOut",
+		});
+	}
 
 	public setClientPreview(skinIndex: number) {
 		this.clearClientPreview();

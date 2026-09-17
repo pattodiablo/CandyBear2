@@ -9,6 +9,10 @@ export const WORKSTATION_ORDER: WorkstationId[] = [
 
 export const ACQUIRED_WORKSTATIONS_STORAGE_KEY = "candybear2-acquired-workstations";
 
+const LEGACY_WORKSTATION_ID_ALIASES: Record<string, WorkstationId> = {
+	workplace: "workplace2",
+};
+
 const UNLOCKED_TEXTURE_BY_WORKSTATION: Record<WorkstationId, string> = {
 	fryer2: "FryerAnim",
 	milkmachine: "Milkmachine",
@@ -30,9 +34,20 @@ function normalizeAcquiredWorkstations(value: unknown): WorkstationId[] {
 		return [...DEFAULT_ACQUIRED_WORKSTATIONS];
 	}
 
-	return value.filter((workstationId): workstationId is WorkstationId => (
-		typeof workstationId === "string" && WORKSTATION_ORDER.includes(workstationId as WorkstationId)
-	));
+	return [...new Set(
+		value
+			.map((workstationId) => {
+				if (typeof workstationId !== "string") {
+					return undefined;
+				}
+
+				const canonical = LEGACY_WORKSTATION_ID_ALIASES[workstationId] ?? workstationId;
+				return WORKSTATION_ORDER.includes(canonical as WorkstationId)
+					? canonical as WorkstationId
+					: undefined;
+			})
+			.filter((workstationId): workstationId is WorkstationId => workstationId !== undefined),
+	)];
 }
 
 function readAcquiredWorkstationsRecord(): WorkstationId[] {

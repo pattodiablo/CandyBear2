@@ -19,18 +19,6 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		panel.scaleY = 0.7;
 		this.add(panel);
 
-		// readyBtn
-		const readyBtn = scene.add.image(46, 27, "readyBtn");
-		readyBtn.scaleX = 0.7;
-		readyBtn.scaleY = 0.7;
-		this.add(readyBtn);
-
-		// nextdayBtn
-		const nextdayBtn = scene.add.image(43, 155, "nextdayBtn");
-		nextdayBtn.scaleX = 0.7;
-		nextdayBtn.scaleY = 0.7;
-		this.add(nextdayBtn);
-
 		// starHolder
 		const starHolder = scene.add.image(50, -151, "StarHolder");
 		starHolder.scaleX = 0.7;
@@ -62,7 +50,7 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		// earnedToday
 		const earnedToday = scene.add.text(40, 86, "", {});
 		earnedToday.setOrigin(0.5, 0.5);
-		earnedToday.text = t("earningsToday");
+		earnedToday.text = "Earnings today";
 		earnedToday.setStyle({ "color": "#A96625", "fontFamily": "Klop", "fontSize": "30px" });
 		finalLabels.add(earnedToday);
 
@@ -73,22 +61,53 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		totalCoins.setStyle({ "color": "#FFE769", "fontFamily": "Klop", "fontSize": "100px", "stroke": "#FEB134", "strokeThickness": 15 });
 		finalLabels.add(totalCoins);
 
-		// levelsBtn
-		const levelsBtn = scene.add.image(46, 233, "LevelsBtn");
-		levelsBtn.scaleX = 0.5675480499648243;
-		levelsBtn.scaleY = 0.5675480499648243;
+		// ReadyBtn
+		const readyBtn = scene.add.image(46, 23, "onBtn");
+		this.add(readyBtn);
+
+		// NextdayBtn
+		const nextdayBtn = scene.add.image(44, 154, "onBtn");
+		this.add(nextdayBtn);
+
+		// LevelsBtn
+		const levelsBtn = scene.add.image(46, 232, "onBtn");
+		levelsBtn.scaleY = 0.6;
 		this.add(levelsBtn);
 
+		// ReadyText
+		const readyText = scene.add.text(42, 17, "", {});
+		readyText.setOrigin(0.5, 0.5);
+		readyText.text = "READY";
+		readyText.setStyle({ "color": "#eedfccff", "fontFamily": "Klop", "fontSize": "50px" });
+		this.add(readyText);
+
+		// NextDayText
+		const nextDayText = scene.add.text(44, 151, "", {});
+		nextDayText.setOrigin(0.5, 0.5);
+		nextDayText.text = "NEXT DAY";
+		nextDayText.setStyle({ "color": "#eedfccff", "fontFamily": "Klop", "fontSize": "50px" });
+		this.add(nextDayText);
+
+		// LevelsText
+		const levelsText = scene.add.text(43, 228, "", {});
+		levelsText.setOrigin(0.5, 0.5);
+		levelsText.text = "Levels and upgrades";
+		levelsText.setStyle({ "color": "#eedfccff", "fontFamily": "Klop", "fontSize": "25px" });
+		this.add(levelsText);
+
 		this.panel = panel;
-		this.readyBtn = readyBtn;
-		this.nextdayBtn = nextdayBtn;
 		this.bigStar2 = bigStar2;
 		this.bigStar1 = bigStar1;
 		this.bigStar3 = bigStar3;
 		this.earnedToday = earnedToday;
 		this.totalCoins = totalCoins;
 		this.finalLabels = finalLabels;
+		this.readyBtn = readyBtn;
+		this.nextdayBtn = nextdayBtn;
 		this.levelsBtn = levelsBtn;
+		this.readyText = readyText;
+		this.nextDayText = nextDayText;
+		this.levelsText = levelsText;
 
 		/* START-USER-CTR-CODE */
 		this.starHolder = starHolder;
@@ -99,19 +118,27 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		}));
 		this.resetStarsToDeactivated();
 
-		finalLabels.add(nextdayBtn);
 		finalLabels.add(starHolder);
 		finalLabels.add(bigStar2);
 		finalLabels.add(bigStar1);
 		finalLabels.add(bigStar3);
 		finalLabels.setVisible(false);
+		this.add(nextdayBtn);
+		this.add(nextDayText);
+		nextdayBtn.setDepth(0);
+		nextDayText.setDepth(1);
+		readyBtn.setDepth(0);
+		readyText.setDepth(1);
+		levelsBtn.setDepth(0);
+		levelsText.setDepth(1);
 
 		this.readyBtnBaseScaleX = readyBtn.scaleX;
 		this.readyBtnBaseScaleY = readyBtn.scaleY;
 		this.readyBtnBaseY = readyBtn.y;
-		this.nextDayButtonBaseScaleX = nextdayBtn.scaleX;
-		this.nextDayButtonBaseScaleY = nextdayBtn.scaleY;
 		this.nextDayButtonBaseY = nextdayBtn.y;
+		this.levelsButtonBaseScaleX = levelsBtn.scaleX;
+		this.levelsButtonBaseScaleY = levelsBtn.scaleY;
+		this.levelsButtonBaseY = levelsBtn.y;
 		this.upgradeAvailableMessage = scene.add.text(
 			levelsBtn.x,
 			0,
@@ -159,27 +186,30 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 	}
 
 	private panel: Phaser.GameObjects.Image;
-	private readyBtn: Phaser.GameObjects.Image;
-	private nextdayBtn: Phaser.GameObjects.Image;
 	private bigStar2: Phaser.GameObjects.Image;
 	private bigStar1: Phaser.GameObjects.Image;
 	private bigStar3: Phaser.GameObjects.Image;
 	private earnedToday: Phaser.GameObjects.Text;
 	private totalCoins: Phaser.GameObjects.Text;
 	private finalLabels: Phaser.GameObjects.Container;
+	private readyBtn: Phaser.GameObjects.Image;
+	private nextdayBtn: Phaser.GameObjects.Image;
 	private levelsBtn: Phaser.GameObjects.Image;
+	private readyText: Phaser.GameObjects.Text;
+	private nextDayText: Phaser.GameObjects.Text;
+	private levelsText: Phaser.GameObjects.Text;
 
 	/* START-USER-CODE */
 	/** Multiplicadores relativos a la escala base de cada botón (no absolutos). */
-	private static readonly BUTTON_HOVER_SCALE_MULT = 1.06;
-	private static readonly BUTTON_PRESSED_SCALE_MULT = 0.96;
+	private static readonly BUTTON_HOVER_SCALE_MULT = 1.10;
+	private static readonly BUTTON_PRESSED_SCALE_MULT = 1.00;
 	private static readonly READY_BUTTON_PRESS_OFFSET_Y = 4;
 	private static readonly READY_BUTTON_TWEEN_DURATION = 90;
 	private static readonly DEACTIVATED_STAR_ALPHA = 0.35;
 	private static readonly DEACTIVATED_STAR_TINT = 0x9a9a9a;
-	private static readonly STAR_REVEAL_STAGGER = 420;
-	private static readonly STAR_POP_DURATION = 220;
-	private static readonly STAR_SETTLE_DURATION = 120;
+	private static readonly STAR_REVEAL_STAGGER = 220;
+	private static readonly STAR_POP_DURATION = 160;
+	private static readonly STAR_SETTLE_DURATION = 80;
 	private static readonly MAX_STARS = 3;
 	private static readonly UPGRADE_ATTENTION_MESSAGE_TOGGLE_DURATION = 700;
 	private static readonly UPGRADE_ATTENTION_SCALE_MULTIPLIER = 1.08;
@@ -196,7 +226,7 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 	private static readonly FINAL_LEVELS_BUTTON_SCALE = 0.55;
 	private static readonly FINAL_NEXT_DAY_BUTTON_Y = 150;
 	private static readonly FINAL_LEVELS_BUTTON_Y = 218;
-	private static readonly NEXT_DAY_TEXTURE_KEY = "nextdayBtn";
+	private static readonly NEXT_DAY_TEXTURE_KEY = "onBtn";
 	private static readonly BUY_UPGRADES_TEXTURE_KEY = "onBtn";
 	private starHolder!: Phaser.GameObjects.Image;
 	private readonly stars: Phaser.GameObjects.Image[];
@@ -206,8 +236,6 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 	private readyBtnBaseScaleX!: number;
 	private readyBtnBaseScaleY!: number;
 	private readyBtnBaseY!: number;
-	private nextDayButtonBaseScaleX!: number;
-	private nextDayButtonBaseScaleY!: number;
 	private nextDayButtonBaseY!: number;
 	private levelsButtonBaseScaleX!: number;
 	private levelsButtonBaseScaleY!: number;
@@ -216,6 +244,8 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 	private isNextDayButtonPressed = false;
 	private isLevelsButtonPressed = false;
 	private isLevelsUpgradeAttentionActive = false;
+	private readyButtonPulseTween?: Phaser.Tweens.Tween;
+	private nextDayButtonPulseTween?: Phaser.Tweens.Tween;
 	private upgradeAvailableMessage!: Phaser.GameObjects.Text;
 	private levelsUpgradeMessageToggleTimer?: Phaser.Time.TimerEvent;
 	private levelsButtonAttentionScaleTween?: Phaser.Tweens.Tween;
@@ -225,17 +255,21 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 	public enableReadyButton(onClick: () => void, onLevelsClick?: () => void) {
 		this.finalLabels.setVisible(false);
 		this.readyBtn.setVisible(true);
+		this.readyText.setVisible(true);
 
 		this.readyBtn.setInteractive({ useHandCursor: true });
 		this.readyBtn.removeAllListeners();
 		this.isReadyButtonPressed = false;
+		this.stopReadyButtonHeartbeat();
 		this.animateReadyButton(this.readyBtnBaseScaleX, this.readyBtnBaseScaleY, this.readyBtnBaseY);
+		this.startReadyButtonHeartbeat();
 
 		this.readyBtn.on(Phaser.Input.Events.POINTER_OVER, () => {
 			if (this.isReadyButtonPressed) {
 				return;
 			}
 
+			this.stopReadyButtonHeartbeat();
 			this.animateReadyButton(
 				this.readyBtnBaseScaleX * PanelPrefab.BUTTON_HOVER_SCALE_MULT,
 				this.readyBtnBaseScaleY * PanelPrefab.BUTTON_HOVER_SCALE_MULT,
@@ -248,18 +282,21 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 				return;
 			}
 
+			this.stopReadyButtonHeartbeat();
 			this.animateReadyButton(this.readyBtnBaseScaleX, this.readyBtnBaseScaleY, this.readyBtnBaseY);
+			this.startReadyButtonHeartbeat();
 		});
 
 		this.readyBtn.once(Phaser.Input.Events.POINTER_DOWN, () => {
 			this.isReadyButtonPressed = true;
+			this.stopReadyButtonHeartbeat();
 			this.animateReadyButton(
 				this.readyBtnBaseScaleX * PanelPrefab.BUTTON_PRESSED_SCALE_MULT,
 				this.readyBtnBaseScaleY * PanelPrefab.BUTTON_PRESSED_SCALE_MULT,
 				this.readyBtnBaseY + PanelPrefab.READY_BUTTON_PRESS_OFFSET_Y,
 				() => {
-			this.readyBtn.disableInteractive();
-			onClick();
+					this.readyBtn.disableInteractive();
+					onClick();
 				}
 			);
 		});
@@ -274,6 +311,9 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		this.readyBtn.disableInteractive();
 		this.readyBtn.removeAllListeners();
 		this.isReadyButtonPressed = false;
+		this.stopReadyButtonHeartbeat();
+		this.readyText.setVisible(false);
+		this.readyBtn.setVisible(false);
 		this.animateReadyButton(this.readyBtnBaseScaleX, this.readyBtnBaseScaleY, this.readyBtnBaseY);
 	}
 
@@ -281,82 +321,76 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		onClick: () => void,
 		mode: "nextDay" | "buyUpgrades" = "nextDay"
 	) {
-		this.applyNextDayButtonMode(mode);
 		this.nextdayBtn.setVisible(true);
+		this.nextDayButtonMode = mode;
+		this.applyNextDayButtonMode(mode);
+		this.nextDayText.setVisible(this.nextdayBtn.visible);
+		this.buyUpgradesLabel?.setVisible(this.nextdayBtn.visible && mode === "buyUpgrades");
 		this.nextdayBtn.setInteractive({ useHandCursor: true });
 		this.nextdayBtn.removeAllListeners();
 		this.isNextDayButtonPressed = false;
-		this.animateNextDayButton(this.nextDayButtonBaseScaleX, this.nextDayButtonBaseScaleY, this.nextDayButtonBaseY);
+		this.buyUpgradesLabel?.setScale(1, 1);
+		this.buyUpgradesLabel?.setY(this.nextDayButtonBaseY - 4);
+		this.startNextDayButtonHeartbeat();
 
 		this.nextdayBtn.on(Phaser.Input.Events.POINTER_OVER, () => {
 			if (this.isNextDayButtonPressed) {
 				return;
 			}
-
-			this.animateNextDayButton(
-				this.nextDayButtonBaseScaleX * PanelPrefab.BUTTON_HOVER_SCALE_MULT,
-				this.nextDayButtonBaseScaleY * PanelPrefab.BUTTON_HOVER_SCALE_MULT,
-				this.nextDayButtonBaseY - 2
-			);
 		});
 
 		this.nextdayBtn.on(Phaser.Input.Events.POINTER_OUT, () => {
 			if (this.isNextDayButtonPressed) {
 				return;
 			}
-
-			this.animateNextDayButton(this.nextDayButtonBaseScaleX, this.nextDayButtonBaseScaleY, this.nextDayButtonBaseY);
 		});
 
 		this.nextdayBtn.once(Phaser.Input.Events.POINTER_DOWN, () => {
 			this.isNextDayButtonPressed = true;
-			this.animateNextDayButton(
-				this.nextDayButtonBaseScaleX * PanelPrefab.BUTTON_PRESSED_SCALE_MULT,
-				this.nextDayButtonBaseScaleY * PanelPrefab.BUTTON_PRESSED_SCALE_MULT,
-				this.nextDayButtonBaseY + PanelPrefab.READY_BUTTON_PRESS_OFFSET_Y,
-				() => {
-					this.nextdayBtn.disableInteractive();
-					onClick();
-				}
-			);
+			this.stopNextDayButtonHeartbeat();
+			this.nextdayBtn.disableInteractive();
+			onClick();
 		});
 	}
 
 	public disableNextDayButton() {
 
+		this.stopNextDayButtonHeartbeat();
 		this.nextdayBtn.setVisible(false);
+		this.nextDayText.setVisible(false);
 		this.nextdayBtn.disableInteractive();
 		this.nextdayBtn.removeAllListeners();
 		this.isNextDayButtonPressed = false;
 		this.buyUpgradesLabel?.setVisible(false);
-		this.animateNextDayButton(this.nextDayButtonBaseScaleX, this.nextDayButtonBaseScaleY, this.nextDayButtonBaseY);
 	}
 
 	private applyNextDayButtonMode(mode: "nextDay" | "buyUpgrades") {
 		this.nextDayButtonMode = mode;
-		const useBuyUpgrades = mode === "buyUpgrades"
-			&& this.scene.textures.exists(PanelPrefab.BUY_UPGRADES_TEXTURE_KEY);
+		const useBuyUpgrades = mode === "buyUpgrades";
+
+		this.nextDayText.setText(t("nextDay"));
+		this.buyUpgradesLabel?.setText(t("buyUpgrades"));
+		this.nextdayBtn.setTexture(PanelPrefab.NEXT_DAY_TEXTURE_KEY);
+		this.nextdayBtn.setDepth(0);
+		this.nextDayText.setDepth(1);
+		this.buyUpgradesLabel?.setDepth(1);
+
+		this.nextDayText.setVisible(this.nextdayBtn.visible && !useBuyUpgrades);
+		this.buyUpgradesLabel?.setVisible(this.nextdayBtn.visible && useBuyUpgrades);
+		this.nextDayText.setAlpha(1);
+		this.buyUpgradesLabel?.setAlpha(1);
 
 		if (useBuyUpgrades) {
-			this.nextdayBtn.setTexture(PanelPrefab.BUY_UPGRADES_TEXTURE_KEY);
-			this.nextDayButtonBaseScaleX = PanelPrefab.FINAL_BUY_UPGRADES_BUTTON_SCALE;
-			this.nextDayButtonBaseScaleY = PanelPrefab.FINAL_BUY_UPGRADES_BUTTON_SCALE;
-			this.buyUpgradesLabel?.setVisible(true);
 			this.buyUpgradesLabel?.setPosition(this.nextdayBtn.x, this.nextDayButtonBaseY - 4);
-		} else {
-			this.nextdayBtn.setTexture(PanelPrefab.NEXT_DAY_TEXTURE_KEY);
-			this.nextDayButtonBaseScaleX = PanelPrefab.FINAL_NEXT_DAY_BUTTON_SCALE;
-			this.nextDayButtonBaseScaleY = PanelPrefab.FINAL_NEXT_DAY_BUTTON_SCALE;
-			this.buyUpgradesLabel?.setVisible(false);
 		}
 
-		this.nextDayButtonBaseY = PanelPrefab.FINAL_NEXT_DAY_BUTTON_Y;
 		this.nextdayBtn.setY(this.nextDayButtonBaseY);
-		this.nextdayBtn.setScale(this.nextDayButtonBaseScaleX, this.nextDayButtonBaseScaleY);
+		this.nextdayBtn.setOrigin(0.5, 0.5);
 	}
 
 	public enableLevelsButton(onClick: () => void) {
 		this.levelsBtn.setVisible(true);
+		this.levelsText.setVisible(true);
 		this.levelsBtn.setInteractive({ useHandCursor: true });
 		this.levelsBtn.removeAllListeners();
 		this.isLevelsButtonPressed = false;
@@ -409,6 +443,7 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 	public disableLevelsButton() {
 
 		this.stopLevelsUpgradeAttention();
+		this.levelsText.setVisible(false);
 		this.levelsBtn.setVisible(false);
 		this.levelsBtn.disableInteractive();
 		this.levelsBtn.removeAllListeners();
@@ -589,6 +624,44 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		this.dayLabelText.setColor(color.startsWith("#") ? color : `#${color}`);
 	}
 
+	private startReadyButtonHeartbeat() {
+		this.stopReadyButtonHeartbeat();
+		this.readyButtonPulseTween = this.scene.tweens.add({
+			targets: this.readyBtn,
+			scaleX: { from: this.readyBtnBaseScaleX * 0.96, to: this.readyBtnBaseScaleX * 1.10 },
+			scaleY: { from: this.readyBtnBaseScaleY * 0.96, to: this.readyBtnBaseScaleY * 1.10 },
+			duration: 700,
+			yoyo: true,
+			repeat: -1,
+			ease: "Sine.InOut",
+		});
+	}
+
+	private stopReadyButtonHeartbeat() {
+		this.readyButtonPulseTween?.stop();
+		this.readyButtonPulseTween = undefined;
+	}
+
+	private startNextDayButtonHeartbeat() {
+		this.stopNextDayButtonHeartbeat();
+		const baseScaleX = this.nextdayBtn.scaleX || 1;
+		const baseScaleY = this.nextdayBtn.scaleY || 1;
+		this.nextDayButtonPulseTween = this.scene.tweens.add({
+			targets: this.nextdayBtn,
+			scaleX: { from: baseScaleX * 0.96, to: baseScaleX * 1.08 },
+			scaleY: { from: baseScaleY * 0.96, to: baseScaleY * 1.08 },
+			duration: 700,
+			yoyo: true,
+			repeat: -1,
+			ease: "Sine.InOut",
+		});
+	}
+
+	private stopNextDayButtonHeartbeat() {
+		this.nextDayButtonPulseTween?.stop();
+		this.nextDayButtonPulseTween = undefined;
+	}
+
 	private animateReadyButton(scaleX: number, scaleY: number, y: number, onComplete?: () => void) {
 
 		this.scene.tweens.killTweensOf(this.readyBtn);
@@ -604,32 +677,11 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 	}
 
 	private animateNextDayButton(scaleX: number, scaleY: number, y: number, onComplete?: () => void) {
-
-		this.scene.tweens.killTweensOf(this.nextdayBtn);
-		if (this.buyUpgradesLabel) {
-			this.scene.tweens.killTweensOf(this.buyUpgradesLabel);
-		}
-
-		this.scene.tweens.add({
-			targets: this.nextdayBtn,
-			scaleX,
-			scaleY,
-			y,
-			duration: PanelPrefab.READY_BUTTON_TWEEN_DURATION,
-			ease: "Quad.Out",
-			onComplete,
-		});
+		this.nextdayBtn.setY(y);
+		onComplete?.();
 
 		if (this.buyUpgradesLabel?.visible) {
-			const labelScale = scaleX / Math.max(0.01, this.nextDayButtonBaseScaleX);
-			this.scene.tweens.add({
-				targets: this.buyUpgradesLabel,
-				scaleX: labelScale,
-				scaleY: labelScale,
-				y: y - 4,
-				duration: PanelPrefab.READY_BUTTON_TWEEN_DURATION,
-				ease: "Quad.Out",
-			});
+			this.buyUpgradesLabel.setY(y - 4);
 		}
 	}
 
@@ -655,13 +707,8 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 
 	private applyFinalButtonLayout() {
 		this.applyNextDayButtonMode(this.nextDayButtonMode);
-		this.levelsBtn.setScale(PanelPrefab.FINAL_LEVELS_BUTTON_SCALE);
-		this.levelsBtn.setY(PanelPrefab.FINAL_LEVELS_BUTTON_Y);
-
-		this.levelsButtonBaseScaleX = PanelPrefab.FINAL_LEVELS_BUTTON_SCALE;
-		this.levelsButtonBaseScaleY = PanelPrefab.FINAL_LEVELS_BUTTON_SCALE;
-		this.levelsButtonBaseY = PanelPrefab.FINAL_LEVELS_BUTTON_Y;
-
+		this.levelsBtn.setScale(this.levelsButtonBaseScaleX, this.levelsButtonBaseScaleY);
+		this.levelsBtn.setY(this.levelsButtonBaseY);
 		this.applyUpgradeMessageLayout();
 	}
 

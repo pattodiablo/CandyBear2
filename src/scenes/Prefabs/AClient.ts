@@ -96,6 +96,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 	private requestIssuedAt = 0;
 	private initialOrderCount = 1;
 	private pendingProducts: ClientRequestAppearance[] = [];
+	private deliveryReservations = new Map<object, number>();
 	private displayedProductIndex = 0;
 	private productCarouselTimer?: Phaser.Time.TimerEvent;
 	/** Pedidos fijos (p. ej. clientes de limpieza de bandeja al final del día). */
@@ -668,19 +669,67 @@ export default class AClient extends Phaser.GameObjects.Container {
 		return this.pendingProducts.some((appearance) => product.matchesAppearance(appearance));
 	}
 
-	public receiveProductDelivery(product: AProduct | milkglass | sandwichPrefab) {
+	public reserveMatchingProduct(product: AProduct | milkglass | sandwichPrefab) {
+		if (!this.hasActiveRequest()) {
+			this.deliveryReservations.delete(product);
+			return -1;
+		}
 
-		const matchedIndex = this.pendingProducts.findIndex((appearance) => (
-			product.matchesAppearance(appearance)
-		));
+		const existingReservedIndex = this.deliveryReservations.get(product);
+		if (existingReservedIndex !== undefined) {
+			const isStillMatch = this.pendingProducts[existingReservedIndex]
+				&& product.matchesAppearance(this.pendingProducts[existingReservedIndex]);
+			if (isStillMatch) {
+				return existingReservedIndex;
+			}
+			this.deliveryReservations.delete(product);
+		}
+
+		for (let index = 0; index < this.pendingProducts.length; index++) {
+			const appearance = this.pendingProducts[index];
+			if (!appearance || !product.matchesAppearance(appearance)) {
+				continue;
+			}
+
+			let isReservedByAnotherProduct = false;
+			this.deliveryReservations.forEach((reservedIndex, reservedProduct) => {
+				if (reservedProduct !== product && reservedIndex === index) {
+					isReservedByAnotherProduct = true;
+				}
+			});
+
+			if (isReservedByAnotherProduct) {
+				continue;
+			}
+
+			this.deliveryReservations.set(product, index);
+			return index;
+		}
+
+		return -1;
+	}
+
+	public clearMatchingProductReservation(product: AProduct | milkglass | sandwichPrefab) {
+		this.deliveryReservations.delete(product);
+	}
+
+	public receiveProductDelivery(product: AProduct | milkglass | sandwichPrefab, reservedIndex?: number) {
+
+		const matchedIndex = reservedIndex !== undefined && reservedIndex >= 0
+			? reservedIndex
+			: this.pendingProducts.findIndex((appearance) => (
+				product.matchesAppearance(appearance)
+			));
 
 		if (matchedIndex < 0) {
+			this.clearMatchingProductReservation(product);
 			return false;
 		}
 
 		const isMultiProductOrder = this.pendingProducts.length > 1;
 
 		this.pendingProducts.splice(matchedIndex, 1);
+		this.clearMatchingProductReservation(product);
 
 		if (matchedIndex < this.displayedProductIndex) {
 			this.displayedProductIndex--;
@@ -927,6 +976,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 		this.productSample.setScale(1);
 		this.productSample.setVisible(false);
 		this.pendingProducts = [];
+		this.deliveryReservations = new Map<object, number>();
 		this.displayedProductIndex = 0;
 		this.requestIssuedAt = 0;
 		this.initialOrderCount = 1;
