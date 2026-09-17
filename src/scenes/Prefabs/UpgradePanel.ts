@@ -214,7 +214,7 @@ export default class UpgradePanel extends Phaser.GameObjects.Container {
 			});
 		});
 
-		this.titleText.setText(choices.length > 0 ? t("selectNewUpgrade") : t("newUnlock"));
+		this.titleText.setText(choices.length > 0 ? t("selectNewUnlock") : t("newUnlock"));
 	}
 
 

@@ -2565,7 +2565,7 @@ export default class Level extends Phaser.Scene {
 		background.setScale(Level.MANDATORY_UPGRADE_PANEL_SCALE);
 		container.add(background);
 
-		const titleText = this.add.text(0, Level.MANDATORY_UPGRADE_TITLE_Y, t("selectNewUpgrade"), {
+		const titleText = this.add.text(0, Level.MANDATORY_UPGRADE_TITLE_Y, t("selectNewUnlock"), {
 			color: Level.MANDATORY_UPGRADE_TEXT_COLOR,
 			fontFamily: "Klop",
 			fontSize: "28px",

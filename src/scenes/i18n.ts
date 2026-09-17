@@ -17,7 +17,7 @@ type TranslationKey =
 	| "upgradesAvailable"
 	| "buyUpgrades"
 	| "newUnlock"
-	| "selectNewUpgrade"
+	| "selectNewUnlock"
 	| "areYouSureToExit"
 	| "yes"
 	| "no"
@@ -52,7 +52,7 @@ const STRINGS: Record<GameLanguage, Record<TranslationKey, string>> = {
 		upgradesAvailable: "Upgrades available",
 		buyUpgrades: "Buy upgrades",
 		newUnlock: "New Unlock",
-		selectNewUpgrade: "SELECT NEW UPGRADE",
+		selectNewUnlock: "SELECT NEW UNLOCK",
 		areYouSureToExit: "Are you sure\nto exit?",
 		yes: "Yes",
 		no: "No",
@@ -86,7 +86,7 @@ const STRINGS: Record<GameLanguage, Record<TranslationKey, string>> = {
 		upgradesAvailable: "Actualizaciones disponibles",
 		buyUpgrades: "Comprar mejoras",
 		newUnlock: "Nuevo desbloqueo",
-		selectNewUpgrade: "SELECCIONA NUEVA MEJORA",
+		selectNewUnlock: "SELECCIONA NUEVO DESBLOQUEO",
 		areYouSureToExit: "¿Seguro que quieres\nsalir?",
 		yes: "Sí",
 		no: "No",
