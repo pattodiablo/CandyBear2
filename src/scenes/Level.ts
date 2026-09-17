@@ -3023,8 +3023,9 @@ export default class Level extends Phaser.Scene {
 	private unlockEarlyCampaignMilestones() {
 		const levelNumber = this.getCurrentLevelNumber();
 		const autoUnlocksByLevel: Record<number, UnlockId[]> = {
+			2: ["holder2"],
 			3: ["holder2"],
-			4: ["fryer2"],
+			4: ["fryer2", "workplace2"],
 			5: ["holder3"],
 		};
 
@@ -3033,12 +3034,18 @@ export default class Level extends Phaser.Scene {
 			return;
 		}
 
+		const grantedUnlocks: UnlockId[] = [];
+
 		for (const unlockId of unlocksToGrant) {
 			if (isProductUnlockId(unlockId) && !isProductAcquired(unlockId)) {
 				storeProductAcquired(unlockId);
+				grantedUnlocks.push(unlockId);
 				for (const workstationId of getBundledWorkstationsForProductUnlock(unlockId)) {
 					if (!isWorkstationAcquired(workstationId)) {
 						storeWorkstationAcquired(workstationId);
+						if (!grantedUnlocks.includes(workstationId)) {
+							grantedUnlocks.push(workstationId);
+						}
 					}
 				}
 				continue;
@@ -3050,10 +3057,20 @@ export default class Level extends Phaser.Scene {
 				|| unlockId === "workplace2";
 			if (isWorkstationUnlock && !isWorkstationAcquired(unlockId)) {
 				storeWorkstationAcquired(unlockId);
+				grantedUnlocks.push(unlockId);
 			}
 		}
 
+		if (grantedUnlocks.length === 0) {
+			return;
+		}
+
 		this.applyLevelProgression();
+
+		this.sound.play(`pop${Phaser.Math.Between(1, 3)}`);
+		for (const unlockId of grantedUnlocks) {
+			this.playKitchenUnlockCelebration(unlockId);
+		}
 	}
 
 	/** Cierra el blur del intro y arranca la prep del nivel. */
