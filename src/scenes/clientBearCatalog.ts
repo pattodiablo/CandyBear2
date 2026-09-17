@@ -316,7 +316,8 @@ export function getBodySkinUnlockLevel(skinIndex: number) {
  * el jugador ya ha comprado ese skin en el sistema de unlocks.
  */
 export function getMaxUnlockedBodySkinIndex(levelNumber: number) {
-	const acquiredSkinIndexes = new Set<number>([0]);
+	// skin 0 (Pepe) y skin 1 (Lulu) vienen desbloqueados desde el inicio.
+	const acquiredSkinIndexes = new Set<number>([0, 1]);
 
 	if (typeof window !== "undefined") {
 		try {
@@ -403,7 +404,8 @@ export function getClientBearProfile(skinIndex: number): ClientBearProfile {
  * A mayor dificultad, sesga un poco hacia skins más altos (más exigentes).
  */
 export function pickClientBearSkinIndex(levelNumber: number, difficulty: number) {
-	const acquiredSkinIndexes = new Set<number>([0]);
+	// skin 0 (Pepe) y skin 1 (Lulu) vienen desbloqueados desde el inicio.
+	const acquiredSkinIndexes = new Set<number>([0, 1]);
 
 	if (typeof window !== "undefined") {
 		try {

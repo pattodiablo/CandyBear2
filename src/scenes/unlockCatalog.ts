@@ -25,10 +25,12 @@ export interface UnlockCatalogEntry {
  * Product 1 (holder1) se mantiene desbloqueado por defecto.
  * Orden de aparición: Bomboloni → Second Workplace → Toaster/Sandwich → Milk → Second Fryer.
  * Workplace2 va antes que las freidoras extras; el primer unlock aparece desde el nivel 3.
+ * clientSkin0 (Pepe) y clientSkin1 (Lulu) vienen desbloqueados por defecto,
+ * por eso el catálogo comprable arranca en el skin 2.
  */
 const CLIENT_UNLOCKS_CATALOG: Record<ClientUnlockId, UnlockCatalogEntry> = {};
 
-for (let skinIndex = 1; skinIndex <= BODY_SKIN_MAX_INDEX; skinIndex++) {
+for (let skinIndex = 2; skinIndex <= BODY_SKIN_MAX_INDEX; skinIndex++) {
 	const clientUnlockId: ClientUnlockId = `clientSkin${skinIndex}` as ClientUnlockId;
 	CLIENT_UNLOCKS_CATALOG[clientUnlockId] = {
 		id: clientUnlockId,
