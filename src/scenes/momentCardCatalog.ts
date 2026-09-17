@@ -1,10 +1,22 @@
 import { getTotalLikes } from "./likeProgress";
 import { getStoredTotalCoins } from "./levelProgress";
 import { isMomentCardBought } from "./momentProgress";
+import { getGameLanguage, type GameLanguage } from "./i18n";
 
 export interface MomentCardUpgradeDefinition {
 	name: string;
 	effect: string;
+	unlockLevel: number;
+	costTier: "Bajo" | "Medio" | "Alto";
+}
+
+interface MomentCardUpgradeText {
+	name: string;
+	effect: string;
+}
+
+interface MomentCardUpgradeSource {
+	text: Record<GameLanguage, MomentCardUpgradeText>;
 	unlockLevel: number;
 	costTier: "Bajo" | "Medio" | "Alto";
 }
@@ -22,23 +34,34 @@ export interface MomentCardCatalogEntry {
  * Textos cortos: se muestran como "nombre\nefecto" bajo la carta.
  * Deben caber en ~2 líneas con wordWrap 240px / fontSize 30 (Klop).
  */
-const MOMENT_CARD_UPGRADES: readonly MomentCardUpgradeDefinition[] = [
-	{ name: "Freidora I", effect: "Freído +1", unlockLevel: 3, costTier: "Bajo" },
-	{ name: "Freidora II", effect: "Freído +2", unlockLevel: 8, costTier: "Medio" },
-	{ name: "Freidora III", effect: "Freído +3", unlockLevel: 15, costTier: "Alto" },
-	{ name: "Leche I", effect: "Refill +1", unlockLevel: 4, costTier: "Bajo" },
-	{ name: "Leche II", effect: "Refill +2", unlockLevel: 10, costTier: "Medio" },
-	{ name: "Leche III", effect: "Refill +3", unlockLevel: 18, costTier: "Alto" },
-	{ name: "Sanduchera I", effect: "Tostado +1", unlockLevel: 6, costTier: "Bajo" },
-	{ name: "Sanduchera II", effect: "Tostado +2", unlockLevel: 12, costTier: "Medio" },
-	{ name: "Sanduchera III", effect: "Tostado +3", unlockLevel: 20, costTier: "Alto" },
-	{ name: "Galletas I", effect: "+1 al final", unlockLevel: 5, costTier: "Bajo" },
-	{ name: "Galletas II", effect: "+2 al final", unlockLevel: 11, costTier: "Medio" },
-	{ name: "Galletas III", effect: "+3 al final", unlockLevel: 17, costTier: "Alto" },
-	{ name: "Pacientes I", effect: "Espera +1", unlockLevel: 7, costTier: "Bajo" },
-	{ name: "Pacientes II", effect: "Espera +2", unlockLevel: 14, costTier: "Medio" },
-	{ name: "Pacientes III", effect: "Espera +3", unlockLevel: 22, costTier: "Alto" },
+const MOMENT_CARD_UPGRADE_SOURCES: readonly MomentCardUpgradeSource[] = [
+	{ text: { es: { name: "Freidora I", effect: "Freído +1" }, en: { name: "Fryer I", effect: "Fry +1" } }, unlockLevel: 3, costTier: "Bajo" },
+	{ text: { es: { name: "Freidora II", effect: "Freído +2" }, en: { name: "Fryer II", effect: "Fry +2" } }, unlockLevel: 8, costTier: "Medio" },
+	{ text: { es: { name: "Freidora III", effect: "Freído +3" }, en: { name: "Fryer III", effect: "Fry +3" } }, unlockLevel: 15, costTier: "Alto" },
+	{ text: { es: { name: "Leche I", effect: "Refill +1" }, en: { name: "Milk I", effect: "Refill +1" } }, unlockLevel: 4, costTier: "Bajo" },
+	{ text: { es: { name: "Leche II", effect: "Refill +2" }, en: { name: "Milk II", effect: "Refill +2" } }, unlockLevel: 10, costTier: "Medio" },
+	{ text: { es: { name: "Leche III", effect: "Refill +3" }, en: { name: "Milk III", effect: "Refill +3" } }, unlockLevel: 18, costTier: "Alto" },
+	{ text: { es: { name: "Sanduchera I", effect: "Tostado +1" }, en: { name: "Toaster I", effect: "Toast +1" } }, unlockLevel: 6, costTier: "Bajo" },
+	{ text: { es: { name: "Sanduchera II", effect: "Tostado +2" }, en: { name: "Toaster II", effect: "Toast +2" } }, unlockLevel: 12, costTier: "Medio" },
+	{ text: { es: { name: "Sanduchera III", effect: "Tostado +3" }, en: { name: "Toaster III", effect: "Toast +3" } }, unlockLevel: 20, costTier: "Alto" },
+	{ text: { es: { name: "Galletas I", effect: "+1 al final" }, en: { name: "Cookies I", effect: "+1 at end" } }, unlockLevel: 5, costTier: "Bajo" },
+	{ text: { es: { name: "Galletas II", effect: "+2 al final" }, en: { name: "Cookies II", effect: "+2 at end" } }, unlockLevel: 11, costTier: "Medio" },
+	{ text: { es: { name: "Galletas III", effect: "+3 al final" }, en: { name: "Cookies III", effect: "+3 at end" } }, unlockLevel: 17, costTier: "Alto" },
+	{ text: { es: { name: "Pacientes I", effect: "Espera +1" }, en: { name: "Patience I", effect: "Wait +1" } }, unlockLevel: 7, costTier: "Bajo" },
+	{ text: { es: { name: "Pacientes II", effect: "Espera +2" }, en: { name: "Patience II", effect: "Wait +2" } }, unlockLevel: 14, costTier: "Medio" },
+	{ text: { es: { name: "Pacientes III", effect: "Espera +3" }, en: { name: "Patience III", effect: "Wait +3" } }, unlockLevel: 22, costTier: "Alto" },
 ];
+
+const MOMENT_CARD_UPGRADES: readonly MomentCardUpgradeDefinition[] = MOMENT_CARD_UPGRADE_SOURCES.map((source) => {
+	const localizedText = source.text[getGameLanguage()];
+
+	return {
+		name: localizedText.name,
+		effect: localizedText.effect,
+		unlockLevel: source.unlockLevel,
+		costTier: source.costTier,
+	};
+});
 
 export const TOTAL_MOMENT_CARDS = MOMENT_CARD_UPGRADES.length;
 export const MOMENT_CARDS_PER_PAGE = 5;

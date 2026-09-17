@@ -50,7 +50,7 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		// earnedToday
 		const earnedToday = scene.add.text(40, 86, "", {});
 		earnedToday.setOrigin(0.5, 0.5);
-		earnedToday.text = "Earnings today";
+		earnedToday.text = t("earningsToday");
 		earnedToday.setStyle({ "color": "#A96625", "fontFamily": "Klop", "fontSize": "30px" });
 		finalLabels.add(earnedToday);
 
@@ -77,7 +77,7 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		// ReadyText
 		const readyText = scene.add.text(42, 17, "", {});
 		readyText.setOrigin(0.5, 0.5);
-		readyText.text = "READY";
+		readyText.text = t("ready");
 		readyText.setStyle({ "color": "#eedfccff", "fontFamily": "Klop", "fontSize": "50px" });
 		this.add(readyText);
 
@@ -91,7 +91,7 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		// LevelsText
 		const levelsText = scene.add.text(43, 228, "", {});
 		levelsText.setOrigin(0.5, 0.5);
-		levelsText.text = "Levels and upgrades";
+		levelsText.text = t("levelsAndUpgrades");
 		levelsText.setStyle({ "color": "#eedfccff", "fontFamily": "Klop", "fontSize": "25px" });
 		this.add(levelsText);
 

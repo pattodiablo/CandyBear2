@@ -93,6 +93,9 @@ export default class SceneSelector extends Phaser.Scene {
 		// musicBtn
 		const musicBtn = this.add.image(71, 88, "MusicBtn");
 
+		// levelsBtnPrefab (prefab fields)
+		levelsBtnPrefab.btnText = t("levels");
+
 		// momentsBtnPrefab (prefab fields)
 		momentsBtnPrefab.btnText = t("upgrades");
 		momentsBtnPrefab.initialState = false;

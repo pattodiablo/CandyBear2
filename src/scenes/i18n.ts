@@ -23,6 +23,7 @@ type TranslationKey =
 	| "no"
 	| "newUpgradesAwait"
 	| "play"
+	| "levels"
 	| "upgrades"
 	| "ready"
 	| "nextDay"
@@ -57,6 +58,7 @@ const STRINGS: Record<GameLanguage, Record<TranslationKey, string>> = {
 		no: "No",
 		newUpgradesAwait: "New upgrades await in the\nmain menu!",
 		play: "Play",
+		levels: "Levels",
 		upgrades: "Upgrades",
 		ready: "READY",
 		nextDay: "NEXT DAY",
@@ -90,6 +92,7 @@ const STRINGS: Record<GameLanguage, Record<TranslationKey, string>> = {
 		no: "No",
 		newUpgradesAwait: "¡Hay nuevas mejoras en el\nmenú principal!",
 		play: "Jugar",
+		levels: "Niveles",
 		upgrades: "Mejoras",
 		ready: "LISTO",
 		nextDay: "SIGUIENTE DÍA",
