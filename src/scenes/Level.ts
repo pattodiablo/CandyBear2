@@ -81,6 +81,7 @@ import {
 import { getExtraCookiesBonus } from "./momentUpgradeBonuses";
 import { canAffordAnyMomentCard } from "./momentCardCatalog";
 import type { ClientRequestAppearance } from "./clientOrderPool";
+import { notifyPokiGameplayStop, runPokiCommercialBreak } from "../pokiHelpers";
 import {
 	recordLevelClearedWithoutUpgradePurchase,
 	shouldPromptBuyUpgrades,
@@ -369,6 +370,8 @@ export default class Level extends Phaser.Scene {
 
 	/* START-USER-CODE */
 	public static readonly CAMPAIGN_LEVEL_COUNT = 40;
+	/** A partir de qué día completado se ofrecen commercial breaks de Poki entre días. */
+	private static readonly COMMERCIAL_BREAK_START_DAY = 5;
 	private static readonly DIFFICULTY_GROWTH = 0.18;
 	private static readonly DIFFICULTY_BASE = 0.9;
 	private static readonly DIFFICULTY_OSCILLATION_AMPLITUDE = 0.95;
@@ -864,7 +867,7 @@ export default class Level extends Phaser.Scene {
 				levelNumber: 1,
 				difficulty: 0.85,
 				oscillation: 0,
-				waveSizes: [5],
+				waveSizes: [3],
 				isTutorial: true
 			};
 		}
@@ -4662,9 +4665,25 @@ export default class Level extends Phaser.Scene {
 		});
 
 		this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
-			this.scene.start("Level", { levelNumber: nextLevelNumber });
+			void this.startNextLevelAfterOptionalBreak(nextLevelNumber);
 		});
 		this.cameras.main.fadeOut(420, 0, 0, 0);
+	}
+
+	/** Muestra un commercial break de Poki (solo a partir del día COMMERCIAL_BREAK_START_DAY) antes de cargar el siguiente día. */
+	private async startNextLevelAfterOptionalBreak(nextLevelNumber: number) {
+		const shouldShowCommercialBreak = this.currentLevelPlan.levelNumber >= Level.COMMERCIAL_BREAK_START_DAY;
+
+		if (shouldShowCommercialBreak) {
+			notifyPokiGameplayStop(this);
+			await runPokiCommercialBreak(this);
+		}
+
+		if (!this.sys?.isActive()) {
+			return;
+		}
+
+		this.scene.start("Level", { levelNumber: nextLevelNumber });
 	}
 
 	private playLevelCompletePanel() {

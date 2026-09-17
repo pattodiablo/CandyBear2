@@ -416,7 +416,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 			const maxOrderCount = this.clientBear.getMaxOrderCount();
 			const orderCount = Math.min(baseOrderCount, maxOrderCount);
 			this.initialOrderCount = orderCount;
-			this.pendingProducts = pickClientOrders(orderCount);
+			this.pendingProducts = pickClientOrders(orderCount, levelScene.getCurrentLevelNumber());
 		}
 
 		this.displayedProductIndex = 0;

@@ -1,5 +1,7 @@
 export type WorkstationId = "fryer2" | "milkmachine" | "toaster" | "workplace2";
 
+const LEGACY_PRODUCT_STORAGE_KEY = "candybear2-acquired-products";
+
 export const WORKSTATION_ORDER: WorkstationId[] = [
 	"fryer2",
 	"milkmachine",
@@ -27,7 +29,33 @@ const LOCKED_TEXTURE_BY_WORKSTATION: Record<WorkstationId, string> = {
 	workplace2: "lockedWorkplace",
 };
 
-const DEFAULT_ACQUIRED_WORKSTATIONS: WorkstationId[] = ["workplace2"];
+const DEFAULT_ACQUIRED_WORKSTATIONS: WorkstationId[] = [];
+
+function readLegacyBundledProducts(): Set<string> {
+	if (typeof window === "undefined") {
+		return new Set<string>();
+	}
+
+	try {
+		const storedValue = window.localStorage.getItem(LEGACY_PRODUCT_STORAGE_KEY);
+		if (!storedValue) {
+			return new Set<string>();
+		}
+
+		const parsedValue = JSON.parse(storedValue);
+		if (!Array.isArray(parsedValue)) {
+			return new Set<string>();
+		}
+
+		return new Set(
+			parsedValue.filter((slotId): slotId is string => (
+				typeof slotId === "string" && (slotId === "holder1" || slotId === "holder2" || slotId === "holder3" || slotId === "holder4")
+			))
+		);
+	} catch {
+		return new Set<string>();
+	}
+}
 
 function normalizeAcquiredWorkstations(value: unknown): WorkstationId[] {
 	if (!Array.isArray(value)) {
@@ -74,7 +102,18 @@ export function getWorkstationTextureKey(workstationId: WorkstationId, isAcquire
 }
 
 export function getAcquiredWorkstations() {
-	return [...new Set(readAcquiredWorkstationsRecord())];
+	const acquiredWorkstations = new Set(readAcquiredWorkstationsRecord());
+	const bundledProducts = readLegacyBundledProducts();
+
+	if (bundledProducts.has("holder4")) {
+		acquiredWorkstations.add("milkmachine");
+	}
+
+	if (bundledProducts.has("holder3")) {
+		acquiredWorkstations.add("toaster");
+	}
+
+	return [...new Set(WORKSTATION_ORDER.filter((workstationId) => acquiredWorkstations.has(workstationId)))];
 }
 
 export function isWorkstationAcquired(workstationId: WorkstationId) {

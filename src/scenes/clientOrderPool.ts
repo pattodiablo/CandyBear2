@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { isProductAcquired, type ProductSlotId } from "./productProgress";
+import { isUnlockAvailableAtLevel } from "./unlockCatalog";
 import { isWorkstationAcquired, type WorkstationId } from "./workstationProgress";
 
 export type ClientRequestAppearance = { key: string; frame?: string | number };
@@ -54,21 +55,36 @@ const DEFAULT_CLIENT_REQUESTS: ClientRequestAppearance[] = [
 	{ key: "Product1Candy" },
 ];
 
-function isClientRequestAvailable({ productSlot, workstation }: ClientRequestDefinition) {
-	if (productSlot && !isProductAcquired(productSlot)) {
-		return false;
+function isClientRequestAvailable(
+	{ productSlot, workstation }: ClientRequestDefinition,
+	levelNumber?: number,
+) {
+	if (productSlot) {
+		if (!isProductAcquired(productSlot)) {
+			return false;
+		}
+
+		if (productSlot !== "holder1" && levelNumber !== undefined && !isUnlockAvailableAtLevel(productSlot, levelNumber)) {
+			return false;
+		}
 	}
 
-	if (workstation && !isWorkstationAcquired(workstation)) {
-		return false;
+	if (workstation) {
+		if (!isWorkstationAcquired(workstation)) {
+			return false;
+		}
+
+		if (levelNumber !== undefined && !isUnlockAvailableAtLevel(workstation, levelNumber)) {
+			return false;
+		}
 	}
 
 	return true;
 }
 
-export function getAvailableClientRequests() {
+export function getAvailableClientRequests(levelNumber?: number) {
 	const availableRequests = CLIENT_REQUEST_DEFINITIONS
-		.filter(isClientRequestAvailable)
+		.filter((request) => isClientRequestAvailable(request, levelNumber))
 		.map(({ appearance }) => appearance);
 
 	return availableRequests.length > 0 ? availableRequests : [...DEFAULT_CLIENT_REQUESTS];
@@ -94,8 +110,8 @@ export function rollClientOrderCount(levelNumber: number, difficulty: number) {
 	return Math.random() < thirdOrderChance ? 3 : 2;
 }
 
-export function pickClientOrders(orderCount: number) {
-	const requestPool = Phaser.Utils.Array.Shuffle([...getAvailableClientRequests()]);
+export function pickClientOrders(orderCount: number, levelNumber?: number) {
+	const requestPool = Phaser.Utils.Array.Shuffle([...getAvailableClientRequests(levelNumber)]);
 	const normalizedCount = Math.max(1, Math.floor(orderCount));
 
 	return requestPool.slice(0, Math.min(normalizedCount, requestPool.length));

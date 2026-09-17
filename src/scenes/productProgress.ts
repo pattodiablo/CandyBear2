@@ -1,4 +1,8 @@
+import type { WorkstationId } from "./workstationProgress";
+
 export type ProductSlotId = "holder1" | "holder2" | "holder3" | "holder4";
+
+const LEGACY_WORKSTATION_STORAGE_KEY = "candybear2-acquired-workstations";
 
 export const PRODUCT_SLOT_ORDER: ProductSlotId[] = [
 	"holder1",
@@ -18,6 +22,42 @@ const LOCKED_TEXTURE_BY_SLOT: Record<ProductSlotId, string> = {
 };
 
 const DEFAULT_ACQUIRED_PRODUCTS: ProductSlotId[] = ["holder1"];
+const PRODUCT_BUNDLED_WORKSTATIONS: Partial<Record<ProductSlotId, WorkstationId>> = {
+	holder3: "toaster",
+	holder4: "milkmachine",
+};
+
+function readLegacyBundledWorkstations(): Set<string> {
+	if (typeof window === "undefined") {
+		return new Set<string>();
+	}
+
+	try {
+		const storedValue = window.localStorage.getItem(LEGACY_WORKSTATION_STORAGE_KEY);
+		if (!storedValue) {
+			return new Set<string>();
+		}
+
+		const parsedValue = JSON.parse(storedValue);
+		if (!Array.isArray(parsedValue)) {
+			return new Set<string>();
+		}
+
+		return new Set(
+			parsedValue
+				.filter((workstationId): workstationId is string => typeof workstationId === "string")
+				.map((workstationId) => workstationId === "workplace" ? "workplace2" : workstationId)
+				.filter((workstationId) => (
+					workstationId === "fryer2"
+					|| workstationId === "milkmachine"
+					|| workstationId === "toaster"
+					|| workstationId === "workplace2"
+				))
+		);
+	} catch {
+		return new Set<string>();
+	}
+}
 
 const PRODUCT_COIN_REWARD_BY_SLOT: Record<ProductSlotId, number> = {
 	holder1: 2,
@@ -68,7 +108,18 @@ export function getProductCoinReward(slotId: ProductSlotId, options?: { isFlavor
 }
 
 export function getAcquiredProductSlots() {
-	return [...new Set(readAcquiredProductsRecord())];
+	const acquiredProducts = new Set(readAcquiredProductsRecord());
+	const bundledWorkstations = readLegacyBundledWorkstations();
+
+	if (bundledWorkstations.has("milkmachine")) {
+		acquiredProducts.add("holder4");
+	}
+
+	if (bundledWorkstations.has("toaster")) {
+		acquiredProducts.add("holder3");
+	}
+
+	return [...new Set(PRODUCT_SLOT_ORDER.filter((productSlot) => acquiredProducts.has(productSlot)))];
 }
 
 export function isProductAcquired(slotId: ProductSlotId) {
