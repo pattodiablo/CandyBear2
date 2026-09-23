@@ -106,6 +106,11 @@ export default class AClient extends Phaser.GameObjects.Container {
 	private static readonly TARGET_Y = 330;
 	private static readonly EXIT_Y = 430;
 	private static readonly MOVE_SPEED = 120;
+	/** Días 3 a 5: paciencia extra que va bajando (día 3 más generoso, día 5 menos) hasta normalizarse en el día 6. */
+	private static readonly EARLY_DAYS_PATIENCE_START_LEVEL = 3;
+	private static readonly EARLY_DAYS_PATIENCE_END_LEVEL = 5;
+	private static readonly EARLY_DAYS_PATIENCE_BONUS_AT_START = 0.35;
+	private static readonly EARLY_DAYS_PATIENCE_BONUS_AT_END = 0.12;
 	private static readonly QUESTION_FLOAT_DISTANCE = 12;
 	private static readonly QUESTION_EARLY_MAX = 900;
 	private static readonly QUESTION_LATE_MAX = 2200;
@@ -533,7 +538,9 @@ export default class AClient extends Phaser.GameObjects.Container {
 		this.stopRequestWaitTimer();
 
 		const levelScene = this.scene as Level;
-		if (levelScene.getCurrentLevelNumber() <= 1) {
+		// Días 1-2: sin límite de paciencia, los clientes nunca se van. Desde el día 3
+		// empieza a correr el tiempo (con el bonus extra de EARLY_DAYS_PATIENCE hasta el 5).
+		if (levelScene.getCurrentLevelNumber() <= 2) {
 			this.requestExpiresAt = Number.POSITIVE_INFINITY;
 			this.stopRequestWaitTimersOnly();
 			this.requestUrgencyTimer = this.scene.time.addEvent({
@@ -547,9 +554,37 @@ export default class AClient extends Phaser.GameObjects.Container {
 		}
 
 		const baseWaitMs = getClientRequestWaitDurationMs();
-		const waitMs = Math.round(baseWaitMs * this.clientBear.getWaitMultiplier());
+		const earlyDaysMultiplier = AClient.getEarlyDaysPatienceMultiplier(levelScene.getCurrentLevelNumber());
+		const waitMs = Math.round(baseWaitMs * this.clientBear.getWaitMultiplier() * earlyDaysMultiplier);
 		this.requestExpiresAt = this.scene.time.now + waitMs;
 		this.scheduleRequestWaitTimers();
+	}
+
+	/**
+	 * Multiplicador de paciencia extra para los días 2-5: día 2 es el más generoso,
+	 * baja gradualmente hasta el día 5 (todavía por encima de lo normal), y a partir
+	 * del día 6 vuelve a 1 (paciencia estándar, sin bonus).
+	 */
+	private static getEarlyDaysPatienceMultiplier(levelNumber: number) {
+
+		if (
+			levelNumber < AClient.EARLY_DAYS_PATIENCE_START_LEVEL
+			|| levelNumber > AClient.EARLY_DAYS_PATIENCE_END_LEVEL
+		) {
+			return 1;
+		}
+
+		const span = AClient.EARLY_DAYS_PATIENCE_END_LEVEL - AClient.EARLY_DAYS_PATIENCE_START_LEVEL;
+		const progress = span > 0
+			? (levelNumber - AClient.EARLY_DAYS_PATIENCE_START_LEVEL) / span
+			: 0;
+		const bonus = Phaser.Math.Linear(
+			AClient.EARLY_DAYS_PATIENCE_BONUS_AT_START,
+			AClient.EARLY_DAYS_PATIENCE_BONUS_AT_END,
+			progress
+		);
+
+		return 1 + bonus;
 	}
 
 	private scheduleRequestWaitTimers() {

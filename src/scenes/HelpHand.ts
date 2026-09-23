@@ -57,7 +57,7 @@ export default class HelpHand extends Phaser.GameObjects.Image {
 		});
 	}
 
-	showAt(x: number, y: number) {
+	showAt(x: number, y: number, urgent = false) {
 
 		const nextRestX = x + HelpHand.POINT_OFFSET_X;
 		const nextRestY = y + HelpHand.POINT_OFFSET_Y;
@@ -65,13 +65,14 @@ export default class HelpHand extends Phaser.GameObjects.Image {
 			|| Math.hypot(this.restX - nextRestX, this.restY - nextRestY) > HelpHand.TARGET_CHANGE_THRESHOLD;
 
 		if (!targetChanged) {
+			this.setUrgent(urgent);
 			return;
 		}
 
 		this.restX = nextRestX;
 		this.restY = nextRestY;
 		this.snapToRestPosition();
-		this.revealAtTarget();
+		this.revealAtTarget(urgent);
 	}
 
 	pointAt(x: number, y: number) {
@@ -91,12 +92,13 @@ export default class HelpHand extends Phaser.GameObjects.Image {
 		this.clickWaveGraphics?.setPosition(this.x, this.y);
 	}
 
-	private revealAtTarget() {
+	private revealAtTarget(urgent = false) {
 
 		this.isShown = true;
 		this.setVisible(true);
 		this.fadeTween?.stop();
 		this.pulseTween?.stop();
+		this.pulseTween = undefined;
 		this.setScale(0.92);
 		this.setAlpha(0);
 		this.fadeTween = this.scene.tweens.add({
@@ -106,8 +108,48 @@ export default class HelpHand extends Phaser.GameObjects.Image {
 			scaleY: 1,
 			duration: HelpHand.FADE_IN_DURATION,
 			ease: "Back.Out",
+			onComplete: () => {
+				this.setUrgent(urgent);
+			},
 		});
 		this.playClickWave();
+	}
+
+	/** Activa/desactiva el titileo de alerta (cliente impaciente sin acción clara que señalar). */
+	private setUrgent(urgent: boolean) {
+
+		if (!urgent) {
+			this.stopUrgentPulse();
+			return;
+		}
+
+		if (this.pulseTween) {
+			return;
+		}
+
+		this.setAlpha(1);
+		this.pulseTween = this.scene.tweens.add({
+			targets: this,
+			alpha: { from: 1, to: 0.3 },
+			duration: 220,
+			yoyo: true,
+			repeat: -1,
+			ease: "Sine.InOut",
+		});
+	}
+
+	private stopUrgentPulse() {
+
+		if (!this.pulseTween) {
+			return;
+		}
+
+		this.pulseTween.stop();
+		this.pulseTween = undefined;
+
+		if (this.isShown) {
+			this.setAlpha(1);
+		}
 	}
 
 	private playClickWave() {
@@ -170,6 +212,7 @@ export default class HelpHand extends Phaser.GameObjects.Image {
 		this.isShown = false;
 		this.fadeTween?.stop();
 		this.pulseTween?.stop();
+		this.pulseTween = undefined;
 		this.fadeTween = this.scene.tweens.add({
 			targets: this,
 			alpha: 0,

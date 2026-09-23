@@ -430,7 +430,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 			y: targetY,
 			scaleX: this.baseScaleX,
 			scaleY: this.baseScaleY,
-			duration: 160,
+			duration: 320,
 			ease: "Cubic.InOut",
 			onComplete: () => {
 				this.resetScaleToBase();
@@ -460,7 +460,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 			targets: this,
 			y: this.baseY - AProduct.RAISED_OFFSET_Y,
 			angle: this.baseAngle + AProduct.SPIN_ANGLE,
-			duration: 220,
+			duration: 360,
 			ease: "Cubic.Out",
 			onComplete: () => {
 				if (!this.active || !this.scene) {
@@ -487,7 +487,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 			targets: this,
 			y: this.baseY,
 			angle: this.baseAngle - AProduct.SPIN_ANGLE,
-			duration: 220,
+			duration: 360,
 			ease: "Cubic.Out",
 			onComplete: () => {
 				if (!this.active || !this.scene) {
@@ -812,7 +812,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 			targets: this,
 			x: workplace.x,
 			y: workplace.y,
-			duration: 180,
+			duration: 360,
 			ease: "Cubic.InOut",
 			onComplete: () => {
 				if (!this.active || !this.scene) {
@@ -933,7 +933,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 			targets: this,
 			x: target.x,
 			y: target.y,
-			duration: 120,
+			duration: 320,
 			ease: "Cubic.InOut",
 			onComplete: () => {
 				this.playDipSwapAnimation(appearance);
@@ -1001,7 +1001,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 			targets: this,
 			x: workplace.x,
 			y: workplace.y,
-			duration: 120,
+			duration: 320,
 			ease: "Cubic.InOut",
 			onComplete: () => {
 				if (!this.active || !this.scene) {
@@ -1053,7 +1053,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 			x: client.x,
 			y: client.y,
 			angle: this.baseAngle + AProduct.SPIN_ANGLE,
-			duration: 180,
+			duration: 360,
 			ease: "Cubic.InOut",
 			onComplete: () => {
 				this.angle = this.baseAngle;

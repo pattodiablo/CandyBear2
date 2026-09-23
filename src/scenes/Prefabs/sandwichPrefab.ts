@@ -44,7 +44,7 @@ export default class sandwichPrefab extends Phaser.GameObjects.Image {
 	private static readonly HOLDER_ACTIVE_DURATION = 100;
 	private static readonly SPIN_ANGLE = 360;
 	private static readonly HIT_AREA_SCALE = 1.75;
-	private static readonly FILLED_FRAME = "sandwich0005.png";
+	public static readonly FILLED_FRAME = "sandwich0005.png";
 	private static readonly MACHINE_SELECTION_SCALE = 1.2;
 	private static readonly SELECTION_TIMEOUT = 2500;
 	private static readonly BURN_DURATION = 6000;

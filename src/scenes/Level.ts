@@ -108,6 +108,8 @@ interface HelpHandHint {
 	x: number;
 	y: number;
 	phase: string;
+	/** True cuando no hay una acción concreta que señalar pero un cliente ya está impaciente. */
+	urgent?: boolean;
 }
 
 const MUSIC_MUTED_STORAGE_KEY = "candybear2-music-muted";
@@ -412,9 +414,15 @@ export default class Level extends Phaser.Scene {
 	private static readonly DELAYED_CLIENT_MIN_DELAY = 4000;
 	private static readonly DELAYED_CLIENT_MAX_DELAY = 5000;
 	private static readonly DELAYED_CLIENT_STAGGER = 350;
+	/** Días 1-5: entrada más paulatina, sin agrupar varios clientes casi al mismo tiempo. */
+	private static readonly GRADUAL_CLIENT_SPAWN_MAX_LEVEL = 5;
+	private static readonly GRADUAL_CLIENT_MIN_GAP = 9000;
+	private static readonly GRADUAL_CLIENT_MAX_GAP = 12000;
+	/** Días 1-5: más respiro entre oleadas (antes eran los que menos prep tenían). */
+	private static readonly GRADUAL_WAVE_PREP_DURATION_MS = 6000;
 	/** Prep inicial al empezar el nivel (setear bandejas). */
 	private static readonly LEVEL_PREP_DURATION_MS = 14000;
-	private static readonly TUTORIAL_LEVEL_PREP_DURATION_MS = 3000;
+	private static readonly TUTORIAL_LEVEL_PREP_DURATION_MS = 1500;
 	private static readonly TUTORIAL_CLIENT_SPAWN_INTERVAL_MS = 10000;
 	/** Prep entre oleadas. */
 	private static readonly WAVE_PREP_DURATION_MS = 7000;
@@ -423,7 +431,7 @@ export default class Level extends Phaser.Scene {
 		const normalizedLevel = Math.max(1, Math.floor(levelNumber));
 
 		if (normalizedLevel <= 5) {
-			return 3000;
+			return Level.GRADUAL_WAVE_PREP_DURATION_MS;
 		}
 
 		const gradualLevel = normalizedLevel - 5;
@@ -624,8 +632,8 @@ export default class Level extends Phaser.Scene {
 	private static readonly PROGRESSION_LOCK_AFFORDANCE_DELAY_MAX = 2400;
 	private progressionLockIcons: Phaser.GameObjects.Image[] = [];
 	private unbindDeveloperCheat?: () => void;
-	private static readonly HELP_HAND_TUTORIAL_MAX_LEVEL = 4;
-	private static readonly HELP_HAND_IDLE_MS = 10000;
+	private static readonly HELP_HAND_TUTORIAL_MAX_LEVEL = 5;
+	private static readonly HELP_HAND_IDLE_MS = 2000;
 	private static readonly HELP_HAND_UPDATE_INTERVAL = 400;
 	private static readonly HELP_HAND_DEPTH_OFFSET = 60;
 	private helpHandUpdateTimer?: Phaser.Time.TimerEvent;
@@ -877,7 +885,9 @@ export default class Level extends Phaser.Scene {
 				levelNumber: 2,
 				difficulty: 1.35,
 				oscillation: Number(Math.sin(Level.DIFFICULTY_OSCILLATION_FREQUENCY).toFixed(3)),
-				waveSizes: [2, 2],
+				// Una sola oleada: cada cliente entra con su propio delay (ver
+				// spawnCurrentWave / GRADUAL_CLIENT_SPAWN_MAX_LEVEL), no en oleadas separadas.
+				waveSizes: [3],
 				isTutorial: false
 			};
 		}
@@ -942,11 +952,18 @@ export default class Level extends Phaser.Scene {
 			distributionStep++;
 		}
 
+		// Días 3-5: cantidad fija de clientes (día 3 → 4, día 4 → 5, día 5 → 6), todos en
+		// una sola oleada, cada uno con su propio delay (ver spawnCurrentWave).
+		const EARLY_DAY_CLIENT_COUNT: Record<number, number> = { 3: 4, 4: 5, 5: 6 };
+		const finalWaveSizes = normalizedLevel <= 5
+			? [EARLY_DAY_CLIENT_COUNT[normalizedLevel] ?? totalClientsTarget]
+			: waveSizes;
+
 		return {
 			levelNumber: normalizedLevel,
 			difficulty,
 			oscillation: Number(oscillation.toFixed(3)),
-			waveSizes,
+			waveSizes: finalWaveSizes,
 			isTutorial: false
 		};
 	}
@@ -3025,11 +3042,12 @@ export default class Level extends Phaser.Scene {
 
 	private unlockEarlyCampaignMilestones() {
 		const levelNumber = this.getCurrentLevelNumber();
+		// holder3 (sándwich) ya no se regala: desde el día 5 la ventana de unlocks está
+		// habilitada, así que queda como una opción más para comprar ahí.
 		const autoUnlocksByLevel: Record<number, UnlockId[]> = {
 			2: ["holder2"],
 			3: ["holder2"],
 			4: ["fryer2", "workplace2"],
-			5: ["holder3"],
 		};
 
 		const unlocksToGrant = autoUnlocksByLevel[levelNumber] ?? [];
@@ -3098,24 +3116,17 @@ export default class Level extends Phaser.Scene {
 
 		this.cameras.main.fadeIn(350, 0, 0, 0);
 
-		const currentLevelNumber = this.getCurrentLevelNumber();
 		this.unlockEarlyCampaignMilestones();
 
 		const panelFinalY = this.panelRestY || this.panel.y;
 		const panelStartY = -this.panel.displayHeight - Level.INTRO_PANEL_START_OFFSET;
-		const availableUpgrades = this.getVisibleKitchenUpgradeChoices();
+		// La ventana de unlocks solo se habilita desde el día 5 en adelante; antes de eso
+		// los desbloqueos tempranos son automáticos (unlockEarlyCampaignMilestones).
+		const isUnlockWindowEnabled = this.getCurrentLevelNumber() >= 5;
+		const availableUpgrades = isUnlockWindowEnabled ? this.getVisibleKitchenUpgradeChoices() : [];
 		const affordableUpgrades = availableUpgrades.filter(
 			(unlockId) => this.coinCount >= getEffectiveUnlockCost(unlockId),
 		);
-
-		if (currentLevelNumber <= 5) {
-			this.panel.disableReadyButton();
-			this.panel.setVisible(false);
-			this.panel.setAlpha(0);
-			this.startBackgroundMusic();
-			this.finishIntroAndStartLevel();
-			return;
-		}
 
 		this.blurOverlay.setVisible(true);
 		this.blurOverlay.setAlpha(0);
@@ -3131,7 +3142,7 @@ export default class Level extends Phaser.Scene {
 			ease: "Quad.Out"
 		});
 
-		// Si hay upgrades comprables disponibles, mostramos el selector de upgrades.
+		// Si hay upgrades comprables disponibles, mostramos el selector de upgrades (el botón Ready no hace falta).
 		if (affordableUpgrades.length > 0) {
 			this.panel.setVisible(false);
 			this.panel.setAlpha(0);
@@ -3142,17 +3153,7 @@ export default class Level extends Phaser.Scene {
 			return;
 		}
 
-		const shouldShowReadyPanel = this.currentLevelPlan.isTutorial || this.getCurrentLevelNumber() === 1;
-		if (!shouldShowReadyPanel) {
-			this.panel.disableReadyButton();
-			this.panel.setVisible(false);
-			this.panel.setAlpha(0);
-			this.startBackgroundMusic();
-			this.finishIntroAndStartLevel();
-			return;
-		}
-
-		// Solo en el tutorial / primer nivel se muestra el panel de Ready.
+		// Panel del día + botón Ready antes de cada día.
 		this.panel.y = panelStartY;
 		this.panel.setAlpha(1);
 		this.panel.setVisible(true);
@@ -4506,6 +4507,34 @@ export default class Level extends Phaser.Scene {
 		return this.currentWaveIndex < this.currentLevelPlan.waveSizes.length - 1;
 	}
 
+	/**
+	 * Al terminar el día: todo lo que quedó a medio hacer en la cocina (donas, sándwiches,
+	 * vasos de leche, lo que hubiera en las charolas) desaparece con un pequeño burst de
+	 * partículas, y los relojes de freidoras/leche/tostadora se apagan, para que quede
+	 * claro que ya no hay nada más que hacer ese día.
+	 */
+	private clearRemainingKitchenProducts() {
+		const leftoverItems: Array<AProduct | sandwichPrefab | milkglass> = [
+			...this.getSceneProducts(),
+			...this.getSceneSandwiches(),
+			...this.getSceneMilkGlasses(),
+		];
+
+		for (const item of leftoverItems) {
+			if (!item.active) {
+				continue;
+			}
+
+			this.tweens.killTweensOf(item);
+			ConfettiPrefab.launchSmallBurstAt(this, item.x, item.y, item.depth + 1);
+			item.destroy();
+		}
+
+		this.charola1Products = [];
+		this.charola2Products = [];
+		this.hideAllKitchenClocks();
+	}
+
 	private handleLevelCleared(finalYum?: YumPrefab) {
 		if (this.isInfiniteMode) {
 			// El modo infinito no termina por limpiar oleadas.
@@ -4518,6 +4547,7 @@ export default class Level extends Phaser.Scene {
 		}
 
 		this.hasCelebratedLevelCompletion = true;
+		this.clearRemainingKitchenProducts();
 		storeTotalCoins(this.coinCount);
 		storeCompletedLevel(this.currentLevelPlan.levelNumber);
 		storeLevelStars(
@@ -4556,7 +4586,11 @@ export default class Level extends Phaser.Scene {
 	private presentLevelCompleteCelebration() {
 		ConfettiPrefab.launch(this);
 		const earnedStars = PanelPrefab.calculateEarnedStars(this.getStarPerformance());
-		const resultKey = earnedStars >= 3 ? "perfect" : earnedStars === 2 ? "good" : "ok";
+		// Días 1-5: el mensaje siempre es "Perfect" para no frustrar a un jugador nuevo,
+		// aunque el panel siga mostrando las estrellas reales.
+		const resultKey = this.getCurrentLevelNumber() <= 5
+			? "perfect"
+			: earnedStars >= 3 ? "perfect" : earnedStars === 2 ? "good" : "ok";
 
 		this.showLevelResultMessage(resultKey, () => {
 			if (!this.sys.isActive()) {
@@ -4950,8 +4984,34 @@ export default class Level extends Phaser.Scene {
 		}
 
 		const isTutorialFirstWave = this.currentLevelPlan.levelNumber === 1 && this.currentWaveIndex === 0;
+		const isGradualSpawnLevel = this.getCurrentLevelNumber() <= Level.GRADUAL_CLIENT_SPAWN_MAX_LEVEL;
+
+		this.scheduledWaveClients = clientCount;
+		this.queuedClientEntries = 0;
+
+		if (isTutorialFirstWave || isGradualSpawnLevel) {
+			// Una sola oleada, entrada puramente secuencial: cada cliente sale con su
+			// propio delay respecto al anterior (nunca aparecen varios juntos).
+			let cumulativeDelay = 0;
+
+			for (let index = 0; index < clientCount; index++) {
+				if (index > 0) {
+					cumulativeDelay += isTutorialFirstWave
+						? Level.TUTORIAL_CLIENT_SPAWN_INTERVAL_MS
+						: Phaser.Math.Between(Level.GRADUAL_CLIENT_MIN_GAP, Level.GRADUAL_CLIENT_MAX_GAP);
+				}
+
+				const timer = this.time.delayedCall(cumulativeDelay, () => {
+					this.onWaveClientScheduled();
+				});
+				this.waveSpawnTimers.push(timer);
+			}
+
+			return;
+		}
+
 		const shuffledIndices = Phaser.Utils.Array.Shuffle(Array.from({ length: clientCount }, (_, index) => index));
-		const delayedCount = isTutorialFirstWave ? 0 : this.getDelayedClientCount(clientCount);
+		const delayedCount = this.getDelayedClientCount(clientCount);
 		const delayedIndices = new Set(shuffledIndices.slice(0, delayedCount));
 		const immediateOrder = new Map(
 			shuffledIndices
@@ -4959,15 +5019,10 @@ export default class Level extends Phaser.Scene {
 				.map((index, order) => [index, order] as const)
 		);
 
-		this.scheduledWaveClients = clientCount;
-		this.queuedClientEntries = 0;
-
 		for (let index = 0; index < clientCount; index++) {
-			const delay = isTutorialFirstWave
-				? index * Level.TUTORIAL_CLIENT_SPAWN_INTERVAL_MS
-				: delayedIndices.has(index)
-					? this.getDelayedClientSpawnDelay(index)
-					: this.getImmediateClientSpawnDelay(immediateOrder.get(index) ?? 0);
+			const delay = delayedIndices.has(index)
+				? this.getDelayedClientSpawnDelay(index)
+				: this.getImmediateClientSpawnDelay(immediateOrder.get(index) ?? 0);
 
 			const timer = this.time.delayedCall(delay, () => {
 				this.onWaveClientScheduled();
@@ -5383,18 +5438,25 @@ export default class Level extends Phaser.Scene {
 
 	private shouldShowHelpHandForIdle() {
 
+		// Se calcula siempre (y no solo en el branch final) para que un tap que no
+		// cambió el estado del juego no deje una fase suprimida de forma permanente
+		// durante el tutorial, donde no hay otro camino para limpiar la supresión.
+		const isIdle = (this.time.now - this.lastHelpHandActionAt) >= Level.HELP_HAND_IDLE_MS;
+		// Un cliente impaciente es más urgente que cualquier tap perdido: la mano debe
+		// retomar de inmediato (sin esperar los 10s de inactividad) y volver a señalar
+		// lo que más urge atender, en vez de quedarse callada por la fase suprimida.
+		const isUrgent = this.hasImpatientClient();
+
+		if (isIdle || isUrgent) {
+			this.helpHandSuppressedPhase = undefined;
+		}
+
 		if (this.getCurrentLevelNumber() <= Level.HELP_HAND_TUTORIAL_MAX_LEVEL) {
 			return true;
 		}
 
-		if (this.hasImpatientClient() && this.canUseCookieJar()) {
+		if (isUrgent && this.canUseCookieJar()) {
 			return true;
-		}
-
-		const isIdle = (this.time.now - this.lastHelpHandActionAt) >= Level.HELP_HAND_IDLE_MS;
-
-		if (isIdle) {
-			this.helpHandSuppressedPhase = undefined;
 		}
 
 		return isIdle;
@@ -5451,21 +5513,35 @@ export default class Level extends Phaser.Scene {
 
 		if (hint.phase !== this.lastHelpHandPhase) {
 			this.lastHelpHandPhase = hint.phase;
-			this.tutiorialHand.showAt(hint.x, hint.y);
+			this.tutiorialHand.showAt(hint.x, hint.y, hint.urgent ?? false);
 			return;
 		}
 
 		if (!this.tutiorialHand.isPointing()) {
-			this.tutiorialHand.showAt(hint.x, hint.y);
+			this.tutiorialHand.showAt(hint.x, hint.y, hint.urgent ?? false);
 		}
 	}
 
-	private makeHelpHandHint(x: number, y: number, phase: string): HelpHandHint {
+	private makeHelpHandHint(x: number, y: number, phase: string, urgent = false): HelpHandHint {
 
-		return { x, y, phase };
+		return { x, y, phase, urgent };
 	}
 
 	private resolveHelpHandHint(): HelpHandHint | undefined {
+
+		// Con un cliente impaciente, la mano no debe quedarse callada: sigue señalando
+		// el próximo lugar al que debe ir el producto (como siempre), solo que titilando.
+		const isUrgent = this.hasImpatientClient();
+		const hint = this.resolveHelpHandHintTarget();
+
+		if (!hint || !isUrgent) {
+			return hint;
+		}
+
+		return { ...hint, urgent: true };
+	}
+
+	private resolveHelpHandHintTarget(): HelpHandHint | undefined {
 
 		if (this.selectedFlavorBottle?.active) {
 			const glass = this.getDirectFlavorGlass(this.selectedFlavorBottle);
@@ -5529,18 +5605,6 @@ export default class Level extends Phaser.Scene {
 			return this.makeHelpHandHint(choosingDipProduct.x, choosingDipProduct.y, "dip-choose-product");
 		}
 
-		if (this.hasProductCurrentlyFrying()) {
-			return undefined;
-		}
-
-		if (this.shouldHideHelpHandForWorkplaceWait()) {
-			return undefined;
-		}
-
-		if (this.shouldHideHelpHandForMilkFlavorWait()) {
-			return undefined;
-		}
-
 		return this.collectPossibleHelpHandMoves(
 			this.isHelpHandTutorialLevel()
 		)[0];
@@ -5578,17 +5642,6 @@ export default class Level extends Phaser.Scene {
 			moves.push(trayDeliveryHint);
 		}
 
-		if (tutorialFocus && hasPipeline && moves.length === 0) {
-			if (pipelineProducts.some((product) => (
-				product.isInMotion()
-				|| product.isRaisedOnHolder()
-				|| product.isTransferringToWorkplace()
-				|| product.isCurrentlyFrying()
-			))) {
-				return moves;
-			}
-		}
-
 		const cookieJarHint = this.getCookieJarHint(tutorialFocus);
 
 		if (cookieJarHint) {
@@ -5607,9 +5660,11 @@ export default class Level extends Phaser.Scene {
 			const client = this.getDirectDeliveryTarget(product);
 
 			if (client) {
+				// El producto ya se entrega solo con un tap (directDeliverToClient), así que
+				// señalamos el producto en vez del cliente: es un solo tap en lugar de dos.
 				moves.push(this.makeHelpHandHint(
-					client.x,
-					client.y - 80,
+					product.x,
+					product.y,
 					tutorialFocus ? "tutorial-deliver-client" : "deliver-client"
 				));
 			}
@@ -5670,46 +5725,69 @@ export default class Level extends Phaser.Scene {
 			));
 		}
 
-		if (!tutorialFocus || !hasPipeline) {
-			for (const sandwich of this.getSceneSandwiches()) {
-				if (!sandwich.isAwaitingToasterPickup()) {
-					continue;
-				}
-
-				moves.push(this.makeHelpHandHint(
-					sandwich.x,
-					sandwich.y,
-					sandwich.canReceiveDirectDelivery() ? "toaster-pickup" : "toaster-discard"
-				));
+		// Nota: estos dos bloques de "empezar algo nuevo desde el holder" ya no se
+		// restringen a "!hasPipeline" — si lo único en curso es un producto que no le
+		// sirve a nadie (sabor equivocado, sin cliente que lo pida), la mano debe poder
+		// seguir sugiriendo arrancar el producto correcto. isDeliverableWantedByAnyActiveClient
+		// ya se encarga de no sugerir sabores que nadie pidió.
+		for (const sandwich of this.getSceneSandwiches()) {
+			if (!sandwich.isAwaitingToasterPickup()) {
+				continue;
 			}
 
-			const idleSandwich = this.getSceneSandwiches().find((sandwich) => (
-				sandwich.isIdleOnHolder() && this.hasAvailableToasterSlot() && isProductAcquired("holder3")
+			moves.push(this.makeHelpHandHint(
+				sandwich.x,
+				sandwich.y,
+				sandwich.canReceiveDirectDelivery() ? "toaster-pickup" : "toaster-discard"
 			));
-
-			if (idleSandwich) {
-				moves.push(this.makeHelpHandHint(idleSandwich.x, idleSandwich.y, "holder-sandwich"));
-			}
 		}
 
-		if (!tutorialFocus || !hasPipeline) {
-			for (const product of this.getSceneProducts()) {
-				if (!product.isIdleOnHolder() || !this.hasAvailableFryer()) {
-					continue;
-				}
+		const idleSandwich = this.getSceneSandwiches().find((sandwich) => (
+			sandwich.isIdleOnHolder() && this.hasAvailableToasterSlot() && isProductAcquired("holder3")
+		));
 
-				const holderSlot = this.getBearProductHolderSlot(product);
+		if (
+			idleSandwich
+			&& (
+				!tutorialFocus
+				|| this.isDeliverableWantedByAnyActiveClient([
+					{ key: "sandWichAnim", frame: sandwichPrefab.FILLED_FRAME },
+				])
+			)
+		) {
+			moves.push(this.makeHelpHandHint(idleSandwich.x, idleSandwich.y, "holder-sandwich"));
+		}
 
-				if (!holderSlot || !isProductAcquired(holderSlot)) {
-					continue;
-				}
-
-				moves.push(this.makeHelpHandHint(
-					product.x,
-					product.y,
-					tutorialFocus ? `tutorial-holder-${product.texture.key}` : `holder-${product.texture.key}`
-				));
+		for (const product of this.getSceneProducts()) {
+			if (!product.isIdleOnHolder() || !this.hasAvailableFryer()) {
+				continue;
 			}
+
+			const holderSlot = this.getBearProductHolderSlot(product);
+
+			if (!holderSlot || !isProductAcquired(holderSlot)) {
+				continue;
+			}
+
+			// Durante el tutorial (días 1-5) solo señalamos un producto crudo si algún
+			// cliente activo realmente está esperando el resultado final (frito y/o bañado),
+			// para que la mano nunca sugiera preparar algo que nadie pidió.
+			if (
+				tutorialFocus
+				&& !this.isDeliverableWantedByAnyActiveClient([
+					product.Cooked,
+					product.ChocolateDip,
+					product.CandyDip,
+				])
+			) {
+				continue;
+			}
+
+			moves.push(this.makeHelpHandHint(
+				product.x,
+				product.y,
+				tutorialFocus ? `tutorial-holder-${product.texture.key}` : `holder-${product.texture.key}`
+			));
 		}
 
 		return moves;
@@ -5876,26 +5954,6 @@ export default class Level extends Phaser.Scene {
 		return undefined;
 	}
 
-	private hasProductCurrentlyFrying() {
-
-		return this.getSceneProducts().some((product) => product.isCurrentlyFrying());
-	}
-
-	private shouldHideHelpHandForWorkplaceWait() {
-
-		return this.getSceneProducts().some((product) => {
-			if (product.isTransferringToWorkplace()) {
-				return true;
-			}
-
-			if (product.canReceiveDirectDip()) {
-				return this.getRequiredDipType(product) === null;
-			}
-
-			return false;
-		});
-	}
-
 	private getSceneProducts() {
 
 		return this.children.list
@@ -5936,6 +5994,32 @@ export default class Level extends Phaser.Scene {
 
 		return this.activeClients.find((client) => (
 			client.active && client.canReceiveDelivery() && client.matchesProduct(product)
+		));
+	}
+
+	/**
+	 * True si algún cliente activo (ya spawneado, con pedido pendiente) tiene entre sus
+	 * pedidos alguna de las apariencias dadas. Se usa para que la mano del tutorial nunca
+	 * sugiera preparar/freír algo que ningún cliente en pantalla está pidiendo.
+	 */
+	private isDeliverableWantedByAnyActiveClient(
+		possibleAppearances: ReadonlyArray<{ key: string; frame?: string | number }>,
+	) {
+		const waitingClients = this.activeClients.filter((client) => (
+			client.active && client.canReceiveDelivery()
+		));
+
+		if (waitingClients.length === 0) {
+			return false;
+		}
+
+		return waitingClients.some((client) => (
+			client.getPendingRequestAppearances().some((requested) => (
+				possibleAppearances.some((appearance) => (
+					appearance.key === requested.key
+					&& (requested.frame === undefined || appearance.frame === requested.frame)
+				))
+			))
 		));
 	}
 
@@ -6144,21 +6228,6 @@ export default class Level extends Phaser.Scene {
 		}
 
 		return null;
-	}
-
-	private shouldHideHelpHandForMilkFlavorWait() {
-
-		const hasGlassAwaitingFlavorOrder = this.getSceneMilkGlasses().some((glass) => (
-			glass.canReceiveFlavor() && this.getRequiredFlavorTypeForGlass(glass) === null
-		));
-
-		if (!hasGlassAwaitingFlavorOrder) {
-			return false;
-		}
-
-		return !this.getSceneMilkGlasses().some((glass) => (
-			glass.canReceiveDirectDelivery() && !!this.getDirectDeliveryTarget(glass)
-		));
 	}
 
 	private getFlavorBottleForGlass(glass: milkglass) {

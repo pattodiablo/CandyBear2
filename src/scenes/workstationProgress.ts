@@ -116,7 +116,14 @@ export function getAcquiredWorkstations() {
 	return [...new Set(WORKSTATION_ORDER.filter((workstationId) => acquiredWorkstations.has(workstationId)))];
 }
 
+/** workplace2/toaster/milkmachine ya no son desbloqueos: siempre están activos. */
+const ALWAYS_ACTIVE_WORKSTATIONS = new Set<WorkstationId>(["milkmachine", "toaster", "workplace2"]);
+
 export function isWorkstationAcquired(workstationId: WorkstationId) {
+	if (ALWAYS_ACTIVE_WORKSTATIONS.has(workstationId)) {
+		return true;
+	}
+
 	return getAcquiredWorkstations().includes(workstationId);
 }
 
