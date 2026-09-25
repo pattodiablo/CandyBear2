@@ -112,3 +112,21 @@ export function notifyPokiGameplayStop(scene: Phaser.Scene): void {
 	pokiGameplayActive = false;
 	poki.gameplayStop();
 }
+
+/**
+ * Custom funnel event (PokiSDK.measure): siempre se loguea en consola para poder
+ * depurarlo localmente, y además se manda al SDK de Poki si está disponible
+ * (adblock / offline / aún cargando → no-op silencioso).
+ */
+export function trackPokiEvent(scene: Phaser.Scene, category: string, what: string, action: string): void {
+	// eslint-disable-next-line no-console
+	console.log(`[Poki event] ${category} / ${what} / ${action}`);
+
+	const poki = getPokiPlugin(scene);
+
+	try {
+		poki?.sdk?.measure(category, what, action);
+	} catch {
+		// El SDK puede no estar listo todavía; no debe romper el flujo del juego.
+	}
+}

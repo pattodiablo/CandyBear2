@@ -581,6 +581,8 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		replacementProduct.ChocolateDip = { ...this.ChocolateDip };
 		replacementProduct.CandyDip = { ...this.CandyDip };
 		replacementProduct.fryDuration = this.fryDuration;
+		// Hereda la profundidad del original (holder2/Bomboloni siempre por encima del 1).
+		replacementProduct.setDepth(this.depth);
 		scene.add.existing(replacementProduct);
 		levelScene.registerHolderProductReplacement(this, replacementProduct);
 		this.playSwooshSound();
@@ -770,6 +772,65 @@ export default class AProduct extends Phaser.GameObjects.Image {
 				});
 			}
 		});
+	}
+
+	/**
+	 * True si el producto está listo en la freidora (cocido, sin quemarse) y puede
+	 * bañarse directamente ahí, sin pasar antes por el mostrador.
+	 */
+	public canReceiveDirectDipFromFryer() {
+
+		return this.active
+			&& this.isCooked
+			&& !this.isBurned
+			&& !this.isLaunching
+			&& !this.isSelectingDip
+			&& !this.isSelectingDelivery;
+	}
+
+	/**
+	 * Atajo nuevo: banda el producto directo desde la freidora al bowl de sabor
+	 * (en vez de primero llevarlo al mostrador). El flujo original (recoger →
+	 * mostrador → bañar ahí) sigue funcionando igual que siempre; este es un
+	 * camino adicional, no un reemplazo.
+	 */
+	public directApplyDipFromFryer(dipType: "chocolate" | "candy") {
+
+		if (!this.canReceiveDirectDipFromFryer()) {
+			return;
+		}
+
+		const scene = this.getSafeScene();
+		if (!scene) {
+			return;
+		}
+
+		const levelScene = scene as Level;
+		const workplace = levelScene.claimAvailableWorkplace();
+
+		if (!workplace) {
+			if (!this.isWaitingForWorkplaceRetry) {
+				this.isWaitingForWorkplaceRetry = true;
+				this.playBlockedMoveFeedback();
+			}
+			this.queueWorkplaceTransferRetry(() => this.directApplyDipFromFryer(dipType));
+			return;
+		}
+
+		this.setPointerInteractionEnabled(false);
+		this.clearWorkplaceTransferRetry();
+		this.isWaitingForWorkplaceRetry = false;
+		this.clearBurnState();
+		levelScene.releaseFryer(this.currentFryerId);
+		this.currentFryerId = undefined;
+		// Se reserva el mostrador desde ya: applyDip() lo necesita para volver ahí
+		// después de bañarlo, aunque el producto nunca haya pasado por él todavía.
+		this.currentWorkplaceId = workplace.id;
+		this.isCooked = false;
+		this.isReadyForDelivery = false;
+		this.isSelectingDip = true;
+		levelScene.beginDipSelection(this);
+		this.applyDip(dipType);
 	}
 
 	private discardBurnedProduct() {
@@ -1249,7 +1310,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		}
 	}
 
-	private queueWorkplaceTransferRetry() {
+	private queueWorkplaceTransferRetry(retryAction: () => void = () => this.pickUpFromFryer()) {
 
 		if (!this.active || !this.isCooked || this.isBurned || this.isLaunching || this.currentWorkplaceId) {
 			this.isWaitingForWorkplaceRetry = false;
@@ -1267,7 +1328,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 					return;
 				}
 
-				this.pickUpFromFryer();
+				retryAction();
 			}
 		});
 	}

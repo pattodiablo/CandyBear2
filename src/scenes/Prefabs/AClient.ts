@@ -105,11 +105,13 @@ export default class AClient extends Phaser.GameObjects.Container {
 
 	private static readonly TARGET_Y = 330;
 	private static readonly EXIT_Y = 430;
-	private static readonly MOVE_SPEED = 120;
-	/** Días 3 a 5: paciencia extra que va bajando (día 3 más generoso, día 5 menos) hasta normalizarse en el día 6. */
-	private static readonly EARLY_DAYS_PATIENCE_START_LEVEL = 3;
+	/** Pacing general más relajado: caminata de entrada/salida un poco más lenta. */
+	private static readonly MOVE_SPEED = 95;
+	/** Días 1 a 5: paciencia extra elevada que va bajando (día 1 la más generosa, día 5 la
+	 * menos) hasta normalizarse en el día 6. Ya no es infinita: tiene límite, pero alto. */
+	private static readonly EARLY_DAYS_PATIENCE_START_LEVEL = 1;
 	private static readonly EARLY_DAYS_PATIENCE_END_LEVEL = 5;
-	private static readonly EARLY_DAYS_PATIENCE_BONUS_AT_START = 0.35;
+	private static readonly EARLY_DAYS_PATIENCE_BONUS_AT_START = 0.70;
 	private static readonly EARLY_DAYS_PATIENCE_BONUS_AT_END = 0.12;
 	private static readonly QUESTION_FLOAT_DISTANCE = 12;
 	private static readonly QUESTION_EARLY_MAX = 900;
@@ -538,20 +540,8 @@ export default class AClient extends Phaser.GameObjects.Container {
 		this.stopRequestWaitTimer();
 
 		const levelScene = this.scene as Level;
-		// Días 1-2: sin límite de paciencia, los clientes nunca se van. Desde el día 3
-		// empieza a correr el tiempo (con el bonus extra de EARLY_DAYS_PATIENCE hasta el 5).
-		if (levelScene.getCurrentLevelNumber() <= 2) {
-			this.requestExpiresAt = Number.POSITIVE_INFINITY;
-			this.stopRequestWaitTimersOnly();
-			this.requestUrgencyTimer = this.scene.time.addEvent({
-				delay: AClient.URGENCY_UPDATE_INTERVAL,
-				loop: true,
-				callback: this.updateQuestionUrgency,
-				callbackScope: this,
-			});
-			this.updateQuestionUrgency();
-			return;
-		}
+		// Días 1-5: paciencia real (con límite), pero elevada por el bonus de
+		// EARLY_DAYS_PATIENCE — más generosa cuanto más temprano sea el día.
 
 		const baseWaitMs = getClientRequestWaitDurationMs();
 		const earlyDaysMultiplier = AClient.getEarlyDaysPatienceMultiplier(levelScene.getCurrentLevelNumber());
@@ -561,7 +551,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 	}
 
 	/**
-	 * Multiplicador de paciencia extra para los días 2-5: día 2 es el más generoso,
+	 * Multiplicador de paciencia extra para los días 1-5: día 1 es el más generoso,
 	 * baja gradualmente hasta el día 5 (todavía por encima de lo normal), y a partir
 	 * del día 6 vuelve a 1 (paciencia estándar, sin bonus).
 	 */

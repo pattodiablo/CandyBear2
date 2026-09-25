@@ -81,7 +81,7 @@ import {
 import { getExtraCookiesBonus } from "./momentUpgradeBonuses";
 import { canAffordAnyMomentCard } from "./momentCardCatalog";
 import type { ClientRequestAppearance } from "./clientOrderPool";
-import { notifyPokiGameplayStop, runPokiCommercialBreak } from "../pokiHelpers";
+import { notifyPokiGameplayStop, runPokiCommercialBreak, trackPokiEvent } from "../pokiHelpers";
 import {
 	recordLevelClearedWithoutUpgradePurchase,
 	shouldPromptBuyUpgrades,
@@ -203,6 +203,8 @@ export default class Level extends Phaser.Scene {
 		// rawProduct2
 		const rawProduct2 = new AProduct(this, 81, 670, "Product2Raw");
 		this.add.existing(rawProduct2);
+		// El Bomboloni crudo (producto 2) debe verse por encima del producto 1.
+		rawProduct2.setDepth(Level.HOLDER2_PRODUCT_DEPTH);
 
 		// milkGlass
 		const milkGlass = new milkglass(this, 210, 553);
@@ -372,8 +374,8 @@ export default class Level extends Phaser.Scene {
 
 	/* START-USER-CODE */
 	public static readonly CAMPAIGN_LEVEL_COUNT = 40;
-	/** A partir de qué día completado se ofrecen commercial breaks de Poki entre días. */
-	private static readonly COMMERCIAL_BREAK_START_DAY = 5;
+	/** Primer día impar en el que se ofrece un commercial break de Poki al entrar a él. */
+	private static readonly COMMERCIAL_BREAK_START_DAY = 7;
 	private static readonly DIFFICULTY_GROWTH = 0.18;
 	private static readonly DIFFICULTY_BASE = 0.9;
 	private static readonly DIFFICULTY_OSCILLATION_AMPLITUDE = 0.95;
@@ -409,23 +411,29 @@ export default class Level extends Phaser.Scene {
 	private static readonly MAX_ACTIVE_CLIENTS = 5;
 	private static readonly CLIENT_SPAWN_SLOT_COUNT = 5;
 	private static readonly CLIENT_SPAWN_RETRY_DELAY = 350;
-	private static readonly IMMEDIATE_CLIENT_STAGGER = 300;
-	private static readonly IMMEDIATE_CLIENT_JITTER_MAX = 2000;
-	private static readonly DELAYED_CLIENT_MIN_DELAY = 4000;
-	private static readonly DELAYED_CLIENT_MAX_DELAY = 5000;
-	private static readonly DELAYED_CLIENT_STAGGER = 350;
+	// Pacing general más relajado: más espacio entre clientes y más prep en todos los días.
+	private static readonly IMMEDIATE_CLIENT_STAGGER = 420;
+	private static readonly IMMEDIATE_CLIENT_JITTER_MAX = 2500;
+	private static readonly DELAYED_CLIENT_MIN_DELAY = 5200;
+	private static readonly DELAYED_CLIENT_MAX_DELAY = 6500;
+	private static readonly DELAYED_CLIENT_STAGGER = 480;
 	/** Días 1-5: entrada más paulatina, sin agrupar varios clientes casi al mismo tiempo. */
 	private static readonly GRADUAL_CLIENT_SPAWN_MAX_LEVEL = 5;
-	private static readonly GRADUAL_CLIENT_MIN_GAP = 9000;
-	private static readonly GRADUAL_CLIENT_MAX_GAP = 12000;
+	private static readonly GRADUAL_CLIENT_MIN_GAP = 10500;
+	private static readonly GRADUAL_CLIENT_MAX_GAP = 14000;
 	/** Días 1-5: más respiro entre oleadas (antes eran los que menos prep tenían). */
-	private static readonly GRADUAL_WAVE_PREP_DURATION_MS = 6000;
+	private static readonly GRADUAL_WAVE_PREP_DURATION_MS = 7000;
+	/**
+	 * Días 1-5: el cartel "clientes en camino" dura un poco más, y una vez que
+	 * desaparece se espera unos segundos más de silencio antes de que lleguen.
+	 */
+	private static readonly GRADUAL_PREP_MESSAGE_DURATION_MS = 4500;
+	private static readonly GRADUAL_PREP_POST_MESSAGE_GAP_MS = 3000;
 	/** Prep inicial al empezar el nivel (setear bandejas). */
 	private static readonly LEVEL_PREP_DURATION_MS = 14000;
-	private static readonly TUTORIAL_LEVEL_PREP_DURATION_MS = 1500;
 	private static readonly TUTORIAL_CLIENT_SPAWN_INTERVAL_MS = 10000;
-	/** Prep entre oleadas. */
-	private static readonly WAVE_PREP_DURATION_MS = 7000;
+	/** Prep entre oleadas (día 6+). */
+	private static readonly WAVE_PREP_DURATION_MS = 9000;
 	private static readonly PREP_MESSAGE_DEPTH = 1005;
 	private static getWavePrepDurationMs(levelNumber: number) {
 		const normalizedLevel = Math.max(1, Math.floor(levelNumber));
@@ -436,11 +444,13 @@ export default class Level extends Phaser.Scene {
 
 		const gradualLevel = normalizedLevel - 5;
 		const gradualStep = gradualLevel * 500;
-		return Phaser.Math.Clamp(3000 + gradualStep, 3000, Level.WAVE_PREP_DURATION_MS);
+		return Phaser.Math.Clamp(4200 + gradualStep, 4200, Level.WAVE_PREP_DURATION_MS);
 	}
 	private static readonly PREP_MESSAGE_Y = 120;
 	private static readonly PREP_MESSAGE_FONT_SIZE = "42px";
 	private static readonly HOLDER_PRODUCT_SPAWN_TOLERANCE = 48;
+	/** El Bomboloni crudo (holder2/producto 2) siempre se dibuja por encima del producto 1. */
+	private static readonly HOLDER2_PRODUCT_DEPTH = 1;
 	private static readonly HOLDER_PRODUCT_SPAWNS: Record<ProductSlotId, { x: number; y: number; textureKey?: string }> = {
 		holder1: { x: 78, y: 547 },
 		holder2: { x: 81, y: 653, textureKey: "Product2Raw" },
@@ -1568,6 +1578,11 @@ export default class Level extends Phaser.Scene {
 
 		const replacementProduct = this.createHolderSlotProduct(slotId);
 		this.add.existing(replacementProduct);
+
+		if (slotId === "holder2") {
+			replacementProduct.setDepth(Level.HOLDER2_PRODUCT_DEPTH);
+		}
+
 		this.setHolderSlotProduct(slotId, replacementProduct);
 		return replacementProduct;
 	}
@@ -3718,13 +3733,23 @@ export default class Level extends Phaser.Scene {
 
 	public resolveDipSelection(dipType: "chocolate" | "candy") {
 
-		if (!this.selectedDipProduct) {
-			const directDipProduct = this.getDirectDipProduct(dipType);
-			directDipProduct?.directApplyDip(dipType);
+		if (this.selectedDipProduct) {
+			this.selectedDipProduct.applyDip(dipType);
 			return;
 		}
 
-		this.selectedDipProduct?.applyDip(dipType);
+		const directDipProduct = this.getDirectDipProduct(dipType);
+
+		if (directDipProduct) {
+			directDipProduct.directApplyDip(dipType);
+			return;
+		}
+
+		// Atajo nuevo: si no hay nada listo en el mostrador para bañar, pero sí hay algo
+		// recién cocido en la freidora, lo manda directo al bowl de sabor sin pasar
+		// primero por el mostrador. El flujo de siempre (mostrador → bañar) no cambia.
+		const directDipProductFromFryer = this.getDirectDipProductFromFryer(dipType);
+		directDipProductFromFryer?.directApplyDipFromFryer(dipType);
 	}
 
 	private getDirectDipProduct(dipType: "chocolate" | "candy") {
@@ -3733,6 +3758,21 @@ export default class Level extends Phaser.Scene {
 		const dipCandidates = this.children.list
 			.filter((child): child is AProduct => child instanceof AProduct)
 			.filter((product) => product.canReceiveDirectDip());
+
+		if (dipCandidates.length === 0) {
+			return undefined;
+		}
+
+		dipCandidates.sort((left, right) => Math.abs(left.x - targetX) - Math.abs(right.x - targetX));
+		return dipCandidates[0];
+	}
+
+	private getDirectDipProductFromFryer(dipType: "chocolate" | "candy") {
+
+		const targetX = dipType === "chocolate" ? this.chocolateDip.x : this.candyDip.x;
+		const dipCandidates = this.children.list
+			.filter((child): child is AProduct => child instanceof AProduct)
+			.filter((product) => product.canReceiveDirectDipFromFryer());
 
 		if (dipCandidates.length === 0) {
 			return undefined;
@@ -4402,6 +4442,12 @@ export default class Level extends Phaser.Scene {
 		this.showPreparationMessage(t("lastCall"));
 		this.destroyLastCallProductionProducts();
 		this.time.delayedCall(2500, () => {
+			// Red de seguridad: los clientes de Last Call deben pedir únicamente lo que
+			// hay en las bandejas en este momento. Cualquier entrada previa que haya
+			// quedado sin consumir en la cola (por ejemplo, un bug en otro lado) nunca
+			// debe colársele a un cliente de Last Call.
+			this.forcedClientOrderQueue = [];
+
 			for (const product of readyTrayProducts) {
 				const appearance = this.getRequestAppearanceFromTrayProduct(product);
 				this.forcedClientOrderQueue.push({
@@ -4535,6 +4581,25 @@ export default class Level extends Phaser.Scene {
 		this.hideAllKitchenClocks();
 	}
 
+	/**
+	 * Funnel de onboarding (días 1-5): manda measure('level', 'dayN', 'start'|'complete')
+	 * a Poki (y lo loguea en consola) para poder ver en su dashboard dónde se caen los
+	 * jugadores nuevos. No aplica a modo infinito ni a partir del día 6.
+	 */
+	private trackDayFunnelEvent(action: "start" | "complete") {
+		if (this.isInfiniteMode) {
+			return;
+		}
+
+		const levelNumber = this.currentLevelPlan.levelNumber;
+
+		if (levelNumber < 1 || levelNumber > 5) {
+			return;
+		}
+
+		trackPokiEvent(this, "level", `day${levelNumber}`, action);
+	}
+
 	private handleLevelCleared(finalYum?: YumPrefab) {
 		if (this.isInfiniteMode) {
 			// El modo infinito no termina por limpiar oleadas.
@@ -4547,6 +4612,7 @@ export default class Level extends Phaser.Scene {
 		}
 
 		this.hasCelebratedLevelCompletion = true;
+		this.trackDayFunnelEvent("complete");
 		this.clearRemainingKitchenProducts();
 		storeTotalCoins(this.coinCount);
 		storeCompletedLevel(this.currentLevelPlan.levelNumber);
@@ -4704,9 +4770,14 @@ export default class Level extends Phaser.Scene {
 		this.cameras.main.fadeOut(420, 0, 0, 0);
 	}
 
-	/** Muestra un commercial break de Poki (solo a partir del día COMMERCIAL_BREAK_START_DAY) antes de cargar el siguiente día. */
+	/**
+	 * Muestra un commercial break de Poki antes de cargar el siguiente día, pero solo
+	 * al entrar a un día impar a partir del COMMERCIAL_BREAK_START_DAY (7, 9, 11, ...):
+	 * no uno sí y otro no desde el día 5, sino cada dos días desde el 7.
+	 */
 	private async startNextLevelAfterOptionalBreak(nextLevelNumber: number) {
-		const shouldShowCommercialBreak = this.currentLevelPlan.levelNumber >= Level.COMMERCIAL_BREAK_START_DAY;
+		const shouldShowCommercialBreak = nextLevelNumber >= Level.COMMERCIAL_BREAK_START_DAY
+			&& nextLevelNumber % 2 === 1;
 
 		if (shouldShowCommercialBreak) {
 			notifyPokiGameplayStop(this);
@@ -4816,9 +4887,24 @@ export default class Level extends Phaser.Scene {
 	}
 
 	private startLevelPreparation() {
-		const prepDuration = this.currentLevelPlan.levelNumber === 1
-			? Level.TUTORIAL_LEVEL_PREP_DURATION_MS
-			: Level.getWavePrepDurationMs(this.currentLevelPlan.levelNumber);
+		this.trackDayFunnelEvent("start");
+		// Se llena la cola de pedidos forzados del día 1 desde ya (no cuando termina la
+		// preparación), para que la mano del tutorial pueda señalar qué hacer desde el
+		// primer instante, sin esperar a que aparezca el primer cliente.
+		this.queueTutorialInitialClientOrders();
+
+		if (this.currentLevelPlan.levelNumber <= 5) {
+			this.beginPreparationPhase(
+				Level.GRADUAL_PREP_MESSAGE_DURATION_MS,
+				() => {
+					this.spawnInitialClients();
+				},
+				Level.GRADUAL_PREP_POST_MESSAGE_GAP_MS,
+			);
+			return;
+		}
+
+		const prepDuration = Level.getWavePrepDurationMs(this.currentLevelPlan.levelNumber);
 
 		this.beginPreparationPhase(prepDuration, () => {
 			this.spawnInitialClients();
@@ -4833,14 +4919,29 @@ export default class Level extends Phaser.Scene {
 		});
 	}
 
-	private beginPreparationPhase(durationMs: number, onComplete: () => void) {
+	/**
+	 * Muestra el cartel de preparación durante `durationMs`. Si se pasa
+	 * `postMessageDelayMs`, al desaparecer el cartel se espera ese tiempo extra en
+	 * silencio antes de llamar a `onComplete` (días 1-5: primero el mensaje, después
+	 * una pausa aparte antes de que lleguen los clientes).
+	 */
+	private beginPreparationPhase(durationMs: number, onComplete: () => void, postMessageDelayMs = 0) {
 		this.clearLevelPrepTimer();
 		this.showPreparationMessage();
 
 		this.levelPrepTimer = this.time.delayedCall(durationMs, () => {
 			this.levelPrepTimer = undefined;
 			this.hidePreparationMessage();
-			onComplete();
+
+			if (postMessageDelayMs <= 0) {
+				onComplete();
+				return;
+			}
+
+			this.levelPrepTimer = this.time.delayedCall(postMessageDelayMs, () => {
+				this.levelPrepTimer = undefined;
+				onComplete();
+			});
 		});
 	}
 
@@ -4924,18 +5025,24 @@ export default class Level extends Phaser.Scene {
 			return;
 		}
 
-		this.forcedClientOrderQueue = [
-			{ orders: [{ key: "Product1Chocolate" }], isFinalWavePickup: false },
-			{ orders: [{ key: "Product1Candy" }], isFinalWavePickup: false },
-			{ orders: [{ key: "Product1Chocolate" }], isFinalWavePickup: false },
-			{ orders: [{ key: "Product1Candy" }], isFinalWavePickup: false },
-			{ orders: [{ key: "Product1Chocolate" }], isFinalWavePickup: false },
+		// Debe generar EXACTAMENTE tantas órdenes como clientes va a spawnear el día 1
+		// (waveSizes[0]). Si sobran entradas sin consumir en forcedClientOrderQueue,
+		// quedan ahí y se las "roba" el siguiente que haga .shift() — incluido un
+		// cliente de Last Call más adelante, pidiendo algo que no está en las bandejas.
+		const clientCount = this.currentLevelPlan.waveSizes[0] ?? 0;
+		const flavorCycle: ClientRequestAppearance[] = [
+			{ key: "Product1Chocolate" },
+			{ key: "Product1Candy" },
 		];
+
+		this.forcedClientOrderQueue = Array.from({ length: clientCount }, (_, index) => ({
+			orders: [flavorCycle[index % flavorCycle.length]],
+			isFinalWavePickup: false,
+		}));
 	}
 
 	private spawnInitialClients() {
 		this.currentWaveIndex = 0;
-		this.queueTutorialInitialClientOrders();
 		this.spawnCurrentWave();
 	}
 
@@ -5489,8 +5596,17 @@ export default class Level extends Phaser.Scene {
 
 	private updateHelpHand() {
 
-		this.updateCookieJarAttention();
-		this.updateTrayInviteAttention();
+		// Días 1-5: la mano ya cubre la galleta/charola cuando corresponde (con prioridad
+		// correcta), así que no dejamos que estas animaciones "latan" en paralelo por su
+		// cuenta — sería una segunda señal compitiendo por la atención del jugador nuevo.
+		if (this.isHelpHandTutorialLevel()) {
+			this.cookieJar?.setAttentionPulse(false);
+			this.cookieJar?.setSandClockUrgent(false);
+			this.stopAllTrayInvitePulses();
+		} else {
+			this.updateCookieJarAttention();
+			this.updateTrayInviteAttention();
+		}
 
 		if (!this.canShowHelpHand() || !this.shouldShowHelpHandForIdle()) {
 			this.lastHelpHandPhase = undefined;
@@ -5511,15 +5627,12 @@ export default class Level extends Phaser.Scene {
 			return;
 		}
 
-		if (hint.phase !== this.lastHelpHandPhase) {
-			this.lastHelpHandPhase = hint.phase;
-			this.tutiorialHand.showAt(hint.x, hint.y, hint.urgent ?? false);
-			return;
-		}
-
-		if (!this.tutiorialHand.isPointing()) {
-			this.tutiorialHand.showAt(hint.x, hint.y, hint.urgent ?? false);
-		}
+		this.lastHelpHandPhase = hint.phase;
+		// Siempre se llama a showAt: HelpHand ya evita repetir la animación de aparición
+		// si la posición no cambió lo suficiente, pero si el objetivo se movió (p. ej. una
+		// fase "fija" que ahora apunta a otro producto de la misma categoría), esto la
+		// mantiene siguiéndolo en vez de quedarse congelada en la posición vieja.
+		this.tutiorialHand.showAt(hint.x, hint.y, hint.urgent ?? false);
 	}
 
 	private makeHelpHandHint(x: number, y: number, phase: string, urgent = false): HelpHandHint {
@@ -5605,9 +5718,15 @@ export default class Level extends Phaser.Scene {
 			return this.makeHelpHandHint(choosingDipProduct.x, choosingDipProduct.y, "dip-choose-product");
 		}
 
-		return this.collectPossibleHelpHandMoves(
-			this.isHelpHandTutorialLevel()
-		)[0];
+		const moves = this.collectPossibleHelpHandMoves(this.isHelpHandTutorialLevel());
+
+		// Fija: si lo que ya se estaba señalando sigue siendo una acción válida, nos
+		// quedamos ahí (con su posición actualizada) en vez de saltar a otra sugerencia
+		// solo porque el orden de prioridad cambió este tick — así nunca parece que
+		// señala "dos cosas a la vez" alternando entre sugerencias.
+		const stickyMove = moves.find((move) => move.phase === this.lastHelpHandPhase);
+
+		return stickyMove ?? moves[0];
 	}
 
 	private isHelpHandTutorialLevel() {
@@ -5999,28 +6118,31 @@ export default class Level extends Phaser.Scene {
 
 	/**
 	 * True si algún cliente activo (ya spawneado, con pedido pendiente) tiene entre sus
-	 * pedidos alguna de las apariencias dadas. Se usa para que la mano del tutorial nunca
-	 * sugiera preparar/freír algo que ningún cliente en pantalla está pidiendo.
+	 * pedidos alguna de las apariencias dadas, O si ya hay un pedido de esa apariencia
+	 * en la cola de forzados (p. ej. el día 1, antes de que aparezca el primer cliente).
+	 * Se usa para que la mano del tutorial nunca sugiera preparar/freír algo que nadie
+	 * pidió, pero también para que pueda señalar qué hacer desde el primer instante del
+	 * día, sin tener que esperar a que el cliente ya esté en pantalla.
 	 */
 	private isDeliverableWantedByAnyActiveClient(
 		possibleAppearances: ReadonlyArray<{ key: string; frame?: string | number }>,
 	) {
+		const matchesAny = (requested: { key: string; frame?: string | number }) => (
+			possibleAppearances.some((appearance) => (
+				appearance.key === requested.key
+				&& (requested.frame === undefined || appearance.frame === requested.frame)
+			))
+		);
+
 		const waitingClients = this.activeClients.filter((client) => (
 			client.active && client.canReceiveDelivery()
 		));
 
-		if (waitingClients.length === 0) {
-			return false;
+		if (waitingClients.some((client) => client.getPendingRequestAppearances().some(matchesAny))) {
+			return true;
 		}
 
-		return waitingClients.some((client) => (
-			client.getPendingRequestAppearances().some((requested) => (
-				possibleAppearances.some((appearance) => (
-					appearance.key === requested.key
-					&& (requested.frame === undefined || appearance.frame === requested.frame)
-				))
-			))
-		));
+		return this.forcedClientOrderQueue.some((entry) => entry.orders.some(matchesAny));
 	}
 
 	private getRequiredDipType(product: AProduct): "chocolate" | "candy" | null {

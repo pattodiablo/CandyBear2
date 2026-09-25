@@ -80,7 +80,12 @@ function createGame() {
 					data: {
 						loadingSceneKey: "Preload",
 						gameplaySceneKey: "Level",
-						autoCommercialBreak: true,
+						// El plugin dispara commercialBreak() solo con cada scene.start("Level"),
+						// sin saber nada de nuestra regla "solo desde el día 5" (Level.ts,
+						// startNextLevelAfterOptionalBreak). Con autoCommercialBreak activo salían
+						// anuncios en TODOS los cambios de día, y desde el día 5 salían dos seguidos
+						// (el automático + el nuestro). Lo apagamos y dejamos el control 100% manual.
+						autoCommercialBreak: false,
 					}
 				}
 			],
