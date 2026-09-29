@@ -10,6 +10,7 @@ import CredictsScene from "./scenes/CredictsScene";
 declare global {
 	interface Window {
 		bootCandyBearGame?: () => void;
+		refreshCandyBearGameScale?: () => void;
 	}
 }
 
@@ -32,13 +33,21 @@ class Boot extends Phaser.Scene {
 
 let game: Phaser.Game | undefined;
 
-/** true solo si la pestaña está visible y la ventana tiene foco. */
+/**
+ * true solo si la pestaña/documento está oculto. OJO: a propósito NO se usa
+ * document.hasFocus() acá. Embebidos en el iframe de Poki, el foco de window es poco
+ * confiable — puede dar false (o dispararse un blur real de window) mientras Poki
+ * todavía está revelando el iframe tras el click en "Play Now", sin que el jugador haya
+ * hecho nada raro. Eso pausaba el juego entero (loop, timers, tweens) antes de pintar el
+ * primer frame, y se quedaba así hasta que el jugador tocaba adentro del canvas.
+ * document.hidden (pestaña realmente en segundo plano) es la señal confiable acá.
+ */
 function isGameWindowActive() {
-	return !document.hidden && document.hasFocus();
+	return !document.hidden;
 }
 
 /**
- * Pausa el loop completo al perder foco / cambiar de pestaña.
+ * Pausa el loop completo al pasar la pestaña a segundo plano.
  * Phaser ya pausa audio con pauseOnBlur; esto congela timers, tweens y update.
  */
 function syncGamePauseToFocus(target: Phaser.Game) {
@@ -57,13 +66,11 @@ function syncGamePauseToFocus(target: Phaser.Game) {
 function setupFocusPause(target: Phaser.Game) {
 	const sync = () => syncGamePauseToFocus(target);
 
-	target.events.on(Phaser.Core.Events.BLUR, sync);
-	target.events.on(Phaser.Core.Events.FOCUS, sync);
+	// Deliberadamente NO se escuchan BLUR/FOCUS (foco de window): dentro de un iframe
+	// no son confiables para decidir si pausar. Solo HIDDEN/VISIBLE (pestaña oculta de
+	// verdad) son señal suficiente para pausar/reanudar el loop completo.
 	target.events.on(Phaser.Core.Events.HIDDEN, sync);
 	target.events.on(Phaser.Core.Events.VISIBLE, sync);
-
-	// Por si arranca en segundo plano (móvil / pestaña en background).
-	sync();
 }
 
 function createGame() {
@@ -134,12 +141,46 @@ function installAudioUnlockHandlers() {
 	}
 }
 
+/**
+ * Fuerza a Phaser a re-medir su contenedor y reescalar el canvas. Poki carga el juego
+ * dentro de un iframe detrás de su propio botón "Play Now"; si ese iframe todavía no
+ * tenía su tamaño final cuando Phaser hizo su primer cálculo (o quedó tapado por el
+ * overlay de Poki), el canvas puede quedar en negro hasta que algo dispare un resize.
+ * Por eso se llama tanto justo después de arrancar como ante cualquier señal de que el
+ * documento pasó a estar visible/con foco.
+ */
+function refreshGameScale() {
+	game?.scale.refresh();
+}
+
+window.refreshCandyBearGameScale = refreshGameScale;
+
+function scheduleScaleRefresh() {
+	refreshGameScale();
+	window.requestAnimationFrame(refreshGameScale);
+	window.setTimeout(refreshGameScale, 150);
+	window.setTimeout(refreshGameScale, 400);
+	window.setTimeout(refreshGameScale, 1000);
+}
+
+function installScaleRefreshHandlers() {
+	document.addEventListener("visibilitychange", () => {
+		if (!document.hidden) {
+			scheduleScaleRefresh();
+		}
+	});
+	window.addEventListener("focus", scheduleScaleRefresh);
+	window.addEventListener("pageshow", scheduleScaleRefresh);
+}
+
 function bootGame() {
 	if (!game) {
 		game = createGame();
 		setupFocusPause(game);
 		installAudioUnlockHandlers();
+		installScaleRefreshHandlers();
 		game.scene.start("Boot");
+		scheduleScaleRefresh();
 	}
 }
 

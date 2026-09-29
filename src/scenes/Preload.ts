@@ -6,7 +6,6 @@
 /* START-USER-IMPORTS */
 import Phaser from "phaser";
 import assetPackUrl from "../../static/assets/asset-pack.json";
-import { notifyPokiGameLoadingFinished } from "../pokiHelpers";
 import {
 	hasOpenedGameBefore,
 	markGameAsOpened,
@@ -119,9 +118,12 @@ export default class Preload extends Phaser.Scene {
 	}
 
 	create() {
-		// Safety: also fire manually in case constructor.name matching fails in some builds.
-		// The plugin may fire this automatically when Preload becomes inactive.
-		notifyPokiGameLoadingFinished(this);
+		// El plugin de Poki ya dispara gameLoadingFinished() automáticamente cuando la
+		// escena "Preload" se desactiva (matchea por constructor.name, preservado en
+		// prod vía keep_classnames en webpack.config.js). Llamarlo también acá, manual,
+		// duplicaba el evento (dos "Game loading finished" seguidos en la consola de
+		// Poki) y lo disparaba antes de tiempo — apenas terminan de cargar los assets,
+		// no cuando el juego realmente ya tiene algo que mostrar.
 
 		if (process.env.NODE_ENV === "development") {
 
