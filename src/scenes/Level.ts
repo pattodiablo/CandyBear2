@@ -102,6 +102,7 @@ interface LevelPlan {
 interface LevelSceneData {
 	levelNumber?: number;
 	infiniteMode?: boolean;
+	skipIntroPanel?: boolean;
 }
 
 interface HelpHandHint {
@@ -376,6 +377,8 @@ export default class Level extends Phaser.Scene {
 	public static readonly CAMPAIGN_LEVEL_COUNT = 40;
 	/** Primer día impar en el que se ofrece un commercial break de Poki al entrar a él. */
 	private static readonly COMMERCIAL_BREAK_START_DAY = 7;
+	/** Primer día en el que aparece el botón "Levels and upgrades" en el panel final. */
+	private static readonly LEVELS_BUTTON_UNLOCK_DAY = 5;
 	private static readonly DIFFICULTY_GROWTH = 0.18;
 	private static readonly DIFFICULTY_BASE = 0.9;
 	private static readonly DIFFICULTY_OSCILLATION_AMPLITUDE = 0.95;
@@ -429,6 +432,9 @@ export default class Level extends Phaser.Scene {
 	 */
 	private static readonly GRADUAL_PREP_MESSAGE_DURATION_MS = 4500;
 	private static readonly GRADUAL_PREP_POST_MESSAGE_GAP_MS = 3000;
+	/** Día 1: el primer cliente debe llegar más rápido que en los días 2-5. */
+	private static readonly DAY1_PREP_MESSAGE_DURATION_MS = 1800;
+	private static readonly DAY1_PREP_POST_MESSAGE_GAP_MS = 800;
 	/** Prep inicial al empezar el nivel (setear bandejas). */
 	private static readonly LEVEL_PREP_DURATION_MS = 14000;
 	private static readonly TUTORIAL_CLIENT_SPAWN_INTERVAL_MS = 10000;
@@ -531,6 +537,8 @@ export default class Level extends Phaser.Scene {
 	private isMusicMuted = false;
 	private selectedLevelNumber = 1;
 	private isInfiniteMode = false;
+	/** Si es true, el día 1 arranca directo en gameplay sin mostrar el PanelPrefab de intro. */
+	private skipIntroPanel = false;
 	private infiniteBaseLevel = 1;
 	private currentLevelPlan: LevelPlan = Level.getLevelPlan(1);
 	private currentWaveIndex = 0;
@@ -539,6 +547,10 @@ export default class Level extends Phaser.Scene {
 	private successfulClientsServed = 0;
 	private quickServiceLikesThisLevel = 0;
 	private discardedProductLosses = 0;
+	/** Checkpoints intermedios del funnel de onboarding (días 1-5): evitan mandar el mismo evento más de una vez por día. */
+	private hasTrackedFirstInteraction = false;
+	private hasTrackedFirstDelivery = false;
+	private hasTrackedFirstDiscard = false;
 	private scheduledWaveClients = 0;
 	private queuedClientEntries = 0;
 	/** Clientes extra por productos listos en bandeja al final de las oleadas. */
@@ -672,6 +684,9 @@ export default class Level extends Phaser.Scene {
 		this.currentLevelPlan = this.isInfiniteMode
 			? Level.createInfiniteLevelPlan(this.infiniteBaseLevel)
 			: Level.getLevelPlan(this.selectedLevelNumber);
+		this.skipIntroPanel = !this.isInfiniteMode
+			&& this.currentLevelPlan.levelNumber === 1
+			&& data.skipIntroPanel === true;
 		this.currentWaveIndex = 0;
 		this.hasCelebratedLevelCompletion = false;
 		this.isGameplayPaused = false;
@@ -709,6 +724,9 @@ export default class Level extends Phaser.Scene {
 		this.quickServiceLikesThisLevel = 0;
 		this.updateLikesCounter();
 		this.discardedProductLosses = 0;
+		this.hasTrackedFirstInteraction = false;
+		this.hasTrackedFirstDelivery = false;
+		this.hasTrackedFirstDiscard = false;
 		this.scheduledWaveClients = 0;
 		this.queuedClientEntries = 0;
 		this.extraClientsSpawned = 0;
@@ -807,6 +825,11 @@ export default class Level extends Phaser.Scene {
 
 	public recordSuccessfulDelivery() {
 		this.successfulClientsServed++;
+
+		if (!this.hasTrackedFirstDelivery) {
+			this.hasTrackedFirstDelivery = true;
+			this.trackDayFunnelEvent("first_delivery");
+		}
 	}
 
 	public getCurrentLevelNumber() {
@@ -834,6 +857,11 @@ export default class Level extends Phaser.Scene {
 
 	public recordProductDiscardLoss() {
 		this.discardedProductLosses++;
+
+		if (!this.hasTrackedFirstDiscard) {
+			this.hasTrackedFirstDiscard = true;
+			this.trackDayFunnelEvent("first_discard");
+		}
 	}
 
 	/**
@@ -3133,6 +3161,17 @@ export default class Level extends Phaser.Scene {
 
 		this.unlockEarlyCampaignMilestones();
 
+		// Primera vez que se abre el juego: día 1 arranca directo en gameplay, sin el panel "Ready".
+		if (this.skipIntroPanel) {
+			this.skipIntroPanel = false;
+			this.panel.setVisible(false);
+			this.panel.setAlpha(0);
+			this.startBackgroundMusic();
+			this.setupHelpHand();
+			this.startLevelPreparation();
+			return;
+		}
+
 		const panelFinalY = this.panelRestY || this.panel.y;
 		const panelStartY = -this.panel.displayHeight - Level.INTRO_PANEL_START_OFFSET;
 		// La ventana de unlocks solo se habilita desde el día 5 en adelante; antes de eso
@@ -3184,9 +3223,11 @@ export default class Level extends Phaser.Scene {
 						this.startBackgroundMusic();
 						this.dismissSceneIntro(panelStartY);
 					},
-					() => {
-						this.confirmExitToSceneSelector();
-					}
+					this.currentLevelPlan.levelNumber >= Level.LEVELS_BUTTON_UNLOCK_DAY
+						? () => {
+							this.confirmExitToSceneSelector();
+						}
+						: undefined
 				);
 			}
 		});
@@ -4582,11 +4623,16 @@ export default class Level extends Phaser.Scene {
 	}
 
 	/**
-	 * Funnel de onboarding (días 1-5): manda measure('level', 'dayN', 'start'|'complete')
-	 * a Poki (y lo loguea en consola) para poder ver en su dashboard dónde se caen los
-	 * jugadores nuevos. No aplica a modo infinito ni a partir del día 6.
+	 * Funnel de onboarding (días 1-5): manda measure('level', 'dayN', action) a Poki
+	 * (y lo loguea en consola) para poder ver en su dashboard dónde se caen los
+	 * jugadores nuevos. Además de "start"/"complete", incluye checkpoints intermedios
+	 * (primer tap, primera entrega, primer descarte) para acotar en qué punto exacto
+	 * entre el inicio y el final del día se traban los jugadores nuevos.
+	 * No aplica a modo infinito ni a partir del día 6.
 	 */
-	private trackDayFunnelEvent(action: "start" | "complete") {
+	private trackDayFunnelEvent(
+		action: "start" | "first_interaction" | "first_delivery" | "first_discard" | "complete"
+	) {
 		if (this.isInfiniteMode) {
 			return;
 		}
@@ -4598,6 +4644,16 @@ export default class Level extends Phaser.Scene {
 		}
 
 		trackPokiEvent(this, "level", `day${levelNumber}`, action);
+	}
+
+	/** Primer tap del jugador tras arrancar la prep del día (cualquier toque en pantalla). */
+	private trackFirstInteraction() {
+		if (this.hasTrackedFirstInteraction) {
+			return;
+		}
+
+		this.hasTrackedFirstInteraction = true;
+		this.trackDayFunnelEvent("first_interaction");
 	}
 
 	private handleLevelCleared(finalYum?: YumPrefab) {
@@ -4851,9 +4907,11 @@ export default class Level extends Phaser.Scene {
 
 						this.transitionToNextLevel(nextLevelNumber);
 					},
-					() => {
-						this.confirmExitToSceneSelector();
-					},
+					this.currentLevelPlan.levelNumber >= Level.LEVELS_BUTTON_UNLOCK_DAY
+						? () => {
+							this.confirmExitToSceneSelector();
+						}
+						: undefined,
 					false,
 					"nextDay"
 				);
@@ -4888,10 +4946,24 @@ export default class Level extends Phaser.Scene {
 
 	private startLevelPreparation() {
 		this.trackDayFunnelEvent("start");
+		this.input.once(Phaser.Input.Events.POINTER_DOWN, () => {
+			this.trackFirstInteraction();
+		});
 		// Se llena la cola de pedidos forzados del día 1 desde ya (no cuando termina la
 		// preparación), para que la mano del tutorial pueda señalar qué hacer desde el
 		// primer instante, sin esperar a que aparezca el primer cliente.
 		this.queueTutorialInitialClientOrders();
+
+		if (this.currentLevelPlan.levelNumber === 1) {
+			this.beginPreparationPhase(
+				Level.DAY1_PREP_MESSAGE_DURATION_MS,
+				() => {
+					this.spawnInitialClients();
+				},
+				Level.DAY1_PREP_POST_MESSAGE_GAP_MS,
+			);
+			return;
+		}
 
 		if (this.currentLevelPlan.levelNumber <= 5) {
 			this.beginPreparationPhase(

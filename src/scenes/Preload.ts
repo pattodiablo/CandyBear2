@@ -140,7 +140,7 @@ export default class Preload extends Phaser.Scene {
 
 		if (!hasOpenedGameBefore()) {
 			markGameAsOpened();
-			this.scene.start("Level", { levelNumber: 1 });
+			this.scene.start("Level", { levelNumber: 1, skipIntroPanel: true });
 			return;
 		}
 
