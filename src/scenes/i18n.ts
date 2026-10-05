@@ -71,7 +71,7 @@ const STRINGS: Record<GameLanguage, Record<TranslationKey, string>> = {
 	},
 	es: {
 		prepare: "Clientes en camino, prepárate",
-		perfect: "Perfect",
+		perfect: "Perfecto",
 		good: "Bien",
 		ok: "OK",
 		lastCall: "Ultima llamada! Todo debe irse",

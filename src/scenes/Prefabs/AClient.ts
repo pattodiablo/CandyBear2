@@ -423,7 +423,7 @@ export default class AClient extends Phaser.GameObjects.Container {
 			const maxOrderCount = this.clientBear.getMaxOrderCount();
 			const orderCount = Math.min(baseOrderCount, maxOrderCount);
 			this.initialOrderCount = orderCount;
-			this.pendingProducts = pickClientOrders(orderCount, levelScene.getCurrentLevelNumber());
+			this.pendingProducts = pickClientOrders(orderCount);
 		}
 
 		this.displayedProductIndex = 0;
@@ -692,6 +692,40 @@ export default class AClient extends Phaser.GameObjects.Container {
 		}
 
 		return this.pendingProducts.some((appearance) => product.matchesAppearance(appearance));
+	}
+
+	/**
+	 * Como matchesProduct, pero ignora los índices ya reservados por OTRO producto en
+	 * camino. Lo usa la elección de destino (getDirectDeliveryTarget) para que, con dos
+	 * taps rápidos sobre productos distintos que coinciden con el mismo pedido, el
+	 * segundo no apunte también a este cliente si ya no le queda un lugar libre —
+	 * si lo hiciera, ambos viajarían al mismo cliente y otro se quedaría sin pedido.
+	 */
+	public hasUnreservedMatchingProduct(product: AProduct | milkglass | sandwichPrefab) {
+
+		if (!this.hasActiveRequest()) {
+			return false;
+		}
+
+		for (let index = 0; index < this.pendingProducts.length; index++) {
+			const appearance = this.pendingProducts[index];
+			if (!appearance || !product.matchesAppearance(appearance)) {
+				continue;
+			}
+
+			let isReservedByAnotherProduct = false;
+			this.deliveryReservations.forEach((reservedIndex, reservedProduct) => {
+				if (reservedProduct !== product && reservedIndex === index) {
+					isReservedByAnotherProduct = true;
+				}
+			});
+
+			if (!isReservedByAnotherProduct) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	public reserveMatchingProduct(product: AProduct | milkglass | sandwichPrefab) {

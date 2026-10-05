@@ -74,7 +74,17 @@ export default class milkglass extends Phaser.GameObjects.Image {
 	private currentSlotId?: MilkSlotId;
 	private flavorType?: FlavorType;
 
+	private setPointerInteractionEnabled(enabled: boolean) {
+		if (this.input) {
+			this.input.enabled = enabled;
+		}
+	}
+
 	private handlePointerOver() {
+		if (!this.input || !this.input.enabled) {
+			return;
+		}
+
 		if (this.isLaunching || this.isRaised || this.isSelectingDelivery) {
 			return;
 		}
@@ -83,6 +93,10 @@ export default class milkglass extends Phaser.GameObjects.Image {
 	}
 
 	private handlePointerDown() {
+		if (!this.input || !this.input.enabled) {
+			return;
+		}
+
 		if (this.isLaunching || this.isSelectingDelivery) {
 			return;
 		}
@@ -121,6 +135,10 @@ export default class milkglass extends Phaser.GameObjects.Image {
 
 	private raiseGlass() {
 
+		if (!this.active || !this.scene) {
+			return;
+		}
+
 		this.clearActiveState();
 		this.scene.tweens.add({
 			targets: this,
@@ -139,6 +157,10 @@ export default class milkglass extends Phaser.GameObjects.Image {
 
 	private returnToBase() {
 
+		if (!this.active || !this.scene) {
+			return;
+		}
+
 		this.clearActiveState();
 		this.scene.tweens.add({
 			targets: this,
@@ -155,6 +177,10 @@ export default class milkglass extends Phaser.GameObjects.Image {
 	}
 
 	private startActiveState() {
+
+		if (!this.active || !this.scene) {
+			return;
+		}
 
 		this.danceTween = this.scene.tweens.add({
 			targets: this,
@@ -196,6 +222,10 @@ export default class milkglass extends Phaser.GameObjects.Image {
 
 	private moveToMilkSlot() {
 
+		if (!this.active || !this.scene) {
+			return;
+		}
+
 		const levelScene = this.scene as Level;
 		const targetSlot = levelScene.claimAvailableMilkSlot();
 
@@ -232,12 +262,20 @@ export default class milkglass extends Phaser.GameObjects.Image {
 
 	private snapToMachineRestPosition(slotId: MilkSlotId) {
 
+		if (!this.active || !this.scene) {
+			return;
+		}
+
 		const levelScene = this.scene as Level;
 		const restTarget = levelScene.milkmachine.getSlotTarget(slotId);
 		this.setPosition(restTarget.x, restTarget.y);
 	}
 
 	private completeMilkRefill(slotId: MilkSlotId) {
+
+		if (!this.active || !this.scene) {
+			return;
+		}
 
 		const levelScene = this.scene as Level;
 		this.currentSlotId = slotId;
@@ -393,6 +431,13 @@ export default class milkglass extends Phaser.GameObjects.Image {
 			return;
 		}
 
+		// Reservar ya, antes de mover nada: si dos taps rápidos sobre productos distintos
+		// apuntan al mismo cliente, el segundo debe fallar acá (y no hacer nada) en vez de
+		// viajar igual y vaciarle el pedido a otro cliente que sí lo necesitaba.
+		if (client.reserveMatchingProduct(this) < 0) {
+			return;
+		}
+
 		const levelScene = this.scene as Level;
 		this.isAtMachine = false;
 		this.isReadyForDelivery = false;
@@ -437,7 +482,13 @@ export default class milkglass extends Phaser.GameObjects.Image {
 		consumeRequestAndExit(showYum?: boolean): void;
 	}) {
 
-		if (!this.isSelectingDelivery || !this.currentSlotId) {
+		if (!this.active || !this.scene || !this.isSelectingDelivery || !this.currentSlotId) {
+			return;
+		}
+
+		// Reserva idempotente: si directDeliverToClient ya reservó, reusa el mismo índice.
+		// En la selección manual (tap directo a un cliente) es la primera y única reserva.
+		if (client.reserveMatchingProduct(this) < 0) {
 			return;
 		}
 
@@ -500,7 +551,7 @@ export default class milkglass extends Phaser.GameObjects.Image {
 
 	public cancelDeliverySelection() {
 
-		if (!this.isSelectingDelivery || !this.currentSlotId) {
+		if (!this.active || !this.scene || !this.isSelectingDelivery || !this.currentSlotId) {
 			return;
 		}
 
@@ -544,7 +595,16 @@ export default class milkglass extends Phaser.GameObjects.Image {
 			useHandCursor: true
 		});
 
+		this.setAlpha(1);
+
 		if (this.scaleX < 0.01 && this.scaleY < 0.01) {
+			// El auto-unlock temprano (día 3) llama a esto en el mismo tick síncrono en
+			// que el constructor programó su propio playSpawnTween (todavía sin correr
+			// ni un frame): sin este kill, quedan dos tweens de escala superpuestos
+			// sobre el mismo objeto, con el primero (el del constructor) arrancando su
+			// interpolación desde un valor ya pisado por el segundo en el mismo frame.
+			this.scene.tweens.killTweensOf(this);
+			this.setScale(0, 0);
 			this.playSpawnTween();
 		}
 	}

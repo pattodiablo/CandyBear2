@@ -388,6 +388,13 @@ export default class AProduct extends Phaser.GameObjects.Image {
 			return;
 		}
 
+		// Reservar ya, antes de mover nada: si dos taps rápidos sobre productos distintos
+		// apuntan al mismo cliente, el segundo debe fallar acá (y no hacer nada) en vez de
+		// viajar igual y vaciarle el pedido a otro cliente que sí lo necesitaba.
+		if (client.reserveMatchingProduct(this) < 0) {
+			return;
+		}
+
 		const levelScene = this.scene as Level;
 		this.isAtWorkplace = false;
 		this.isReadyForDelivery = false;
@@ -1089,6 +1096,12 @@ export default class AProduct extends Phaser.GameObjects.Image {
 	}) {
 
 		if (!this.isSelectingDelivery || !this.active || !this.scene) {
+			return;
+		}
+
+		// Reserva idempotente: si directDeliverToClient ya reservó, reusa el mismo índice.
+		// En la selección manual (tap directo a un cliente) es la primera y única reserva.
+		if (client.reserveMatchingProduct(this) < 0) {
 			return;
 		}
 

@@ -400,6 +400,10 @@ export default class Level extends Phaser.Scene {
 	/** Latido de escala cuando conviene guardar un producto en la charola. */
 	private static readonly TRAY_INVITE_SCALE = 1.07;
 	private static readonly TRAY_INVITE_PULSE_DURATION = 620;
+	/** Latido del holder1 durante el onboarding del día 1 (primera vez que se abre el juego). */
+	private static readonly HOLDER1_INTRO_PULSE_SCALE = 1.08;
+	private static readonly HOLDER1_INTRO_PULSE_DURATION = 620;
+	private static readonly HOLDER1_INTRO_PULSE_TOTAL_MS = 10000;
 	private static readonly CAMPAIGN_LEVEL_PLANS = Array.from(
 		{ length: Level.CAMPAIGN_LEVEL_COUNT },
 		(_, index) => Level.createLevelPlan(index + 1)
@@ -516,6 +520,9 @@ export default class Level extends Phaser.Scene {
 	private charola1InviteTween?: Phaser.Tweens.Tween;
 	private charola2InviteTween?: Phaser.Tweens.Tween;
 	private isTrayInviteActive = false;
+	private holder1BaseScaleX = 1;
+	private holder1BaseScaleY = 1;
+	private holder1IntroPulseTween?: Phaser.Tweens.Tween;
 	/** Stock en memoria del tarro (sincronizado con localStorage). */
 	private cookieStock = 0;
 	private static readonly COOKIE_JAR_TEXTURE = "cookieJar";
@@ -1513,6 +1520,22 @@ export default class Level extends Phaser.Scene {
 			&& Phaser.Math.Distance.Between(product.x, product.y, spawnX, spawnY) <= Level.HOLDER_PRODUCT_SPAWN_TOLERANCE;
 	}
 
+	/**
+	 * A diferencia de isHolderSlotProductAtSpawn, no exige estar cerca del holder:
+	 * un producto "en juego" (vaso de leche levantado/viajando a la máquina, producto
+	 * friéndose, etc.) se aleja del spawn por diseño. Si acá exigiéramos posición,
+	 * cualquier refresh de progresión (p. ej. comprar un desbloqueo) mientras el
+	 * producto está en uso lo daría por "perdido" y crearía uno nuevo en el holder,
+	 * dejando el original huérfano (sigue en pantalla pero nadie lo rastrea más) —
+	 * ese es el bug que hacía "desaparecer" los vasos de leche.
+	 */
+	private isHolderSlotProductStillTracked(
+		product?: AProduct | sandwichPrefab | milkglass
+	): product is AProduct | sandwichPrefab | milkglass {
+
+		return !!product && product.active && product.scene === this;
+	}
+
 	private findHolderSlotProductAtSpawn(slotId: ProductSlotId) {
 
 		const spawn = Level.HOLDER_PRODUCT_SPAWNS[slotId];
@@ -1584,7 +1607,6 @@ export default class Level extends Phaser.Scene {
 
 	private ensureHolderSlotProduct(slotId: ProductSlotId) {
 
-		const spawn = Level.HOLDER_PRODUCT_SPAWNS[slotId];
 		const trackedProduct = slotId === "holder1"
 			? this.rawProduct1
 			: slotId === "holder2"
@@ -1593,7 +1615,7 @@ export default class Level extends Phaser.Scene {
 					? this.sandwichProduct
 					: this.milkGlass;
 
-		if (this.isHolderSlotProductAtSpawn(trackedProduct, spawn.x, spawn.y)) {
+		if (this.isHolderSlotProductStillTracked(trackedProduct)) {
 			return trackedProduct;
 		}
 
@@ -1615,6 +1637,8 @@ export default class Level extends Phaser.Scene {
 		return replacementProduct;
 	}
 
+	private static readonly PROGRESSION_PRODUCT_VERIFY_DELAY_MS = 300;
+
 	private activateProgressionProduct(slotId: ProductSlotId) {
 
 		const product = this.ensureHolderSlotProduct(slotId);
@@ -1622,7 +1646,41 @@ export default class Level extends Phaser.Scene {
 
 		if (product instanceof AProduct || product instanceof milkglass || product instanceof sandwichPrefab) {
 			product.reactivateFromProgression();
+			this.verifyProgressionProductVisible(slotId, product);
 		}
+	}
+
+	/**
+	 * Red de seguridad: si por algún motivo el producto queda invisible/en escala casi
+	 * nula después de activarse (p. ej. el holder4/leche que no aparecía al desbloquearse
+	 * temprano), lo forzamos a un estado correcto y lo logueamos para diagnosticar la
+	 * causa real si vuelve a pasar, en vez de dejarlo roto en silencio.
+	 */
+	private verifyProgressionProductVisible(
+		slotId: ProductSlotId,
+		product: AProduct | milkglass | sandwichPrefab
+	) {
+		this.time.delayedCall(Level.PROGRESSION_PRODUCT_VERIFY_DELAY_MS, () => {
+			if (!product.active || !isProductAcquired(slotId)) {
+				return;
+			}
+
+			if (product.visible && product.scaleX > 0.5 && product.alpha > 0.5) {
+				return;
+			}
+
+			// eslint-disable-next-line no-console
+			console.warn(
+				`[progression] ${slotId} quedó en estado inválido tras activarse `
+				+ `(visible=${product.visible}, scaleX=${product.scaleX}, alpha=${product.alpha}); forzando estado correcto.`
+			);
+			product.setVisible(true);
+			product.setAlpha(1);
+			product.setScale(1, 1);
+			if (product.input) {
+				product.input.enabled = true;
+			}
+		});
 	}
 
 	private deactivateProgressionProduct(
@@ -3089,7 +3147,7 @@ export default class Level extends Phaser.Scene {
 		// habilitada, así que queda como una opción más para comprar ahí.
 		const autoUnlocksByLevel: Record<number, UnlockId[]> = {
 			2: ["holder2"],
-			3: ["holder2"],
+			3: ["holder2", "holder4"],
 			4: ["fryer2", "workplace2"],
 		};
 
@@ -3167,7 +3225,10 @@ export default class Level extends Phaser.Scene {
 			this.panel.setVisible(false);
 			this.panel.setAlpha(0);
 			this.startBackgroundMusic();
-			this.setupHelpHand();
+			this.setupHelpHand({ skipInitialTimer: true });
+			this.playHelpHandFirstTimeIntro();
+			this.playHolder1FirstTimePulse();
+			this.playProduct1FirstTimeReveal();
 			this.startLevelPreparation();
 			return;
 		}
@@ -4170,7 +4231,7 @@ export default class Level extends Phaser.Scene {
 		this.sanitizeStaleTrayProducts();
 
 		const matchingTargets = this.activeClients.filter((client) => {
-			return client.active && client.canReceiveDelivery() && client.matchesProduct(product);
+			return client.active && client.canReceiveDelivery() && client.hasUnreservedMatchingProduct(product);
 		});
 
 		if (matchingTargets.length === 0) {
@@ -4631,7 +4692,7 @@ export default class Level extends Phaser.Scene {
 	 * No aplica a modo infinito ni a partir del día 6.
 	 */
 	private trackDayFunnelEvent(
-		action: "start" | "first_interaction" | "first_delivery" | "first_discard" | "complete"
+		action: "start" | "interact" | "first_delivery" | "first_discard" | "complete"
 	) {
 		if (this.isInfiniteMode) {
 			return;
@@ -4653,7 +4714,7 @@ export default class Level extends Phaser.Scene {
 		}
 
 		this.hasTrackedFirstInteraction = true;
-		this.trackDayFunnelEvent("first_interaction");
+		this.trackDayFunnelEvent("interact");
 	}
 
 	private handleLevelCleared(finalYum?: YumPrefab) {
@@ -5556,7 +5617,7 @@ export default class Level extends Phaser.Scene {
 		sandwichCandidates[0].autoPlaceInTray(trayId, slot.x, slot.y);
 	}
 
-	private setupHelpHand() {
+	private setupHelpHand(options: { skipInitialTimer?: boolean } = {}) {
 
 		this.clearHelpHandTimer();
 		this.lastHelpHandActionAt = this.time.now;
@@ -5574,11 +5635,139 @@ export default class Level extends Phaser.Scene {
 		};
 		this.input.on(Phaser.Input.Events.POINTER_DOWN, this.helpHandPointerHandler);
 
+		if (!options.skipInitialTimer) {
+			this.startHelpHandUpdateTimer();
+		}
+	}
+
+	private startHelpHandUpdateTimer() {
+
 		this.helpHandUpdateTimer = this.time.addEvent({
 			delay: Level.HELP_HAND_UPDATE_INTERVAL,
 			loop: true,
 			callback: this.updateHelpHand,
 			callbackScope: this,
+		});
+	}
+
+	/**
+	 * Onboarding del día 1 (primera vez que se abre el juego): antes de señalar
+	 * nada, la mano aparece en el centro de la pantalla con el confetti y el sonido
+	 * típico de desbloqueo, crece suave hasta escala 2 y se asienta de vuelta a la
+	 * normalidad, quedando "latiendo" en el lugar; recién cuando el nivel ya tiene
+	 * algo real que señalar se desliza en línea recta hasta ahí y arranca el
+	 * funcionamiento normal de la mano.
+	 */
+	private static readonly HELP_HAND_INTRO_TARGET_POLL_MS = 150;
+	private static readonly HELP_HAND_INTRO_TARGET_TIMEOUT_MS = 6000;
+
+	private playHelpHandFirstTimeIntro() {
+
+		const centerX = this.scale.width * 0.5;
+		const centerY = this.scale.height * 0.5;
+
+		this.sound.play(`pop${Phaser.Math.Between(1, 3)}`);
+		ConfettiPrefab.launchUnlockBurstAt(this, centerX, centerY, this.tutiorialHand.depth + 4);
+
+		this.tutiorialHand.revealAtCenterWithBounce(centerX, centerY, () => {
+			this.waitForHelpHandIntroTarget(centerX, centerY);
+		});
+	}
+
+	/**
+	 * Mientras la mano late en el centro, sondea el hint real cada
+	 * `HELP_HAND_INTRO_TARGET_POLL_MS` en vez de resolverlo una sola vez: si el nivel
+	 * todavía no tiene nada que señalar (p. ej. el primer cliente no spawneó aún),
+	 * esperar evita que la mano arranque un movimiento a medias y después "salte" de
+	 * golpe cuando el loop normal recién ahí calcula el destino correcto.
+	 */
+	private waitForHelpHandIntroTarget(centerX: number, centerY: number, elapsedMs = 0) {
+
+		const hint = this.resolveHelpHandHint();
+
+		if (!hint && elapsedMs < Level.HELP_HAND_INTRO_TARGET_TIMEOUT_MS) {
+			this.time.delayedCall(Level.HELP_HAND_INTRO_TARGET_POLL_MS, () => {
+				this.waitForHelpHandIntroTarget(centerX, centerY, elapsedMs + Level.HELP_HAND_INTRO_TARGET_POLL_MS);
+			});
+			return;
+		}
+
+		const targetX = hint?.x ?? centerX;
+		const targetY = hint?.y ?? centerY;
+
+		if (hint) {
+			this.lastHelpHandPhase = hint.phase;
+		}
+
+		this.tutiorialHand.moveToPoint(targetX, targetY, () => {
+			this.startHelpHandUpdateTimer();
+		});
+	}
+
+	/** Holder1 "late" un rato al arrancar el día 1 (primera vez), para reforzar el onboarding de la mano. */
+	private playHolder1FirstTimePulse() {
+
+		if (!this.holder1?.active) {
+			return;
+		}
+
+		this.holder1BaseScaleX = this.holder1.scaleX;
+		this.holder1BaseScaleY = this.holder1.scaleY;
+
+		this.holder1IntroPulseTween?.stop();
+		this.holder1IntroPulseTween = this.tweens.add({
+			targets: this.holder1,
+			scaleX: this.holder1BaseScaleX * Level.HOLDER1_INTRO_PULSE_SCALE,
+			scaleY: this.holder1BaseScaleY * Level.HOLDER1_INTRO_PULSE_SCALE,
+			duration: Level.HOLDER1_INTRO_PULSE_DURATION,
+			yoyo: true,
+			repeat: -1,
+			ease: "Sine.InOut",
+		});
+
+		this.time.delayedCall(Level.HOLDER1_INTRO_PULSE_TOTAL_MS, () => {
+			this.stopHolder1FirstTimePulse();
+		});
+	}
+
+	private stopHolder1FirstTimePulse() {
+
+		this.holder1IntroPulseTween?.stop();
+		this.holder1IntroPulseTween = undefined;
+
+		if (this.holder1?.active) {
+			this.holder1.setScale(this.holder1BaseScaleX, this.holder1BaseScaleY);
+		}
+	}
+
+	/**
+	 * Día 1 (primera vez): la primera dona de holder1 "llega" con el mismo confeti
+	 * que usamos para los desbloqueos. Ojo: AProduct arranca en scale 0 y dispara su
+	 * propio tween de aparición (playSpawnTween) al construirse, que en este punto
+	 * (mismo tick síncrono que editorCreate) todavía no corrió — si acá animáramos
+	 * scale con playUnlockRevealPulse, pisaríamos ese tween con el scale aún en 0 y
+	 * la dona quedaría invisible para siempre. Por eso el reveal es solo de alpha,
+	 * sin tocar scale, dejando que AProduct haga su propio "pop" en paralelo.
+	 */
+	private playProduct1FirstTimeReveal() {
+
+		if (!this.rawProduct1?.active) {
+			return;
+		}
+
+		ConfettiPrefab.launchUnlockBurstAt(
+			this,
+			this.rawProduct1.x,
+			this.rawProduct1.y,
+			this.rawProduct1.depth + 4
+		);
+
+		this.rawProduct1.setAlpha(0);
+		this.tweens.add({
+			targets: this.rawProduct1,
+			alpha: 1,
+			duration: 420,
+			ease: "Sine.Out",
 		});
 	}
 
@@ -5608,7 +5797,10 @@ export default class Level extends Phaser.Scene {
 
 	private canShowHelpHand() {
 
-		return !this.isGameplayPaused
+		// La mano es solo para el onboarding (días 1-5); de ahí en más no debe
+		// volver a aparecer, ni siquiera por inactividad o un cliente impaciente.
+		return this.isHelpHandTutorialLevel()
+			&& !this.isGameplayPaused
 			&& !this.isExitConfirmVisible
 			&& !this.isUnlockPanelVisible
 			&& !this.panel.visible
@@ -5617,28 +5809,18 @@ export default class Level extends Phaser.Scene {
 
 	private shouldShowHelpHandForIdle() {
 
-		// Se calcula siempre (y no solo en el branch final) para que un tap que no
-		// cambió el estado del juego no deje una fase suprimida de forma permanente
-		// durante el tutorial, donde no hay otro camino para limpiar la supresión.
+		// Solo se llama durante el tutorial (canShowHelpHand ya filtró por nivel), pero
+		// igual hay que limpiar la fase suprimida acá: un tap que no cambió el estado
+		// del juego no debe dejarla suprimida para siempre, ya que no hay otro camino
+		// para limpiarla durante el tutorial.
 		const isIdle = (this.time.now - this.lastHelpHandActionAt) >= Level.HELP_HAND_IDLE_MS;
-		// Un cliente impaciente es más urgente que cualquier tap perdido: la mano debe
-		// retomar de inmediato (sin esperar los 10s de inactividad) y volver a señalar
-		// lo que más urge atender, en vez de quedarse callada por la fase suprimida.
 		const isUrgent = this.hasImpatientClient();
 
 		if (isIdle || isUrgent) {
 			this.helpHandSuppressedPhase = undefined;
 		}
 
-		if (this.getCurrentLevelNumber() <= Level.HELP_HAND_TUTORIAL_MAX_LEVEL) {
-			return true;
-		}
-
-		if (isUrgent && this.canUseCookieJar()) {
-			return true;
-		}
-
-		return isIdle;
+		return true;
 	}
 
 	private hasImpatientClient() {

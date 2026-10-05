@@ -29,6 +29,12 @@ export default class HelpHand extends Phaser.GameObjects.Image {
 	private static readonly TARGET_CHANGE_THRESHOLD = 14;
 	private static readonly POINT_OFFSET_X = 30;
 	private static readonly POINT_OFFSET_Y = 34;
+	private static readonly INTRO_BOUNCE_SCALE = 2;
+	private static readonly INTRO_GROW_DURATION = 420;
+	private static readonly INTRO_SETTLE_DURATION = 320;
+	private static readonly INTRO_HEARTBEAT_SCALE = 1.06;
+	private static readonly INTRO_HEARTBEAT_DURATION = 420;
+	private static readonly INTRO_MOVE_DURATION = 650;
 
 	private restX = 0;
 	private restY = 0;
@@ -37,6 +43,7 @@ export default class HelpHand extends Phaser.GameObjects.Image {
 	private floatTween?: Phaser.Tweens.Tween;
 	private fadeTween?: Phaser.Tweens.Tween;
 	private pulseTween?: Phaser.Tweens.Tween;
+	private introTween?: Phaser.Tweens.Tween;
 	private clickWaveGraphics?: Phaser.GameObjects.Graphics;
 	private clickWaveTween?: Phaser.Tweens.Tween;
 
@@ -83,6 +90,105 @@ export default class HelpHand extends Phaser.GameObjects.Image {
 	isPointing() {
 
 		return this.isShown;
+	}
+
+	/**
+	 * Intro de onboarding (día 1, primera vez): aparece en el centro de la pantalla
+	 * con un crecimiento suave hasta escala 2 que se asienta de vuelta a la normalidad,
+	 * y se queda "latiendo" ahí en loop hasta que se llama a `moveToPoint` (el caller
+	 * decide cuándo, normalmente al confirmar el destino real al que debe apuntar).
+	 */
+	revealAtCenterWithBounce(centerX: number, centerY: number, onSettled?: () => void) {
+
+		this.floatTween?.stop();
+		this.fadeTween?.stop();
+		this.pulseTween?.stop();
+		this.introTween?.stop();
+		this.pulseTween = undefined;
+
+		this.isShown = true;
+		this.setVisible(true);
+		this.restX = centerX;
+		this.restY = centerY;
+		this.floatOffset = 0;
+		this.x = centerX;
+		this.y = centerY;
+		this.setAlpha(0);
+		this.setScale(0.4);
+
+		this.fadeTween = this.scene.tweens.add({
+			targets: this,
+			alpha: 1,
+			duration: HelpHand.FADE_IN_DURATION,
+			ease: "Sine.Out",
+		});
+
+		this.introTween = this.scene.tweens.add({
+			targets: this,
+			scaleX: HelpHand.INTRO_BOUNCE_SCALE,
+			scaleY: HelpHand.INTRO_BOUNCE_SCALE,
+			duration: HelpHand.INTRO_GROW_DURATION,
+			ease: "Sine.Out",
+			onComplete: () => {
+				this.introTween = this.scene.tweens.add({
+					targets: this,
+					scaleX: 1,
+					scaleY: 1,
+					duration: HelpHand.INTRO_SETTLE_DURATION,
+					ease: "Sine.InOut",
+					onComplete: () => {
+						this.playIntroHeartbeat();
+						onSettled?.();
+					},
+				});
+			},
+		});
+	}
+
+	/** Pulso suave e indefinido en el lugar; `moveToPoint` lo detiene cuando hay que avanzar. */
+	private playIntroHeartbeat() {
+
+		this.introTween = this.scene.tweens.add({
+			targets: this,
+			scaleX: HelpHand.INTRO_HEARTBEAT_SCALE,
+			scaleY: HelpHand.INTRO_HEARTBEAT_SCALE,
+			duration: HelpHand.INTRO_HEARTBEAT_DURATION,
+			ease: "Sine.InOut",
+			yoyo: true,
+			repeat: -1,
+		});
+	}
+
+	/** Desliza la mano en línea recta desde su posición actual hasta el punto indicado y retoma la flotación normal. */
+	moveToPoint(targetX: number, targetY: number, onComplete?: () => void) {
+
+		const nextRestX = targetX + HelpHand.POINT_OFFSET_X;
+		const nextRestY = targetY + HelpHand.POINT_OFFSET_Y;
+		const moveState = { x: this.x, y: this.restY };
+
+		this.introTween?.stop();
+		this.introTween = undefined;
+		this.setScale(1);
+
+		this.introTween = this.scene.tweens.add({
+			targets: moveState,
+			x: nextRestX,
+			y: nextRestY,
+			duration: HelpHand.INTRO_MOVE_DURATION,
+			ease: "Sine.InOut",
+			onUpdate: () => {
+				this.x = moveState.x;
+				this.y = moveState.y;
+				this.restY = moveState.y;
+			},
+			onComplete: () => {
+				this.restX = nextRestX;
+				this.restY = nextRestY;
+				this.startFloating();
+				this.playClickWave();
+				onComplete?.();
+			},
+		});
 	}
 
 	private snapToRestPosition() {
@@ -229,6 +335,7 @@ export default class HelpHand extends Phaser.GameObjects.Image {
 		this.floatTween?.stop();
 		this.fadeTween?.stop();
 		this.pulseTween?.stop();
+		this.introTween?.stop();
 		this.clickWaveTween?.stop();
 		this.clickWaveGraphics?.destroy();
 		super.destroy(fromScene);
