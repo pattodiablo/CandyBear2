@@ -79,6 +79,7 @@ import {
 	notifyPokiGameplayStart,
 	notifyPokiGameplayStop,
 	runPokiCommercialBreak,
+	trackPokiEvent,
 } from "../pokiHelpers";
 
 interface LevelPlan {
@@ -422,6 +423,9 @@ export default class Level extends Phaser.Scene {
 	private currentLevelPlan: LevelPlan = Level.getLevelPlan(1);
 	private currentWaveIndex = 0;
 	private hasCelebratedLevelCompletion = false;
+	private hasTrackedFirstInteraction = false;
+	private hasTrackedFirstDelivery = false;
+	private hasTrackedFirstDiscard = false;
 	private panelRestY = 0;
 	private successfulClientsServed = 0;
 	private quickServiceLikesThisLevel = 0;
@@ -559,6 +563,9 @@ export default class Level extends Phaser.Scene {
 			: Level.getLevelPlan(this.selectedLevelNumber);
 		this.currentWaveIndex = 0;
 		this.hasCelebratedLevelCompletion = false;
+		this.hasTrackedFirstInteraction = false;
+		this.hasTrackedFirstDelivery = false;
+		this.hasTrackedFirstDiscard = false;
 		this.isGameplayPaused = false;
 		this.savedGameplayTimeScale = 1;
 		this.time.timeScale = 1;
@@ -693,6 +700,11 @@ export default class Level extends Phaser.Scene {
 
 	public recordSuccessfulDelivery() {
 		this.successfulClientsServed++;
+
+		if (!this.hasTrackedFirstDelivery) {
+			this.hasTrackedFirstDelivery = true;
+			this.trackDayFunnelEvent("first_delivery");
+		}
 	}
 
 	public getCurrentLevelNumber() {
@@ -720,6 +732,11 @@ export default class Level extends Phaser.Scene {
 
 	public recordProductDiscardLoss() {
 		this.discardedProductLosses++;
+
+		if (!this.hasTrackedFirstDiscard) {
+			this.hasTrackedFirstDiscard = true;
+			this.trackDayFunnelEvent("first_discard");
+		}
 	}
 
 	/**
@@ -3731,6 +3748,7 @@ export default class Level extends Phaser.Scene {
 		}
 
 		this.hasCelebratedLevelCompletion = true;
+		this.trackDayFunnelEvent("complete");
 		storeTotalCoins(this.coinCount);
 		storeCompletedLevel(this.currentLevelPlan.levelNumber);
 		storeLevelStars(
@@ -3957,7 +3975,42 @@ export default class Level extends Phaser.Scene {
 		return this.scheduledWaveClients + this.queuedClientEntries;
 	}
 
+	/**
+	 * Funnel de onboarding (dias 1-5): manda measure('level', 'dayN', action) a Poki
+	 * (y lo loguea en consola) para poder ver en su dashboard donde se caen los
+	 * jugadores nuevos. No aplica a modo infinito ni a partir del dia 6.
+	 */
+	private trackDayFunnelEvent(
+		action: "start" | "interact" | "first_delivery" | "first_discard" | "complete"
+	) {
+		if (this.isInfiniteMode) {
+			return;
+		}
+
+		const levelNumber = this.currentLevelPlan.levelNumber;
+
+		if (levelNumber < 1 || levelNumber > 5) {
+			return;
+		}
+
+		trackPokiEvent(this, "level", `day${levelNumber}`, action);
+	}
+
+	/** Primer tap del jugador tras arrancar la prep del dia (cualquier toque en pantalla). */
+	private trackFirstInteraction() {
+		if (this.hasTrackedFirstInteraction) {
+			return;
+		}
+
+		this.hasTrackedFirstInteraction = true;
+		this.trackDayFunnelEvent("interact");
+	}
+
 	private startLevelPreparation() {
+		this.trackDayFunnelEvent("start");
+		this.input.once(Phaser.Input.Events.POINTER_DOWN, () => {
+			this.trackFirstInteraction();
+		});
 		this.beginPreparationPhase(Level.LEVEL_PREP_DURATION_MS, () => {
 			this.spawnInitialClients();
 		});
