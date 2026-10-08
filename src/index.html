@@ -18,6 +18,9 @@
             height: 100%;
             min-height: 100dvh;
             overflow: hidden;
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+            box-sizing: border-box;
         }
 
         body {
@@ -28,10 +31,140 @@
             display: block;
             touch-action: none;
         }
+
+        #orientationHint {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        #orientationHint.is-visible {
+            display: flex;
+        }
+
+        #orientationHint .card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #FEF6E7;
+            color: #6b4a3a;
+            border: 2px solid #f4c7cf;
+            border-radius: 999px;
+            padding: 10px 20px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+            opacity: 0;
+            transform: translateY(8px);
+            transition: opacity 220ms ease, transform 220ms ease;
+        }
+
+        #orientationHint.is-visible .card {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        #orientationHint .icon {
+            font-size: 20px;
+            display: inline-block;
+            animation: orientationHintRotate 1.6s ease-in-out infinite;
+        }
+
+        @keyframes orientationHintRotate {
+
+            0%,
+            100% {
+                transform: rotate(0deg);
+            }
+
+            50% {
+                transform: rotate(-90deg);
+            }
+        }
+
     </style>
 </head>
 
 <body>
+    <div id="orientationHint" aria-hidden="true">
+        <div class="card">
+            <span class="icon">🔄</span>
+            <span id="orientationHintText"></span>
+        </div>
+    </div>
+    <script>
+        (function () {
+            // No bloqueamos con una pantalla de "gira tu dispositivo": Poki recomienda
+            // soportar ambas orientaciones (los juegos landscape-only pierden entrada de
+            // jugadores en promedio). Phaser.Scale.FIT ya escala solo al espacio disponible;
+            // esto solo empuja un recálculo cuando el viewport cambia (rotación, teclado,
+            // barra del navegador mobile apareciendo/ocultándose), que a veces no dispara
+            // un "resize" nativo a tiempo por su cuenta.
+            const isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+                || (navigator.maxTouchPoints > 0 && Math.min(screen.width, screen.height) < 1024);
+
+            if (!isMobileDevice) {
+                return;
+            }
+
+            const refreshGameScale = () => {
+                if (typeof window.refreshCandyBearGameScale === "function") {
+                    window.refreshCandyBearGameScale();
+                    return;
+                }
+                window.dispatchEvent(new Event("resize"));
+            };
+
+            const scheduleRefresh = () => {
+                refreshGameScale();
+                window.requestAnimationFrame(refreshGameScale);
+                window.setTimeout(refreshGameScale, 150);
+                window.setTimeout(refreshGameScale, 400);
+            };
+
+            window.addEventListener("resize", scheduleRefresh, { passive: true });
+            window.addEventListener("orientationchange", scheduleRefresh, { passive: true });
+            window.visualViewport?.addEventListener("resize", scheduleRefresh, { passive: true });
+        })();
+
+        (function () {
+            // Hint cosmético, nunca bloqueante (pointer-events: none en el CSS): solo
+            // invita a rotar a horizontal para la mejor experiencia, no impide jugar en
+            // portrait. Ver el comentario de arriba sobre por qué no hay un gate duro.
+            const hintEl = document.getElementById("orientationHint");
+            const textEl = document.getElementById("orientationHintText");
+
+            if (!hintEl || !textEl) {
+                return;
+            }
+
+            const isTouchDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+                || navigator.maxTouchPoints > 0;
+
+            if (!isTouchDevice) {
+                return;
+            }
+
+            const language = (navigator.language || "en").toLowerCase();
+            textEl.textContent = language.startsWith("es") ? "Juega como un pro :)" : "Play like a pro :)";
+
+            const updateOrientationHint = () => {
+                const isPortrait = window.innerHeight > window.innerWidth;
+                hintEl.classList.toggle("is-visible", isPortrait);
+            };
+
+            updateOrientationHint();
+            window.addEventListener("resize", updateOrientationHint, { passive: true });
+            window.addEventListener("orientationchange", updateOrientationHint, { passive: true });
+            window.visualViewport?.addEventListener("resize", updateOrientationHint, { passive: true });
+        })();
+    </script>
 </body>
 
 </html>
