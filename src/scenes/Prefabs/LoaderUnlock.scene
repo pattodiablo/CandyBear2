@@ -1,0 +1,125 @@
+{
+    "id": "95cf79d8-0ea1-4aac-ad29-0b97f1f4c42f",
+    "sceneType": "PREFAB",
+    "settings": {
+        "exportClass": true,
+        "autoImport": true,
+        "preloadMethodName": "",
+        "preloadPackFiles": [],
+        "createMethodName": "",
+        "compilerOutputLanguage": "TYPE_SCRIPT",
+        "borderWidth": 1280,
+        "borderHeight": 720
+    },
+    "displayList": [
+        {
+            "type": "Container",
+            "id": "f6f68df0-7621-4ab0-aba1-4e19052b8594",
+            "label": "container_1",
+            "list": [
+                {
+                    "type": "Image",
+                    "id": "53813bf6-1bdb-454b-9536-52dd06198b73",
+                    "label": "unlockedBtn",
+                    "scope": "CLASS",
+                    "texture": {
+                        "key": "unlockedBtn"
+                    }
+                },
+                {
+                    "type": "Sprite",
+                    "id": "b88ca381-5496-4952-8653-ee5ecfaf28da",
+                    "label": "loaderBg",
+                    "scope": "PUBLIC",
+                    "texture": {
+                        "key": "loaderBg"
+                    }
+                },
+                {
+                    "type": "Rectangle",
+                    "id": "4530ef97-c745-458b-a903-000caa581f59",
+                    "label": "LoaderFill",
+                    "x": -228,
+                    "y": -1,
+                    "scaleX": 0,
+                    "originX": 0,
+                    "isFilled": true,
+                    "fillColor": "#3A9A63",
+                    "width": 460,
+                    "height": 108,
+                    "rounded": 20
+                },
+                {
+                    "type": "Text",
+                    "id": "295188b6-c094-4124-b965-09055257bae0",
+                    "label": "UnlockedText",
+                    "scope": "CLASS",
+                    "y": -77,
+                    "originX": 0.5,
+                    "originY": 0.5,
+                    "text": "UNLOCKED",
+                    "fontFamily": "Klop",
+                    "fontSize": "50px",
+                    "color": "#3A9A63"
+                },
+                {
+                    "type": "Image",
+                    "id": "10194b47-8b8b-405f-ac57-b3294d3232ea",
+                    "label": "unlockStar",
+                    "scope": "CLASS",
+                    "texture": {
+                        "key": "unlockStar"
+                    },
+                    "x": 237,
+                    "y": -1
+                },
+                {
+                    "type": "Image",
+                    "id": "a949ea4a-c879-4eb7-87a5-b2271ef4fc63",
+                    "label": "ProductPreview",
+                    "scope": "CLASS",
+                    "texture": {
+                        "key": "Product2Chocolate"
+                    },
+                    "x": 237,
+                    "y": -1
+                },
+                {
+                    "type": "Text",
+                    "id": "10e46f42-bf7b-4fd9-a7f4-3409c851a700",
+                    "label": "PrecentajeLoader",
+                    "scope": "CLASS",
+                    "y": -1,
+                    "originX": 0.5,
+                    "originY": 0.5,
+                    "text": "0%",
+                    "fontFamily": "Klop",
+                    "fontSize": "50px",
+                    "color": "#F8ECDA",
+                    "stroke": "#F8ECDA"
+                },
+                {
+                    "type": "Text",
+                    "id": "fc3e4e82-8f1e-4dbc-a48e-79ab0dd6ddfe",
+                    "label": "unlockedThing",
+                    "scope": "CLASS",
+                    "x": -2,
+                    "y": 80,
+                    "originX": 0.5,
+                    "originY": 0.5,
+                    "text": "UNLOCKED",
+                    "fontFamily": "Klop",
+                    "fontSize": "30px",
+                    "color": "#3A9A63"
+                }
+            ]
+        }
+    ],
+    "plainObjects": [],
+    "meta": {
+        "app": "Phaser Editor - Scene Editor",
+        "url": "https://phaser.io/editor",
+        "contentType": "phasereditor2d.core.scene.SceneContentType",
+        "version": 5
+    }
+}

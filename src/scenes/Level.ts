@@ -37,6 +37,7 @@ import { SkinsAndAnimationBoundsProvider } from "@esotericsoftware/spine-phaser-
 import type { MilkSlotId } from "./Prefabs/milkMachine";
 import type { ToasterSlotId } from "./Prefabs/ToasterPrefab";
 import type { LevelStarPerformance } from "./Prefabs/PanelPrefab";
+import type { LoaderUnlockPreview } from "./Prefabs/LoaderUnlock";
 import LikeHeart from "./Prefabs/LikeHeart";
 import {
 	isProductAcquired,
@@ -133,19 +134,19 @@ export default class Level extends Phaser.Scene {
 		const workstation = this.add.image(654, 563, "Workstation");
 
 		// milkmachine
-		const milkmachine = new milkMachine(this, 611, 590);
+		const milkmachine = new milkMachine(this, 937, 590);
 		this.add.existing(milkmachine);
 
 		// toaster
-		const toaster = new ToasterPrefab(this, 827, 582);
+		const toaster = new ToasterPrefab(this, 1153, 582);
 		this.add.existing(toaster);
 
 		// fryer1
-		const fryer1 = new FryerPrefab(this, 390, 523);
+		const fryer1 = new FryerPrefab(this, 263, 523);
 		this.add.existing(fryer1);
 
 		// fryer2
-		const fryer2 = new FryerPrefab(this, 390, 654);
+		const fryer2 = new FryerPrefab(this, 263, 654);
 		this.add.existing(fryer2);
 
 		// holder1
@@ -155,28 +156,28 @@ export default class Level extends Phaser.Scene {
 		const holder2 = this.add.image(80, 667, "Holder");
 
 		// holder3
-		const holder3 = this.add.image(210, 667, "Holder");
+		const holder3 = this.add.image(760, 667, "Holder");
 
 		// holder4
-		const holder4 = this.add.image(210, 561, "Holder");
+		const holder4 = this.add.image(760, 561, "Holder");
 
 		// workplace1
-		const workplace1 = this.add.image(1175, 660, "workplace");
+		const workplace1 = this.add.image(591, 660, "workplace");
 
 		// workplace2
-		const workplace2 = this.add.image(1042, 660, "workplace");
+		const workplace2 = this.add.image(458, 660, "workplace");
 
 		// chocolateDip
-		const chocolateDip = this.add.image(1042, 559, "ChocolateDip");
+		const chocolateDip = this.add.image(458, 559, "ChocolateDip");
 
 		// candyDip
-		const candyDip = this.add.image(1175, 559, "CandyDip");
+		const candyDip = this.add.image(591, 559, "CandyDip");
 
 		// chocolateIcon
-		this.add.image(1039, 557, "chocolateIcon");
+		this.add.image(455, 557, "chocolateIcon");
 
 		// candyicon
-		this.add.image(1174, 557, "candyicon");
+		this.add.image(590, 557, "candyicon");
 
 		// charola1
 		const charola1 = this.add.image(927, 399, "Charola");
@@ -187,7 +188,7 @@ export default class Level extends Phaser.Scene {
 		charola2.scaleX = 1.2;
 
 		// cookieJar
-		const cookieJar = new CookiesJar(this, 145, 455);
+		const cookieJar = new CookiesJar(this, 666, 455);
 		this.add.existing(cookieJar);
 		cookieJar.visible = false;
 
@@ -204,15 +205,13 @@ export default class Level extends Phaser.Scene {
 		// rawProduct2
 		const rawProduct2 = new AProduct(this, 81, 670, "Product2Raw");
 		this.add.existing(rawProduct2);
-		// El Bomboloni crudo (producto 2) debe verse por encima del producto 1.
-		rawProduct2.setDepth(Level.HOLDER2_PRODUCT_DEPTH);
 
 		// milkGlass
-		const milkGlass = new milkglass(this, 210, 553);
+		const milkGlass = new milkglass(this, 760, 553);
 		this.add.existing(milkGlass);
 
 		// sandwichProduct
-		const sandwichProduct = new sandwichPrefab(this, 209, 668);
+		const sandwichProduct = new sandwichPrefab(this, 759, 668);
 		this.add.existing(sandwichProduct);
 
 		// blurOverlay
@@ -233,11 +232,11 @@ export default class Level extends Phaser.Scene {
 		const menuBtn = this.add.image(1224, 47, "menuBtn");
 
 		// glace2
-		const glace2 = new FlavorBottle(this, 1145, 454);
+		const glace2 = new FlavorBottle(this, 569, 454);
 		this.add.existing(glace2);
 
 		// glace1
-		const glace1 = new FlavorBottle(this, 1062, 458, "glace1");
+		const glace1 = new FlavorBottle(this, 486, 458, "glace1");
 		this.add.existing(glace1);
 
 		// overTrayIcon
@@ -266,34 +265,39 @@ export default class Level extends Phaser.Scene {
 		this.add.existing(upgradePanel);
 
 		// relojFryer1
-		const relojFryer1 = new Reloj(this, 388, 469);
+		const relojFryer1 = new Reloj(this, 261, 469);
 		this.add.existing(relojFryer1);
 		relojFryer1.scaleX = 0.5;
 		relojFryer1.scaleY = 0.5;
 
 		// relojFryer2
-		const relojFryer2 = new Reloj(this, 388, 598);
+		const relojFryer2 = new Reloj(this, 261, 598);
 		this.add.existing(relojFryer2);
 		relojFryer2.scaleX = 0.5;
 		relojFryer2.scaleY = 0.5;
 
 		// relojMilk1
-		const relojMilk1 = new Reloj(this, 558, 567);
+		const relojMilk1 = new Reloj(this, 884, 567);
 		this.add.existing(relojMilk1);
 		relojMilk1.scaleX = 0.5;
 		relojMilk1.scaleY = 0.5;
 
 		// relojMilk2
-		const relojMilk2 = new Reloj(this, 664, 567);
+		const relojMilk2 = new Reloj(this, 990, 567);
 		this.add.existing(relojMilk2);
 		relojMilk2.scaleX = 0.5;
 		relojMilk2.scaleY = 0.5;
 
 		// relojToaster
-		const relojToaster = new Reloj(this, 824, 535);
+		const relojToaster = new Reloj(this, 1150, 535);
 		this.add.existing(relojToaster);
 		relojToaster.scaleX = 0.5;
 		relojToaster.scaleY = 0.5;
+
+		// leftIcon
+		const leftIcon = this.add.image(725, 43, "LeftIcon");
+		leftIcon.scaleX = 0.5;
+		leftIcon.scaleY = 0.5;
 
 		// glace1 (prefab fields)
 		glace1.FlavorType = "Red";
@@ -333,6 +337,7 @@ export default class Level extends Phaser.Scene {
 		this.relojMilk1 = relojMilk1;
 		this.relojMilk2 = relojMilk2;
 		this.relojToaster = relojToaster;
+		this.leftIcon = leftIcon;
 
 		this.events.emit("scene-awake");
 	}
@@ -372,6 +377,7 @@ export default class Level extends Phaser.Scene {
 	private relojMilk1!: Reloj;
 	private relojMilk2!: Reloj;
 	private relojToaster!: Reloj;
+	private leftIcon!: Phaser.GameObjects.Image;
 
 	/* START-USER-CODE */
 	public static readonly CAMPAIGN_LEVEL_COUNT = 40;
@@ -481,7 +487,7 @@ export default class Level extends Phaser.Scene {
 	private static readonly REWARD_COIN_STAGGER = 70;
 	private static readonly REWARD_COIN_FALL_DURATION_MIN = 240;
 	private static readonly REWARD_COIN_FALL_DURATION_MAX = 360;
-	private static readonly REWARD_COIN_COLLECT_DELAY = 1600;
+	private static readonly REWARD_COIN_COLLECT_DELAY = 3200;
 	private static readonly LEVEL_COMPLETE_CONFETTI_DELAY = 0;
 	private static readonly PERFECT_MESSAGE_HOLD_MS = 1900;
 	private static readonly PERFECT_MESSAGE_DEPTH = 1006;
@@ -534,7 +540,6 @@ export default class Level extends Phaser.Scene {
 	private coinCounterText?: Phaser.GameObjects.Text;
 	private dayIndicatorLabel?: Phaser.GameObjects.Text;
 	private dayIndicatorNumber?: Phaser.GameObjects.Text;
-	private clientsLeftLabel?: Phaser.GameObjects.Text;
 	private clientsLeftNumber?: Phaser.GameObjects.Text;
 	private likeHeartIcon?: Phaser.GameObjects.Image;
 	private likesCounterText?: Phaser.GameObjects.Text;
@@ -756,7 +761,6 @@ export default class Level extends Phaser.Scene {
 		this.dayIndicatorNumber = undefined;
 		this.likeHeartIcon = undefined;
 		this.likesCounterText = undefined;
-		this.clientsLeftLabel = undefined;
 		this.clientsLeftNumber = undefined;
 		this.exitConfirmContainer = undefined;
 		this.exitConfirmYesButton = undefined;
@@ -836,7 +840,30 @@ export default class Level extends Phaser.Scene {
 		if (!this.hasTrackedFirstDelivery) {
 			this.hasTrackedFirstDelivery = true;
 			this.trackDayFunnelEvent("first_delivery");
+			this.revealTutorialRawProduct1AfterFirstDelivery();
 		}
+	}
+
+	/**
+	 * Día 1 de un jugador nuevo: el producto crudo de holder1 (y el pulso de
+	 * holder1 que lo acompaña) se quedaron ocultos desde placeTutorialStarterDonut;
+	 * recién cuando el jugador entrega la primera dona precolocada los mostramos,
+	 * para que no compitan por atención con el primer delivery.
+	 */
+	private revealTutorialRawProduct1AfterFirstDelivery() {
+
+		if (!this.currentLevelPlan.isTutorial || this.getCurrentLevelNumber() !== 1) {
+			return;
+		}
+
+		if (!this.rawProduct1?.active) {
+			return;
+		}
+
+		this.rawProduct1.setVisible(true);
+		this.rawProduct1.setInteractive();
+		this.playHolder1FirstTimePulse();
+		this.playProduct1FirstTimeReveal();
 	}
 
 	public getCurrentLevelNumber() {
@@ -1154,19 +1181,32 @@ export default class Level extends Phaser.Scene {
 		);
 	}
 
+	private static readonly LEFT_ICON_NUMBER_GAP = 8;
+
 	private initializeClientsLeftIndicator() {
 
-		this.clientsLeftLabel = this.add.text(0, Level.DAY_INDICATOR_Y, `${t("left")}: `, this.getHudTextStyle("#FD7CB6"));
+		// Mismo Y que el texto de "DAY", no el del ícono -así el número queda nivelado
+		// con "DAY: X" sin importar en qué Y termine quedando leftIcon (eso lo ajusta
+		// Pat a mano en el editor para que el ícono se vea bien con el número).
 		this.clientsLeftNumber = this.add.text(0, Level.DAY_INDICATOR_Y, "0", this.getHudTextStyle("#2D120B"));
-		this.clientsLeftLabel.setOrigin(0, 0.5);
 		this.clientsLeftNumber.setOrigin(0, 0.5);
-
-		for (const clientsLeftText of [this.clientsLeftLabel, this.clientsLeftNumber]) {
-			clientsLeftText.setScrollFactor(0);
-			clientsLeftText.setDepth(this.workstation.depth + 10);
-		}
+		this.clientsLeftNumber.setScrollFactor(0);
+		this.clientsLeftNumber.setDepth(this.workstation.depth + 10);
+		this.positionClientsLeftNumber();
 
 		this.syncClientsRemainingInLevel();
+	}
+
+	/** El número queda pegado a la derecha de leftIcon (puesto en el editor), sin label. */
+	private positionClientsLeftNumber() {
+
+		if (!this.clientsLeftNumber?.scene) {
+			return;
+		}
+
+		this.clientsLeftNumber.setX(
+			this.leftIcon.x + (this.leftIcon.displayWidth * 0.5) + Level.LEFT_ICON_NUMBER_GAP
+		);
 	}
 
 	private syncClientsRemainingInLevel() {
@@ -1190,16 +1230,11 @@ export default class Level extends Phaser.Scene {
 
 	private updateClientsLeftIndicator() {
 
-		if (!this.clientsLeftLabel?.scene || !this.clientsLeftNumber?.scene) {
+		if (!this.clientsLeftNumber?.scene) {
 			return;
 		}
 
 		this.clientsLeftNumber.setText(String(this.clientsRemainingInLevel));
-		this.layoutHudLabelPair(
-			this.clientsLeftLabel,
-			this.clientsLeftNumber,
-			(this.scale.width * 0.5) + Level.DAY_INDICATOR_CENTER_OFFSET_X
-		);
 	}
 
 	private completeLevelClient() {
@@ -1662,6 +1697,19 @@ export default class Level extends Phaser.Scene {
 	) {
 		this.time.delayedCall(Level.PROGRESSION_PRODUCT_VERIFY_DELAY_MS, () => {
 			if (!product.active || !isProductAcquired(slotId)) {
+				return;
+			}
+
+			// holder1 se oculta a propósito durante el tutorial del día 1 hasta la
+			// primera entrega (ver placeTutorialStarterDonut/revealTutorialRawProduct1-
+			// AfterFirstDelivery); no es el mismo "estado inválido" que esta red de
+			// seguridad busca detectar.
+			if (
+				slotId === "holder1"
+				&& this.currentLevelPlan.isTutorial
+				&& this.getCurrentLevelNumber() === 1
+				&& !this.hasTrackedFirstDelivery
+			) {
 				return;
 			}
 
@@ -3141,17 +3189,21 @@ export default class Level extends Phaser.Scene {
 		this.finishIntroAndStartLevel();
 	}
 
+	/**
+	 * holder3 (sándwich) ya no se regala: desde el día 5 la ventana de unlocks está
+	 * habilitada, así que queda como una opción más para comprar ahí.
+	 * También la consulta el panel de fin de día (ver getPendingAutoUnlockPreview) para
+	 * mostrar el loaderPrefab con el desbloqueo del día siguiente en vez de nextdayBtn.
+	 */
+	private static readonly AUTO_UNLOCKS_BY_LEVEL: Record<number, Array<Exclude<ProductSlotId, "holder1"> | WorkstationId>> = {
+		2: ["holder2"],
+		3: ["holder2", "holder4"],
+		4: ["fryer2", "workplace2"],
+	};
+
 	private unlockEarlyCampaignMilestones() {
 		const levelNumber = this.getCurrentLevelNumber();
-		// holder3 (sándwich) ya no se regala: desde el día 5 la ventana de unlocks está
-		// habilitada, así que queda como una opción más para comprar ahí.
-		const autoUnlocksByLevel: Record<number, UnlockId[]> = {
-			2: ["holder2"],
-			3: ["holder2", "holder4"],
-			4: ["fryer2", "workplace2"],
-		};
-
-		const unlocksToGrant = autoUnlocksByLevel[levelNumber] ?? [];
+		const unlocksToGrant = Level.AUTO_UNLOCKS_BY_LEVEL[levelNumber] ?? [];
 		if (unlocksToGrant.length === 0) {
 			return;
 		}
@@ -3195,6 +3247,44 @@ export default class Level extends Phaser.Scene {
 		}
 	}
 
+	/**
+	 * holder1/holder2 son productos "con baño" (AProduct.ChocolateDip): para el reveal
+	 * del loader se ve mejor el sprite grande bañado en chocolate que el ícono chico de
+	 * la tienda (previewTextureKey). holder3/holder4 no tienen variante de baño, así que
+	 * para esos se sigue usando el ícono del catálogo.
+	 */
+	private static readonly PRODUCT_UNLOCK_PREVIEW_TEXTURE: Partial<Record<Exclude<ProductSlotId, "holder1">, string>> = {
+		holder2: "Product2Chocolate",
+	};
+
+	/**
+	 * Si al entrar a `levelNumber` se va a otorgar automáticamente algún desbloqueo
+	 * (ver AUTO_UNLOCKS_BY_LEVEL) que el jugador todavía no tiene, devuelve los datos
+	 * para mostrarlo en el loaderPrefab del panel de fin de día en vez de nextdayBtn.
+	 */
+	private getPendingAutoUnlockPreview(levelNumber: number): LoaderUnlockPreview | undefined {
+		const candidateUnlocks = Level.AUTO_UNLOCKS_BY_LEVEL[levelNumber] ?? [];
+
+		const pendingUnlockId = candidateUnlocks.find((unlockId) => (
+			isProductUnlockId(unlockId) ? !isProductAcquired(unlockId) : !isWorkstationAcquired(unlockId)
+		));
+
+		if (!pendingUnlockId) {
+			return undefined;
+		}
+
+		const catalogEntry = getUnlockCatalogEntry(pendingUnlockId);
+		const textureKey = isProductUnlockId(pendingUnlockId)
+			? Level.PRODUCT_UNLOCK_PREVIEW_TEXTURE[pendingUnlockId] ?? catalogEntry.previewTextureKey
+			: catalogEntry.previewTextureKey;
+
+		return {
+			textureKey,
+			frame: catalogEntry.previewFrame,
+			displayName: catalogEntry.displayName,
+		};
+	}
+
 	/** Cierra el blur del intro y arranca la prep del nivel. */
 	private finishIntroAndStartLevel() {
 		this.tweens.add({
@@ -3227,8 +3317,6 @@ export default class Level extends Phaser.Scene {
 			this.startBackgroundMusic();
 			this.setupHelpHand({ skipInitialTimer: true });
 			this.playHelpHandFirstTimeIntro();
-			this.playHolder1FirstTimePulse();
-			this.playProduct1FirstTimeReveal();
 			this.startLevelPreparation();
 			return;
 		}
@@ -4431,14 +4519,31 @@ export default class Level extends Phaser.Scene {
 								duration: Phaser.Math.Between(Level.REWARD_COIN_FALL_DURATION_MIN, Level.REWARD_COIN_FALL_DURATION_MAX),
 								ease: "Bounce.Out",
 								onComplete: () => {
-									this.time.delayedCall(Level.REWARD_COIN_COLLECT_DELAY, () => {
+									let autoCollectTimer: Phaser.Time.TimerEvent | undefined;
+
+									const collectNow = () => {
+										autoCollectTimer?.remove(false);
+										coin.playCollectAnimation(() => {
+											this.addCoins(1);
+										});
+									};
+
+									autoCollectTimer = this.time.delayedCall(Level.REWARD_COIN_COLLECT_DELAY, () => {
 										if (!coin.active) {
 											return;
 										}
 
-										coin.playCollectAnimation(() => {
-											this.addCoins(1);
-										});
+										collectNow();
+									});
+
+									// Si el jugador toca la moneda, se recoge al instante (con su propio
+									// sonido) en vez de esperar la autocolecta.
+									coin.enableTapToCollect(() => {
+										if (this.sys?.isActive() && this.sound) {
+											this.sound.play(Phaser.Math.Between(0, 1) === 0 ? "coinDrop" : "coinDrop2");
+										}
+
+										collectNow();
 									});
 								}
 						});
@@ -4687,12 +4792,20 @@ export default class Level extends Phaser.Scene {
 	 * Funnel de onboarding (días 1-5): manda measure('level', 'dayN', action) a Poki
 	 * (y lo loguea en consola) para poder ver en su dashboard dónde se caen los
 	 * jugadores nuevos. Además de "start"/"complete", incluye checkpoints intermedios
-	 * (primer tap, primera entrega, primer descarte) para acotar en qué punto exacto
-	 * entre el inicio y el final del día se traban los jugadores nuevos.
+	 * (primer tap, primera entrega, primer descarte, teaser de desbloqueo en el panel
+	 * de fin de día y el tap que arranca el día siguiente) para acotar en qué punto
+	 * exacto entre el inicio y el final del día se traban los jugadores nuevos.
 	 * No aplica a modo infinito ni a partir del día 6.
 	 */
 	private trackDayFunnelEvent(
-		action: "start" | "interact" | "first_delivery" | "first_discard" | "complete"
+		action:
+			| "start"
+			| "interact"
+			| "first_delivery"
+			| "first_discard"
+			| "complete"
+			| "unlock_shown"
+			| "next_day_tap"
 	) {
 		if (this.isInfiniteMode) {
 			return;
@@ -4915,6 +5028,11 @@ export default class Level extends Phaser.Scene {
 			1,
 			Level.CAMPAIGN_LEVEL_COUNT
 		);
+		const unlockPreview = this.getPendingAutoUnlockPreview(nextLevelNumber);
+
+		if (unlockPreview) {
+			this.trackDayFunnelEvent("unlock_shown");
+		}
 
 		this.blurOverlay.setVisible(true);
 		this.blurOverlay.setAlpha(0);
@@ -4941,6 +5059,8 @@ export default class Level extends Phaser.Scene {
 				this.panel.showFinalState(
 					this.getStarPerformance(),
 					() => {
+						this.trackDayFunnelEvent("next_day_tap");
+
 						const nextLevelBlockedByProgress = isSpecialGateLevel(nextLevelNumber)
 							&& !canEnterLevel(
 								nextLevelNumber,
@@ -4974,7 +5094,8 @@ export default class Level extends Phaser.Scene {
 						}
 						: undefined,
 					false,
-					"nextDay"
+					"nextDay",
+					unlockPreview
 				);
 			}
 		});
@@ -5014,15 +5135,12 @@ export default class Level extends Phaser.Scene {
 		// preparación), para que la mano del tutorial pueda señalar qué hacer desde el
 		// primer instante, sin esperar a que aparezca el primer cliente.
 		this.queueTutorialInitialClientOrders();
+		this.placeTutorialStarterDonut();
 
 		if (this.currentLevelPlan.levelNumber === 1) {
-			this.beginPreparationPhase(
-				Level.DAY1_PREP_MESSAGE_DURATION_MS,
-				() => {
-					this.spawnInitialClients();
-				},
-				Level.DAY1_PREP_POST_MESSAGE_GAP_MS,
-			);
+			// Sin cartel de "Prepárate" ni delay acá: el primer cliente del día 1 debe
+			// entrar de inmediato, para que el jugador vea su pedido lo antes posible.
+			this.spawnInitialClients();
 			return;
 		}
 
@@ -5172,6 +5290,54 @@ export default class Level extends Phaser.Scene {
 			orders: [flavorCycle[index % flavorCycle.length]],
 			isFinalWavePickup: false,
 		}));
+	}
+
+	/**
+	 * Día 1 de un jugador nuevo: precoloca una dona ya terminada (sabor chocolate,
+	 * igual al primer pedido forzado en queueTutorialInitialClientOrders) en la
+	 * charola 1, visible y entregable desde el primer instante — para que el primer
+	 * logro del jugador sea tocar la dona y llevarla al cliente, sin tener que
+	 * primero entender el circuito completo de cocinar/bañar.
+	 */
+	private static readonly TUTORIAL_STARTER_DONUT_WAIT_POLL_MS = 150;
+
+	private placeTutorialStarterDonut() {
+		if (!this.currentLevelPlan.isTutorial || this.getCurrentLevelNumber() !== 1) {
+			return;
+		}
+
+		// El producto crudo normal de holder1 se queda oculto hasta que el jugador
+		// entregue esta primera dona (ver revealTutorialRawProduct1AfterFirstDelivery),
+		// para no distraer con dos cosas a la vez en el primerísimo instante del día 1.
+		if (this.rawProduct1?.active) {
+			this.rawProduct1.setVisible(false);
+			this.rawProduct1.disableInteractive();
+		}
+
+		// La dona en sí tampoco aparece todavía: esperamos en silencio a que el primer
+		// cliente llegue y despliegue su pedido (mismo gate que usa la mano), para que
+		// no haya nada en la bandeja antes de que el jugador sepa qué le están pidiendo.
+		this.waitToSpawnTutorialStarterDonut();
+	}
+
+	private waitToSpawnTutorialStarterDonut() {
+
+		if (!this.hasActiveClientWithRevealedOrder()) {
+			this.time.delayedCall(Level.TUTORIAL_STARTER_DONUT_WAIT_POLL_MS, () => {
+				this.waitToSpawnTutorialStarterDonut();
+			});
+			return;
+		}
+
+		this.spawnTutorialStarterDonut();
+	}
+
+	private spawnTutorialStarterDonut() {
+
+		const starterDonut = new AProduct(this, 0, 0, "Product1Raw");
+		starterDonut.configureAsPrebuiltStarter(starterDonut.ChocolateDip);
+		this.add.existing(starterDonut);
+		this.reserveTraySlot("charola1", starterDonut);
 	}
 
 	private spawnInitialClients() {
@@ -5661,7 +5827,35 @@ export default class Level extends Phaser.Scene {
 	private static readonly HELP_HAND_INTRO_TARGET_POLL_MS = 150;
 	private static readonly HELP_HAND_INTRO_TARGET_TIMEOUT_MS = 6000;
 
+	private static readonly HELP_HAND_FIRST_TIME_WAIT_POLL_MS = 150;
+
+	/**
+	 * Antes de que la mano aparezca por primera vez (día 1), esperamos en silencio
+	 * -sin pop, sin confetti, sin sonido, mano oculta- a que el primer cliente haya
+	 * llegado Y mostrado su pedido (pendingProducts ya poblado, en sincronía con la
+	 * burbuja de pregunta). Ojo: NO usamos resolveHelpHandHint() acá, porque ese
+	 * devuelve hints que no dependen de ningún cliente (p. ej. "llevar un producto
+	 * crudo a la bandeja"), y por eso la mano seguía apareciendo de una al cargar el
+	 * nivel aunque el cliente todavía no hubiera llegado.
+	 */
 	private playHelpHandFirstTimeIntro() {
+
+		if (!this.hasActiveClientWithRevealedOrder()) {
+			this.time.delayedCall(Level.HELP_HAND_FIRST_TIME_WAIT_POLL_MS, () => {
+				this.playHelpHandFirstTimeIntro();
+			});
+			return;
+		}
+
+		this.revealHelpHandFirstTime();
+	}
+
+	private hasActiveClientWithRevealedOrder() {
+
+		return this.activeClients.some((client) => client.active && client.canReceiveDelivery());
+	}
+
+	private revealHelpHandFirstTime() {
 
 		const centerX = this.scale.width * 0.5;
 		const centerY = this.scale.height * 0.5;

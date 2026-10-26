@@ -49,6 +49,11 @@ export default class AProduct extends Phaser.GameObjects.Image {
 
 	/* START-USER-CODE */
 	public fryDuration = 3000;
+	private static readonly HOLDER1_PRODUCT_DEPTH = 0;
+	private static readonly HOLDER2_PRODUCT_DEPTH = 1;
+	// Mientras está seleccionado/levantado, el producto 1 debe quedar por encima
+	// del producto 2 (que normalmente se dibuja encima de él en reposo).
+	private static readonly SELECTED_PRODUCT_DEPTH = 2;
 	private static readonly PRODUCT2_EXTRA_FRY_DURATION = 3000;
 	private static readonly BURN_DURATION = 6000;
 	private static readonly HOLDER_ACTIVE_DURATION = 100;
@@ -100,6 +105,10 @@ export default class AProduct extends Phaser.GameObjects.Image {
 
 	private getProductSlotId(): ProductSlotId {
 		return this.Raw.key.startsWith("Product2") ? "holder2" : "holder1";
+	}
+
+	private getBaseDepthForSlot(): number {
+		return this.getProductSlotId() === "holder2" ? AProduct.HOLDER2_PRODUCT_DEPTH : AProduct.HOLDER1_PRODUCT_DEPTH;
 	}
 
 	public getCurrentWorkplaceId() {
@@ -463,6 +472,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 
 		this.setPointerInteractionEnabled(false);
 		this.clearActiveState();
+		this.setDepth(AProduct.SELECTED_PRODUCT_DEPTH);
 		scene.tweens.add({
 			targets: this,
 			y: this.baseY - AProduct.RAISED_OFFSET_Y,
@@ -503,6 +513,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 				this.isRaised = false;
 				this.isLaunching = false;
 				this.angle = this.baseAngle;
+				this.setDepth(this.getBaseDepthForSlot());
 				this.setPointerInteractionEnabled(true);
 			}
 		});
@@ -582,14 +593,18 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		this.isLaunching = true;
 		this.isReadyForDelivery = false;
 		this.isAtWorkplace = false;
+		// Restaura la profundidad base: this.depth puede estar temporalmente elevado
+		// por la selección (ver raiseProduct), y ya no aplica una vez que deja el holder.
+		this.setDepth(this.getBaseDepthForSlot());
 		const replacementProduct = new AProduct(scene, this.baseX, this.baseY, this.Raw.key, this.Raw.frame);
 		replacementProduct.Raw = { ...this.Raw };
 		replacementProduct.Cooked = { ...this.Cooked };
 		replacementProduct.ChocolateDip = { ...this.ChocolateDip };
 		replacementProduct.CandyDip = { ...this.CandyDip };
 		replacementProduct.fryDuration = this.fryDuration;
-		// Hereda la profundidad del original (holder2/Bomboloni siempre por encima del 1).
-		replacementProduct.setDepth(this.depth);
+		// El producto que vuelve a aparecer en el holder siempre usa la profundidad
+		// base de ese holder (holder2/Bomboloni siempre por encima de holder1).
+		replacementProduct.setDepth(replacementProduct.getBaseDepthForSlot());
 		scene.add.existing(replacementProduct);
 		levelScene.registerHolderProductReplacement(this, replacementProduct);
 		this.playSwooshSound();
@@ -890,6 +905,10 @@ export default class AProduct extends Phaser.GameObjects.Image {
 				this.isAtWorkplace = true;
 				this.isReadyForDelivery = false;
 				this.isDelivered = true;
+				// pickUpFromFryer() desactivó el input antes de esta animación; sin este
+				// re-enable el producto llega al mostrador pero queda sin poder tocarse
+				// (ni para elegir sabor ni para entregar directo).
+				this.setPointerInteractionEnabled(true);
 			}
 		});
 	}
@@ -1169,11 +1188,12 @@ export default class AProduct extends Phaser.GameObjects.Image {
 
 	public cancelDeliverySelection() {
 
-		if (!this.isSelectingDelivery) {
+		const scene = this.getSafeScene();
+		if (!this.isSelectingDelivery || !scene) {
 			return;
 		}
 
-		const levelScene = this.scene as Level;
+		const levelScene = scene as Level;
 		const hasTraySlot = this.currentTrayId && this.traySlotX !== undefined && this.traySlotY !== undefined;
 		const workplace = this.currentWorkplaceId === "workplace1"
 			? levelScene?.workplace1
@@ -1189,7 +1209,7 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		this.isSelectingDelivery = false;
 		this.isLaunching = true;
 
-		this.scene.tweens.add({
+		scene.tweens.add({
 			targets: this,
 			x: fallbackX,
 			y: fallbackY,
@@ -1198,6 +1218,9 @@ export default class AProduct extends Phaser.GameObjects.Image {
 			duration: 220,
 			ease: "Cubic.Out",
 			onComplete: () => {
+				if (!this.active || !this.scene) {
+					return;
+				}
 				this.isLaunching = false;
 				this.isAtWorkplace = !this.currentTrayId;
 				this.isReadyForDelivery = true;
@@ -1255,6 +1278,31 @@ export default class AProduct extends Phaser.GameObjects.Image {
 		this.traySlotY = y;
 		this.isAtWorkplace = false;
 		this.setPosition(x, y);
+		this.resetScaleToBase();
+	}
+
+	/**
+	 * Para el día 1 de un jugador nuevo: deja este producto ya listo para entregar
+	 * (con el sabor aplicado) sin pasar por cocinar/bañar. Pensado solo para la dona
+	 * inicial que se precoloca en la charola antes de que el jugador toque nada.
+	 */
+	public configureAsPrebuiltStarter(dip: { key: string; frame?: string | number }) {
+
+		this.applyAppearance(dip);
+		// isCooked se queda en false a propósito: así queda en el mismo estado que
+		// cualquier producto normal ya entregado en la bandeja (ver autoPlaceInTray/
+		// placeInTray), y no en el de "recién salido de la freidora". Con isCooked=true
+		// este producto quedaba también elegible para canReceiveDirectDipFromFryer()
+		// (ese check no mira isReadyForDelivery), así que un click en el bowl de sabor
+		// lo agarraba y lo volvía a "bañar" de nuevo, aunque ya estuviera listo.
+		this.isCooked = false;
+		this.isBurned = false;
+		this.isLaunching = false;
+		this.isSelectingDip = false;
+		this.isSelectingDelivery = false;
+		this.isAtWorkplace = false;
+		this.isReadyForDelivery = true;
+		this.setAlpha(1);
 		this.resetScaleToBase();
 	}
 
@@ -1467,6 +1515,11 @@ export default class AProduct extends Phaser.GameObjects.Image {
 
 		scene.tweens.killTweensOf(this);
 		this.resetScaleToBase();
+		// killTweensOf puede cortar a mitad de camino el fade-in de
+		// playProduct1FirstTimeReveal (holder1, primera dona del día 1) si el jugador
+		// toca el producto antes de que termine; sin esto el producto se queda con el
+		// alpha parcial de ese momento durante todo el viaje a la freidora.
+		this.setAlpha(1);
 
 		scene.tweens.add({
 			targets: this,

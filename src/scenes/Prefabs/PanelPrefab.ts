@@ -3,9 +3,11 @@
 
 /* START OF COMPILED CODE */
 
+import LoaderUnlock from "./LoaderUnlock";
 /* START-USER-IMPORTS */
 import Phaser from "phaser";
 import { t } from "../i18n";
+import type { LoaderUnlockPreview } from "./LoaderUnlock";
 /* END-USER-IMPORTS */
 
 export default class PanelPrefab extends Phaser.GameObjects.Container {
@@ -48,9 +50,9 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		this.add(finalLabels);
 
 		// earnedToday
-		const earnedToday = scene.add.text(40, 86, "", {});
+		const earnedToday = scene.add.text(-101, 16, "", {});
 		earnedToday.setOrigin(0.5, 0.5);
-		earnedToday.text = t("earningsToday");
+		earnedToday.text = "Earnings";
 		earnedToday.setStyle({ "color": "#A96625", "fontFamily": "Klop", "fontSize": "30px" });
 		finalLabels.add(earnedToday);
 
@@ -77,7 +79,7 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		// ReadyText
 		const readyText = scene.add.text(42, 17, "", {});
 		readyText.setOrigin(0.5, 0.5);
-		readyText.text = t("ready");
+		readyText.text = "READY";
 		readyText.setStyle({ "color": "#eedfccff", "fontFamily": "Klop", "fontSize": "50px" });
 		this.add(readyText);
 
@@ -91,9 +93,15 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		// LevelsText
 		const levelsText = scene.add.text(43, 228, "", {});
 		levelsText.setOrigin(0.5, 0.5);
-		levelsText.text = t("levelsAndUpgrades");
+		levelsText.text = "Levels and upgrades";
 		levelsText.setStyle({ "color": "#eedfccff", "fontFamily": "Klop", "fontSize": "25px" });
 		this.add(levelsText);
+
+		// loaderPrefab
+		const loaderPrefab = new LoaderUnlock(scene, 42, 148);
+		loaderPrefab.scaleX = 0.8;
+		loaderPrefab.scaleY = 0.8;
+		this.add(loaderPrefab);
 
 		this.panel = panel;
 		this.bigStar2 = bigStar2;
@@ -108,6 +116,7 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		this.readyText = readyText;
 		this.nextDayText = nextDayText;
 		this.levelsText = levelsText;
+		this.loaderPrefab = loaderPrefab;
 
 		/* START-USER-CTR-CODE */
 		this.starHolder = starHolder;
@@ -198,6 +207,7 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 	private readyText: Phaser.GameObjects.Text;
 	private nextDayText: Phaser.GameObjects.Text;
 	private levelsText: Phaser.GameObjects.Text;
+	public loaderPrefab: LoaderUnlock;
 
 	/* START-USER-CODE */
 	/** Multiplicadores relativos a la escala base de cada botón (no absolutos). */
@@ -483,6 +493,7 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		this.disableReadyButton();
 		this.disableNextDayButton();
 		this.disableLevelsButton();
+		this.loaderPrefab.stopUnlockAnimation();
 		this.readyBtn.setVisible(false);
 		this.earnedToday.setVisible(true);
 		this.totalCoins.setVisible(true);
@@ -496,7 +507,8 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		onNextDayClick?: () => void,
 		onLevelsClick?: () => void,
 		showUpgradeAttention = false,
-		nextDayMode: "nextDay" | "buyUpgrades" = "nextDay"
+		nextDayMode: "nextDay" | "buyUpgrades" = "nextDay",
+		unlockPreview?: LoaderUnlockPreview
 	) {
 
 		this.prepareFinalState();
@@ -504,10 +516,16 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 
 		this.revealEarnedStars(earnedStars, () => {
 			if (onNextDayClick) {
-				this.enableNextDayButton(() => {
+				const handleNextDayClick = () => {
 					this.stopLevelsUpgradeAttention();
 					onNextDayClick();
-				}, nextDayMode);
+				};
+
+				if (unlockPreview) {
+					this.loaderPrefab.playUnlockReveal(unlockPreview, handleNextDayClick);
+				} else {
+					this.enableNextDayButton(handleNextDayClick, nextDayMode);
+				}
 			}
 
 			if (onLevelsClick) {
@@ -517,8 +535,9 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 				});
 			}
 
-			// Si el CTA principal ya es "Buy upgrades", no hace falta el aviso en Levels.
-			if (showUpgradeAttention && onLevelsClick && nextDayMode !== "buyUpgrades") {
+			// Si el CTA principal ya es "Buy upgrades" o el loader de desbloqueo, no hace
+			// falta el aviso en Levels.
+			if (showUpgradeAttention && onLevelsClick && nextDayMode !== "buyUpgrades" && !unlockPreview) {
 				this.startLevelsUpgradeAttention();
 			}
 		});
@@ -533,6 +552,7 @@ export default class PanelPrefab extends Phaser.GameObjects.Container {
 		this.readyBtn.setVisible(true);
 		this.disableReadyButton();
 		this.disableNextDayButton();
+		this.loaderPrefab.stopUnlockAnimation();
 		this.disableLevelsButton();
 		this.resetStarsToDeactivated();
 	}

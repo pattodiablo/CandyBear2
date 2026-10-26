@@ -339,6 +339,11 @@
                 "key": "lamp"
             },
             {
+                "url": "assets/LeftIcon.png",
+                "type": "image",
+                "key": "LeftIcon"
+            },
+            {
                 "url": "assets/LevelsBtn.png",
                 "type": "image",
                 "key": "LevelsBtn"
@@ -354,6 +359,16 @@
                 ],
                 "type": "audio",
                 "key": "likeSound"
+            },
+            {
+                "url": "assets/loaderBg.png",
+                "type": "image",
+                "key": "loaderBg"
+            },
+            {
+                "url": "assets/LoaderHolder.png",
+                "type": "image",
+                "key": "LoaderHolder"
             },
             {
                 "url": "assets/lock.png",
@@ -752,6 +767,16 @@
                 "url": "assets/TutiorialHand.png",
                 "type": "image",
                 "key": "TutiorialHand"
+            },
+            {
+                "url": "assets/unlockedBtn.png",
+                "type": "image",
+                "key": "unlockedBtn"
+            },
+            {
+                "url": "assets/unlockStar.png",
+                "type": "image",
+                "key": "unlockStar"
             },
             {
                 "url": "assets/UpgradeBg.png",

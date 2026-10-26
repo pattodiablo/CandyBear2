@@ -34,20 +34,37 @@ class Boot extends Phaser.Scene {
 let game: Phaser.Game | undefined;
 
 /**
- * true solo si la pestaña/documento está oculto. OJO: a propósito NO se usa
- * document.hasFocus() acá. Embebidos en el iframe de Poki, el foco de window es poco
- * confiable — puede dar false (o dispararse un blur real de window) mientras Poki
- * todavía está revelando el iframe tras el click en "Play Now", sin que el jugador haya
- * hecho nada raro. Eso pausaba el juego entero (loop, timers, tweens) antes de pintar el
- * primer frame, y se quedaba así hasta que el jugador tocaba adentro del canvas.
- * document.hidden (pestaña realmente en segundo plano) es la señal confiable acá.
+ * Cuánto esperar tras el boot antes de empezar a pausar por blur de window.
+ * Embebidos en el iframe de Poki, el foco de window es poco confiable al arrancar —
+ * puede dar false (o dispararse un blur real) mientras Poki todavía está revelando el
+ * iframe tras el click en "Play Now", sin que el jugador haya hecho nada raro. Si se
+ * escuchara blur desde el frame 0 el juego arrancaría pausado y se quedaría así hasta
+ * que el jugador tocara adentro del canvas.
+ */
+const BLUR_PAUSE_GRACE_MS = 3000;
+
+/** true una vez pasado el período de gracia inicial; recién ahí el blur de window pausa. */
+let blurPauseEnabled = false;
+
+/**
+ * true solo si el juego debe estar activo según visibilidad + foco.
+ * document.hidden (pestaña realmente en segundo plano) siempre pausa. El foco de
+ * window (document.hasFocus()) solo se tiene en cuenta pasado BLUR_PAUSE_GRACE_MS.
  */
 function isGameWindowActive() {
-	return !document.hidden;
+	if (document.hidden) {
+		return false;
+	}
+
+	if (blurPauseEnabled && !document.hasFocus()) {
+		return false;
+	}
+
+	return true;
 }
 
 /**
- * Pausa el loop completo al pasar la pestaña a segundo plano.
+ * Pausa el loop completo al pasar la pestaña a segundo plano o perder foco de window.
  * Phaser ya pausa audio con pauseOnBlur; esto congela timers, tweens y update.
  */
 function syncGamePauseToFocus(target: Phaser.Game) {
@@ -66,11 +83,20 @@ function syncGamePauseToFocus(target: Phaser.Game) {
 function setupFocusPause(target: Phaser.Game) {
 	const sync = () => syncGamePauseToFocus(target);
 
-	// Deliberadamente NO se escuchan BLUR/FOCUS (foco de window): dentro de un iframe
-	// no son confiables para decidir si pausar. Solo HIDDEN/VISIBLE (pestaña oculta de
-	// verdad) son señal suficiente para pausar/reanudar el loop completo.
+	// HIDDEN/VISIBLE (pestaña oculta de verdad) son señal confiable desde el frame 0.
 	target.events.on(Phaser.Core.Events.HIDDEN, sync);
 	target.events.on(Phaser.Core.Events.VISIBLE, sync);
+
+	// BLUR/FOCUS de window: ver BLUR_PAUSE_GRACE_MS arriba. El listener se agrega ya,
+	// pero isGameWindowActive() ignora el foco hasta que blurPauseEnabled sea true, así
+	// que un blur falso durante el reveal del iframe de Poki no pausa nada.
+	window.addEventListener("blur", sync);
+	window.addEventListener("focus", sync);
+
+	window.setTimeout(() => {
+		blurPauseEnabled = true;
+		sync();
+	}, BLUR_PAUSE_GRACE_MS);
 }
 
 function createGame() {

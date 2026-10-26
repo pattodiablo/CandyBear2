@@ -17,6 +17,7 @@ export default class HelpHand extends Phaser.GameObjects.Image {
 		this.setAlpha(0);
 		this.setVisible(false);
 		this.startFloating();
+		this.createLabel(scene);
 		/* END-USER-CTR-CODE */
 	}
 
@@ -29,6 +30,8 @@ export default class HelpHand extends Phaser.GameObjects.Image {
 	private static readonly TARGET_CHANGE_THRESHOLD = 14;
 	private static readonly POINT_OFFSET_X = 30;
 	private static readonly POINT_OFFSET_Y = 34;
+	private static readonly LABEL_TEXT = "Tap";
+	private static readonly LABEL_MARGIN = 6;
 	private static readonly INTRO_BOUNCE_SCALE = 2;
 	private static readonly INTRO_GROW_DURATION = 420;
 	private static readonly INTRO_SETTLE_DURATION = 320;
@@ -46,6 +49,8 @@ export default class HelpHand extends Phaser.GameObjects.Image {
 	private introTween?: Phaser.Tweens.Tween;
 	private clickWaveGraphics?: Phaser.GameObjects.Graphics;
 	private clickWaveTween?: Phaser.Tweens.Tween;
+	private label?: Phaser.GameObjects.Text;
+	private labelFadeTween?: Phaser.Tweens.Tween;
 
 	private startFloating() {
 
@@ -60,6 +65,7 @@ export default class HelpHand extends Phaser.GameObjects.Image {
 			onUpdate: () => {
 				this.floatOffset = floatState.offset;
 				this.y = this.restY + this.floatOffset;
+				this.updateLabelPosition();
 			},
 		});
 	}
@@ -113,9 +119,14 @@ export default class HelpHand extends Phaser.GameObjects.Image {
 		this.floatOffset = 0;
 		this.x = centerX;
 		this.y = centerY;
+		this.updateLabelPosition();
 		this.setAlpha(0);
 		this.setScale(0.4);
 
+		// El label "Tap" no se muestra todavía: en este punto la mano solo está
+		// haciendo su bounce de bienvenida en el centro, sin un destino real que
+		// señalar (p. ej. el primer cliente del día 1 ni siquiera llegó/mostró su
+		// pedido). Se revela recién en moveToPoint, cuando ya hay algo concreto.
 		this.fadeTween = this.scene.tweens.add({
 			targets: this,
 			alpha: 1,
@@ -180,11 +191,13 @@ export default class HelpHand extends Phaser.GameObjects.Image {
 				this.x = moveState.x;
 				this.y = moveState.y;
 				this.restY = moveState.y;
+				this.updateLabelPosition();
 			},
 			onComplete: () => {
 				this.restX = nextRestX;
 				this.restY = nextRestY;
 				this.startFloating();
+				this.showLabel();
 				this.playClickWave();
 				onComplete?.();
 			},
@@ -196,12 +209,15 @@ export default class HelpHand extends Phaser.GameObjects.Image {
 		this.x = this.restX;
 		this.y = this.restY + this.floatOffset;
 		this.clickWaveGraphics?.setPosition(this.x, this.y);
+		this.updateLabelPosition();
 	}
 
 	private revealAtTarget(urgent = false) {
 
 		this.isShown = true;
 		this.setVisible(true);
+		this.updateLabelPosition();
+		this.showLabel();
 		this.fadeTween?.stop();
 		this.pulseTween?.stop();
 		this.pulseTween = undefined;
@@ -300,6 +316,8 @@ export default class HelpHand extends Phaser.GameObjects.Image {
 
 		this.isShown = true;
 		this.setVisible(true);
+		this.updateLabelPosition();
+		this.showLabel();
 		this.fadeTween?.stop();
 		this.fadeTween = this.scene.tweens.add({
 			targets: this,
@@ -319,6 +337,7 @@ export default class HelpHand extends Phaser.GameObjects.Image {
 		this.fadeTween?.stop();
 		this.pulseTween?.stop();
 		this.pulseTween = undefined;
+		this.hideLabel();
 		this.fadeTween = this.scene.tweens.add({
 			targets: this,
 			alpha: 0,
@@ -338,7 +357,76 @@ export default class HelpHand extends Phaser.GameObjects.Image {
 		this.introTween?.stop();
 		this.clickWaveTween?.stop();
 		this.clickWaveGraphics?.destroy();
+		this.labelFadeTween?.stop();
+		this.label?.destroy();
 		super.destroy(fromScene);
+	}
+
+	setDepth(value: number): this {
+
+		super.setDepth(value);
+		this.label?.setDepth(value + 1);
+		return this;
+	}
+
+	private createLabel(scene: Phaser.Scene) {
+
+		this.label = scene.add.text(0, 0, HelpHand.LABEL_TEXT, {
+			fontFamily: "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif",
+			fontSize: "18px",
+			fontStyle: "800",
+			color: "#6b4a3a",
+			stroke: "#FEF6E7",
+			strokeThickness: 5,
+		});
+		this.label.setOrigin(0.5, 1);
+		this.label.setAlpha(0);
+		this.label.setVisible(false);
+	}
+
+	private updateLabelPosition() {
+
+		if (!this.label) {
+			return;
+		}
+
+		const topY = this.y - (this.originY * this.displayHeight);
+		const centerX = this.x - ((this.originX - 0.5) * this.displayWidth);
+		this.label.setPosition(centerX, topY - HelpHand.LABEL_MARGIN);
+	}
+
+	private showLabel() {
+
+		if (!this.label) {
+			return;
+		}
+
+		this.label.setVisible(true);
+		this.labelFadeTween?.stop();
+		this.labelFadeTween = this.scene.tweens.add({
+			targets: this.label,
+			alpha: 1,
+			duration: HelpHand.FADE_IN_DURATION,
+			ease: "Sine.Out",
+		});
+	}
+
+	private hideLabel() {
+
+		if (!this.label) {
+			return;
+		}
+
+		this.labelFadeTween?.stop();
+		this.labelFadeTween = this.scene.tweens.add({
+			targets: this.label,
+			alpha: 0,
+			duration: HelpHand.FADE_OUT_DURATION,
+			ease: "Sine.In",
+			onComplete: () => {
+				this.label?.setVisible(false);
+			},
+		});
 	}
 
 	/* END-USER-CODE */

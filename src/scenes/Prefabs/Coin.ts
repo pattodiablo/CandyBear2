@@ -18,7 +18,34 @@ export default class Coin extends Phaser.GameObjects.Image {
 	}
 
 	/* START-USER-CODE */
+	private hasBeenTapped = false;
+
+	/**
+	 * Permite que el jugador toque la moneda para recogerla al instante, en vez de
+	 * esperar a la autocolecta. Se habilita recién cuando la moneda ya aterrizó
+	 * (ver showCoinsAt en Level.ts). `onTap` corre una sola vez.
+	 */
+	public enableTapToCollect(onTap: () => void) {
+
+		if (!this.active || this.hasBeenTapped) {
+			return;
+		}
+
+		this.setInteractive({ useHandCursor: true });
+		this.once(Phaser.Input.Events.POINTER_DOWN, () => {
+			if (this.hasBeenTapped) {
+				return;
+			}
+
+			this.hasBeenTapped = true;
+			onTap();
+		});
+	}
+
 	public playCollectAnimation(onComplete?: () => void) {
+
+		this.hasBeenTapped = true;
+		this.disableInteractive();
 
 		this.scene.tweens.add({
 			targets: this,

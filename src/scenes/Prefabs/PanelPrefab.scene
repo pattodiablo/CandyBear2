@@ -92,11 +92,11 @@
                             "id": "a24cf040-9607-4702-807c-3e032cc2fb22",
                             "label": "earnedToday",
                             "scope": "CLASS",
-                            "x": 40,
-                            "y": 86,
+                            "x": -101,
+                            "y": 16,
                             "originX": 0.5,
                             "originY": 0.5,
-                            "text": "Earnings today",
+                            "text": "Earnings",
                             "fontFamily": "Klop",
                             "fontSize": "30px",
                             "color": "#A96625"
@@ -128,7 +128,8 @@
                         "key": "onBtn"
                     },
                     "x": 46,
-                    "y": 23
+                    "y": 23,
+                    "editorRender": false
                 },
                 {
                     "type": "Image",
@@ -194,6 +195,22 @@
                     "fontFamily": "Klop",
                     "fontSize": "25px",
                     "color": "#eedfccff"
+                },
+                {
+                    "prefabId": "95cf79d8-0ea1-4aac-ad29-0b97f1f4c42f",
+                    "id": "7524d430-bd25-4859-979a-d75876a53bdb",
+                    "unlock": [
+                        "x",
+                        "y",
+                        "scaleX",
+                        "scaleY"
+                    ],
+                    "label": "loaderPrefab",
+                    "scope": "PUBLIC",
+                    "x": 42,
+                    "y": 148,
+                    "scaleX": 0.8,
+                    "scaleY": 0.8
                 }
             ]
         }

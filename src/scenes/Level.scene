@@ -32,7 +32,7 @@
             ],
             "label": "milkmachine",
             "scope": "PUBLIC",
-            "x": 611,
+            "x": 937,
             "y": 590
         },
         {
@@ -44,7 +44,7 @@
             ],
             "label": "toaster",
             "scope": "PUBLIC",
-            "x": 827,
+            "x": 1153,
             "y": 582
         },
         {
@@ -56,7 +56,7 @@
             ],
             "label": "fryer1",
             "scope": "PUBLIC",
-            "x": 390,
+            "x": 263,
             "y": 523
         },
         {
@@ -68,7 +68,7 @@
             ],
             "label": "fryer2",
             "scope": "PUBLIC",
-            "x": 390,
+            "x": 263,
             "y": 654
         },
         {
@@ -101,7 +101,7 @@
             "texture": {
                 "key": "Holder"
             },
-            "x": 210,
+            "x": 760,
             "y": 667
         },
         {
@@ -112,7 +112,7 @@
             "texture": {
                 "key": "Holder"
             },
-            "x": 210,
+            "x": 760,
             "y": 561
         },
         {
@@ -123,7 +123,7 @@
             "texture": {
                 "key": "workplace"
             },
-            "x": 1175,
+            "x": 591,
             "y": 660
         },
         {
@@ -134,7 +134,7 @@
             "texture": {
                 "key": "workplace"
             },
-            "x": 1042,
+            "x": 458,
             "y": 660
         },
         {
@@ -145,7 +145,7 @@
             "texture": {
                 "key": "ChocolateDip"
             },
-            "x": 1042,
+            "x": 458,
             "y": 559
         },
         {
@@ -156,7 +156,7 @@
             "texture": {
                 "key": "CandyDip"
             },
-            "x": 1175,
+            "x": 591,
             "y": 559
         },
         {
@@ -166,7 +166,7 @@
             "texture": {
                 "key": "chocolateIcon"
             },
-            "x": 1039,
+            "x": 455,
             "y": 557
         },
         {
@@ -176,7 +176,7 @@
             "texture": {
                 "key": "candyicon"
             },
-            "x": 1174,
+            "x": 590,
             "y": 557
         },
         {
@@ -213,7 +213,7 @@
             ],
             "label": "cookieJar",
             "scope": "PUBLIC",
-            "x": 145,
+            "x": 666,
             "y": 455,
             "visible": false
         },
@@ -274,7 +274,7 @@
             ],
             "label": "milkGlass",
             "scope": "CLASS",
-            "x": 210,
+            "x": 760,
             "y": 553
         },
         {
@@ -286,7 +286,7 @@
             ],
             "label": "sandwichProduct",
             "scope": "CLASS",
-            "x": 209,
+            "x": 759,
             "y": 668
         },
         {
@@ -300,7 +300,8 @@
             "scaleX": 7,
             "scaleY": 4,
             "originX": 0,
-            "originY": 0
+            "originY": 0,
+            "editorRender": false
         },
         {
             "prefabId": "d22c95a1-a07a-4d36-acf8-819eb6f4423d",
@@ -348,7 +349,7 @@
             ],
             "label": "glace2",
             "scope": "CLASS",
-            "x": 1145,
+            "x": 569,
             "y": 454
         },
         {
@@ -366,7 +367,7 @@
             "texture": {
                 "key": "glace1"
             },
-            "x": 1062,
+            "x": 486,
             "y": 458
         },
         {
@@ -461,7 +462,7 @@
             ],
             "label": "relojFryer1",
             "scope": "CLASS",
-            "x": 388,
+            "x": 261,
             "y": 469,
             "scaleX": 0.5,
             "scaleY": 0.5
@@ -477,7 +478,7 @@
             ],
             "label": "relojFryer2",
             "scope": "CLASS",
-            "x": 388,
+            "x": 261,
             "y": 598,
             "scaleX": 0.5,
             "scaleY": 0.5
@@ -493,7 +494,7 @@
             ],
             "label": "relojMilk1",
             "scope": "CLASS",
-            "x": 558,
+            "x": 884,
             "y": 567,
             "scaleX": 0.5,
             "scaleY": 0.5
@@ -509,7 +510,7 @@
             ],
             "label": "relojMilk2",
             "scope": "CLASS",
-            "x": 664,
+            "x": 990,
             "y": 567,
             "scaleX": 0.5,
             "scaleY": 0.5
@@ -525,8 +526,21 @@
             ],
             "label": "relojToaster",
             "scope": "CLASS",
-            "x": 824,
+            "x": 1150,
             "y": 535,
+            "scaleX": 0.5,
+            "scaleY": 0.5
+        },
+        {
+            "type": "Image",
+            "id": "1300a520-df30-42dd-8ab7-c2fb0083ec70",
+            "label": "leftIcon",
+            "scope": "CLASS",
+            "texture": {
+                "key": "LeftIcon"
+            },
+            "x": 725,
+            "y": 43,
             "scaleX": 0.5,
             "scaleY": 0.5
         }
