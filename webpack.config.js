@@ -3,29 +3,14 @@ const webpack = require("webpack");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const CopyPlugin = require("copy-webpack-plugin");
-const TerserPlugin = require("terser-webpack-plugin");
 
-// Always use the project's Phaser (v4). @poki/phaser-3 nests Phaser 3 and would
-// otherwise double the bundle and break the plugin (extends the wrong BasePlugin).
 const phaserRoot = path.resolve(__dirname, "node_modules/phaser");
-const pokiPhaserPlugin = path.resolve(
-    __dirname,
-    "node_modules/@poki/phaser-3/lib/index.js"
-);
 
 module.exports = {
     entry: {
         main: "./src/index.ts"
     },
     optimization: {
-        // Poki's plugin matches scenes via constructor.name — keep class names in prod.
-        minimizer: [
-            new TerserPlugin({
-                terserOptions: {
-                    keep_classnames: true,
-                },
-            }),
-        ],
         splitChunks: {
             cacheGroups: {
                 phaser: {
@@ -65,9 +50,8 @@ module.exports = {
         extensions: [".tsx", ".ts", ".js"],
         alias: {
             "@esotericsoftware/spine-phaser$": path.resolve(__dirname, "src/vendor/spine-phaser.ts"),
-            // Force a single Phaser instance for the whole graph (incl. Poki plugin).
+            // Force a single Phaser instance for the whole graph.
             phaser: phaserRoot,
-            "@poki/phaser-3": pokiPhaserPlugin,
         },
     },
     devServer: {

@@ -1,11 +1,11 @@
 import Phaser from "phaser";
-import { PokiPlugin } from "@poki/phaser-3";
 import { SpinePlugin } from "@esotericsoftware/spine-phaser-v4";
 import Level from "./scenes/Level";
 import SceneSelector from "./scenes/SceneSelector";
 import preloadAssetPackUrl from "../static/assets/preload-asset-pack.json";
 import Preload from "./scenes/Preload";
 import CredictsScene from "./scenes/CredictsScene";
+import { initializeFrvrSdk, startFrvrBootstrapper } from "./frvrHelpers";
 
 declare global {
 	interface Window {
@@ -72,23 +72,6 @@ function createGame() {
 		height: 720,
 		backgroundColor: "#FEF6E7",
 		plugins: {
-			global: [
-				{
-					key: "poki",
-					plugin: PokiPlugin,
-					start: true,
-					data: {
-						loadingSceneKey: "Preload",
-						gameplaySceneKey: "Level",
-						// El plugin dispara commercialBreak() solo con cada scene.start("Level"),
-						// sin saber nada de nuestra regla "solo desde el día 5" (Level.ts,
-						// startNextLevelAfterOptionalBreak). Con autoCommercialBreak activo salían
-						// anuncios en TODOS los cambios de día, y desde el día 5 salían dos seguidos
-						// (el automático + el nuestro). Lo apagamos y dejamos el control 100% manual.
-						autoCommercialBreak: false,
-					}
-				}
-			],
 			scene: [
 				{
 					key: "spine.SpinePlugin",
@@ -143,9 +126,25 @@ function bootGame() {
 	}
 }
 
+function muteGameAudio(muted: boolean) {
+	if (game?.sound) {
+		game.sound.mute = muted;
+	}
+}
+
+// FRVR pauses the game loop and mutes audio around ads / channel pauses via
+// these hooks — see https://docs.frvr.com/engines/web/lifecycle/.
+initializeFrvrSdk({
+	onSuspend: () => game?.pause(),
+	onResume: () => game?.resume(),
+	onAudioSuspend: () => muteGameAudio(true),
+	onAudioResume: () => muteGameAudio(false),
+	onGamePause: () => game?.pause(),
+});
+
 window.bootCandyBearGame = bootGame;
 
 window.addEventListener("load", () => {
 	window.dispatchEvent(new Event("candybear-game-ready"));
-	bootGame();
+	void startFrvrBootstrapper().then(bootGame);
 });

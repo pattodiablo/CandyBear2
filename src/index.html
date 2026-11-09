@@ -8,6 +8,12 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <!-- FRVR SDK: must load synchronously (no async/defer) before any game script.
+         Keep these exact CDN URLs — FRVR's release pipeline rewrites them to local
+         paths and swaps the dev channel for the right production channel at
+         packaging time. See https://docs.frvr.com/engines/web/quickstart/ -->
+    <script src="https://cdn.frvr.com/sdk/frvr-sdk.min.js"></script>
+    <script src="https://cdn.frvr.com/sdk/frvr-channel-dev.min.js"></script>
     <style>
         html,
         body {

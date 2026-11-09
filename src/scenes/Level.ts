@@ -81,7 +81,7 @@ import {
 import { getExtraCookiesBonus } from "./momentUpgradeBonuses";
 import { canAffordAnyMomentCard } from "./momentCardCatalog";
 import type { ClientRequestAppearance } from "./clientOrderPool";
-import { notifyPokiGameplayStop, runPokiCommercialBreak, trackPokiEvent } from "../pokiHelpers";
+import { runFrvrInterstitialBreak, trackFrvrEvent } from "../frvrHelpers";
 import {
 	recordLevelClearedWithoutUpgradePurchase,
 	shouldPromptBuyUpgrades,
@@ -374,7 +374,7 @@ export default class Level extends Phaser.Scene {
 
 	/* START-USER-CODE */
 	public static readonly CAMPAIGN_LEVEL_COUNT = 40;
-	/** Primer día impar en el que se ofrece un commercial break de Poki al entrar a él. */
+	/** Primer día impar en el que se ofrece un interstitial de FRVR al entrar a él. */
 	private static readonly COMMERCIAL_BREAK_START_DAY = 7;
 	private static readonly DIFFICULTY_GROWTH = 0.18;
 	private static readonly DIFFICULTY_BASE = 0.9;
@@ -4582,8 +4582,8 @@ export default class Level extends Phaser.Scene {
 	}
 
 	/**
-	 * Funnel de onboarding (días 1-5): manda measure('level', 'dayN', 'start'|'complete')
-	 * a Poki (y lo loguea en consola) para poder ver en su dashboard dónde se caen los
+	 * Funnel de onboarding (días 1-5): manda logEvent('level_dayN', { action: 'start'|'complete' })
+	 * a FRVR (y lo loguea en consola) para poder ver en su dashboard dónde se caen los
 	 * jugadores nuevos. No aplica a modo infinito ni a partir del día 6.
 	 */
 	private trackDayFunnelEvent(action: "start" | "complete") {
@@ -4597,7 +4597,7 @@ export default class Level extends Phaser.Scene {
 			return;
 		}
 
-		trackPokiEvent(this, "level", `day${levelNumber}`, action);
+		trackFrvrEvent("level", `day${levelNumber}`, action);
 	}
 
 	private handleLevelCleared(finalYum?: YumPrefab) {
@@ -4771,7 +4771,7 @@ export default class Level extends Phaser.Scene {
 	}
 
 	/**
-	 * Muestra un commercial break de Poki antes de cargar el siguiente día, pero solo
+	 * Muestra un interstitial de FRVR antes de cargar el siguiente día, pero solo
 	 * al entrar a un día impar a partir del COMMERCIAL_BREAK_START_DAY (7, 9, 11, ...):
 	 * no uno sí y otro no desde el día 5, sino cada dos días desde el 7.
 	 */
@@ -4780,8 +4780,7 @@ export default class Level extends Phaser.Scene {
 			&& nextLevelNumber % 2 === 1;
 
 		if (shouldShowCommercialBreak) {
-			notifyPokiGameplayStop(this);
-			await runPokiCommercialBreak(this);
+			await runFrvrInterstitialBreak();
 		}
 
 		if (!this.sys?.isActive()) {
