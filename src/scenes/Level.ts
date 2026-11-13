@@ -81,7 +81,7 @@ import {
 import { getExtraCookiesBonus } from "./momentUpgradeBonuses";
 import { canAffordAnyMomentCard } from "./momentCardCatalog";
 import type { ClientRequestAppearance } from "./clientOrderPool";
-import { runFrvrInterstitialBreak, trackFrvrEvent } from "../frvrHelpers";
+import { runFrvrInterstitialBreak, runFrvrRewardedBreak, trackFrvrEvent } from "../frvrHelpers";
 import {
 	recordLevelClearedWithoutUpgradePurchase,
 	shouldPromptBuyUpgrades,
@@ -472,6 +472,8 @@ export default class Level extends Phaser.Scene {
 	private static readonly REWARD_COIN_FALL_DURATION_MIN = 240;
 	private static readonly REWARD_COIN_FALL_DURATION_MAX = 360;
 	private static readonly REWARD_COIN_COLLECT_DELAY = 1600;
+	/** Monedas que otorga el botón "get coins" del panel de unlocks al completar un rewarded ad. */
+	private static readonly REWARDED_AD_COIN_AMOUNT = 10;
 	private static readonly LEVEL_COMPLETE_CONFETTI_DELAY = 0;
 	private static readonly PERFECT_MESSAGE_HOLD_MS = 1900;
 	private static readonly PERFECT_MESSAGE_DEPTH = 1006;
@@ -576,6 +578,15 @@ export default class Level extends Phaser.Scene {
 	private mandatoryUpgradeRestY = 0;
 	private isMandatoryUpgradeSelectVisible = false;
 	private onMandatoryUpgradeComplete?: () => void;
+	/** Catálogo vigente del panel "SELECT NEW UNLOCK", para poder refrescar la asequibilidad tras un rewarded ad. */
+	private mandatoryUpgradeChoiceIds: UnlockId[] = [];
+	/**
+	 * Si el jugador completó un rewarded ad ("get coins") desde la última vez que se evaluó
+	 * un interstitial, nos saltamos el próximo interstitial para no saturarlo de anuncios.
+	 * Debe sobrevivir el scene.start("Level", ...) entre días: no se resetea en init/resetRuntimeState,
+	 * solo se consume (se apaga) en startNextLevelAfterOptionalBreak.
+	 */
+	private hasWatchedRewardedAdSinceLastInterstitialCheck = false;
 	private isExitConfirmVisible = false;
 	private isUnlockPanelVisible = false;
 	private isGameplayPaused = false;
@@ -1607,6 +1618,7 @@ export default class Level extends Phaser.Scene {
 			product.disableInteractive();
 		}
 	}
+
 
 	private syncFlavorBottlesVisibility() {
 		const milkUnlocked = isProductAcquired("holder4");
@@ -2721,30 +2733,19 @@ export default class Level extends Phaser.Scene {
 
 		this.onMandatoryUpgradeComplete = onComplete;
 		this.isMandatoryUpgradeSelectVisible = true;
+		this.mandatoryUpgradeChoiceIds = unlockIds;
 		this.panel.disableReadyButton();
 		this.panel.setVisible(false);
-
-		const visibleChoices = unlockIds.slice(0, 5).map((unlockId) => {
-			const entry = getUnlockCatalogEntry(unlockId);
-			const effectiveCost = getEffectiveUnlockCost(unlockId);
-			return {
-				id: unlockId,
-				label: entry.displayName,
-				textureKey: entry.previewTextureKey,
-				frame: entry.previewFrame,
-				cost: effectiveCost,
-				isAffordable: this.coinCount >= effectiveCost,
-			};
-		});
 
 		this.upgradePanel.setPosition(this.scale.width * 0.5, this.scale.height * 0.5);
 		this.upgradePanel.setVisible(true);
 		this.upgradePanel.setAlpha(1);
-		this.upgradePanel.populateChoices(visibleChoices, (unlockId) => {
-			this.confirmMandatoryUpgradePurchase(unlockId);
-		});
+		this.refreshMandatoryUpgradeChoices();
 		this.upgradePanel.setCloseHandler(() => {
 			this.closeMandatoryUpgradeSelect();
+		});
+		this.upgradePanel.setRewardedHandler(() => {
+			void this.handleMandatoryUpgradeRewardedAd();
 		});
 		this.upgradePanel.animateOpen();
 
@@ -2762,6 +2763,38 @@ export default class Level extends Phaser.Scene {
 			duration: Level.INTRO_PANEL_DROP_DURATION,
 			ease: "Bounce.Out",
 		});
+	}
+
+	/** Reconstruye las cards del panel "SELECT NEW UNLOCK" con la asequibilidad actual. */
+	private refreshMandatoryUpgradeChoices() {
+		const visibleChoices = this.mandatoryUpgradeChoiceIds.slice(0, 5).map((unlockId) => {
+			const entry = getUnlockCatalogEntry(unlockId);
+			const effectiveCost = getEffectiveUnlockCost(unlockId);
+			return {
+				id: unlockId,
+				label: entry.displayName,
+				textureKey: entry.previewTextureKey,
+				frame: entry.previewFrame,
+				cost: effectiveCost,
+				isAffordable: this.coinCount >= effectiveCost,
+			};
+		});
+
+		this.upgradePanel.populateChoices(visibleChoices, (unlockId) => {
+			this.confirmMandatoryUpgradePurchase(unlockId);
+		});
+	}
+
+	/** Botón "get coins" del panel de unlocks: rewarded ad de FRVR, solo paga si se completó. */
+	private async handleMandatoryUpgradeRewardedAd() {
+		const rewardGranted = await runFrvrRewardedBreak();
+
+		if (!rewardGranted || !this.sys?.isActive() || !this.isMandatoryUpgradeSelectVisible) {
+			return;
+		}
+
+		this.hasWatchedRewardedAdSinceLastInterstitialCheck = true;
+		this.showCoinsAt(this.scale.width * 0.5, Level.REWARDED_AD_COIN_AMOUNT);
 	}
 
 	private closeMandatoryUpgradeSelect() {
@@ -3232,6 +3265,12 @@ export default class Level extends Phaser.Scene {
 
 		storeTotalCoins(this.coinCount);
 		this.updateCoinCounter();
+
+		// Las monedas de un rewarded ad se acreditan de a una conforme caen (showCoinsAt);
+		// refrescar aquí mantiene la asequibilidad de las cards en sync sin esperar un timeout fijo.
+		if (this.isMandatoryUpgradeSelectVisible) {
+			this.refreshMandatoryUpgradeChoices();
+		}
 	}
 
 	private getCoinOffsets(count: number) {
@@ -4434,13 +4473,21 @@ export default class Level extends Phaser.Scene {
 
 		this.sanitizeStaleTrayProducts();
 		const readyTrayProducts = this.getReadyTrayProductsForOrders();
+		// Los vasos de leche nunca pasan por charola (son de entrega directa), así que sin esto
+		// quedaban fuera del "last call" y destroyLastCallProductionProducts() los destruía sin
+		// ofrecérselos a ningún cliente: un vaso ya listo (y ya desbloqueado) desaparecía de la nada.
+		const readyMilkGlasses = this.getSceneMilkGlasses().filter((glass) => glass.canReceiveDirectDelivery());
+		const readyLeftoverProducts: Array<AProduct | sandwichPrefab | milkglass> = [
+			...readyTrayProducts,
+			...readyMilkGlasses,
+		];
 
-		if (readyTrayProducts.length === 0) {
+		if (readyLeftoverProducts.length === 0) {
 			return false;
 		}
 
 		this.showPreparationMessage(t("lastCall"));
-		this.destroyLastCallProductionProducts();
+		this.destroyLastCallProductionProducts(readyMilkGlasses);
 		this.time.delayedCall(2500, () => {
 			// Red de seguridad: los clientes de Last Call deben pedir únicamente lo que
 			// hay en las bandejas en este momento. Cualquier entrada previa que haya
@@ -4448,7 +4495,7 @@ export default class Level extends Phaser.Scene {
 			// debe colársele a un cliente de Last Call.
 			this.forcedClientOrderQueue = [];
 
-			for (const product of readyTrayProducts) {
+			for (const product of readyLeftoverProducts) {
 				const appearance = this.getRequestAppearanceFromTrayProduct(product);
 				this.forcedClientOrderQueue.push({
 					orders: [appearance],
@@ -4466,7 +4513,7 @@ export default class Level extends Phaser.Scene {
 		return true;
 	}
 
-	private destroyLastCallProductionProducts() {
+	private destroyLastCallProductionProducts(protectedMilkGlasses: readonly milkglass[] = []) {
 		const productsToDestroy: Array<AProduct | milkglass | sandwichPrefab> = [
 			...this.getSceneProducts(),
 			...this.getSceneMilkGlasses(),
@@ -4476,7 +4523,10 @@ export default class Level extends Phaser.Scene {
 		for (const product of productsToDestroy) {
 			const trayId = (product as any).currentTrayId as "charola1" | "charola2" | undefined;
 			const isOnTray = trayId !== undefined && product.canReceiveDirectDelivery();
-			if (isOnTray) {
+			// Los vasos de leche no usan charola: un vaso ya listo para entregar se protege
+			// igual que un producto en charola, porque un cliente de last call lo va a reclamar.
+			const isProtectedMilkGlass = product instanceof milkglass && protectedMilkGlasses.includes(product);
+			if (isOnTray || isProtectedMilkGlass) {
 				continue;
 			}
 
@@ -4534,7 +4584,7 @@ export default class Level extends Phaser.Scene {
 	}
 
 	private getRequestAppearanceFromTrayProduct(
-		product: AProduct | sandwichPrefab
+		product: AProduct | sandwichPrefab | milkglass
 	): ClientRequestAppearance {
 		const frameName = product.frame?.name;
 
@@ -4773,14 +4823,20 @@ export default class Level extends Phaser.Scene {
 	/**
 	 * Muestra un interstitial de FRVR antes de cargar el siguiente día, pero solo
 	 * al entrar a un día impar a partir del COMMERCIAL_BREAK_START_DAY (7, 9, 11, ...):
-	 * no uno sí y otro no desde el día 5, sino cada dos días desde el 7.
+	 * no uno sí y otro no desde el día 5, sino cada dos días desde el 7. Si el jugador
+	 * ya vio un rewarded ad ("get coins") desde la última vez que evaluamos esto, nos
+	 * saltamos este interstitial para no encimarle dos anuncios.
 	 */
 	private async startNextLevelAfterOptionalBreak(nextLevelNumber: number) {
 		const shouldShowCommercialBreak = nextLevelNumber >= Level.COMMERCIAL_BREAK_START_DAY
 			&& nextLevelNumber % 2 === 1;
 
 		if (shouldShowCommercialBreak) {
-			await runFrvrInterstitialBreak();
+			if (this.hasWatchedRewardedAdSinceLastInterstitialCheck) {
+				this.hasWatchedRewardedAdSinceLastInterstitialCheck = false;
+			} else {
+				await runFrvrInterstitialBreak();
+			}
 		}
 
 		if (!this.sys?.isActive()) {
@@ -6094,6 +6150,7 @@ export default class Level extends Phaser.Scene {
 			.filter((child): child is milkglass => child instanceof milkglass)
 			.filter((glass) => glass.active);
 	}
+
 
 	private getSceneSandwiches() {
 

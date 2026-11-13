@@ -286,12 +286,14 @@ export default class milkglass extends Phaser.GameObjects.Image {
 
 	private playRefillPop(onComplete?: () => void) {
 
-		const scene = this.scene;
-		if (!scene || !scene.sys?.isActive()) {
+		// No chequear scene.sys.isActive() (ver comentario en playSpawnTween): acá solo nos
+		// importa si el vaso sigue siendo un objeto válido de la escena.
+		if (!this.active || !this.scene) {
 			onComplete?.();
 			return;
 		}
 
+		const scene = this.scene;
 		const timeScale = getMachineAnimationTimeScale(getMilkRefillSpeedBonus());
 		const riseDuration = milkglass.REFILL_POP_RISE_DURATION / timeScale;
 		const settleDuration = milkglass.REFILL_POP_SETTLE_DURATION / timeScale;
@@ -305,13 +307,12 @@ export default class milkglass extends Phaser.GameObjects.Image {
 			duration: riseDuration,
 			ease: "Back.Out",
 			onComplete: () => {
-				const activeScene = this.scene;
-				if (!activeScene || !activeScene.sys?.isActive()) {
+				if (!this.active || !this.scene) {
 					onComplete?.();
 					return;
 				}
 
-				activeScene.tweens.add({
+				this.scene.tweens.add({
 					targets: this,
 					scaleX: this.baseScaleX,
 					scaleY: this.baseScaleY,
@@ -699,24 +700,26 @@ export default class milkglass extends Phaser.GameObjects.Image {
 
 	private playSpawnTween() {
 
-		const scene = this.scene;
-		if (!scene || !scene.sys?.isActive()) {
+		// No chequear scene.sys.isActive(): al construirse durante create() (p.ej. justo
+		// después de un interstitial, que pausa/resume el juego) esa bandera puede reportar
+		// false todavía aunque la escena sea válida, y el vaso se quedaba pegado en scale 0
+		// (invisible) para el resto del día. AProduct/sandwichPrefab no hacen este chequeo.
+		if (!this.active || !this.scene) {
 			return;
 		}
 
-		scene.tweens.add({
+		this.scene.tweens.add({
 			targets: this,
 			scaleX: this.baseScaleX * 1.2,
 			scaleY: this.baseScaleY * 1.2,
 			duration: 120,
 			ease: "Back.Out",
 			onComplete: () => {
-				const activeScene = this.scene;
-				if (!activeScene || !activeScene.sys?.isActive()) {
+				if (!this.active || !this.scene) {
 					return;
 				}
 
-				activeScene.tweens.add({
+				this.scene.tweens.add({
 					targets: this,
 					scaleX: this.baseScaleX,
 					scaleY: this.baseScaleY,

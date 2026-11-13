@@ -137,6 +137,26 @@ export async function runFrvrInterstitialBreak(): Promise<void> {
 }
 
 /**
+ * Shows a rewarded ad. Resolves true only when the player watched it to the end
+ * (AdShowResult.COMPLETED) — a skipped (DELIVERED) or failed/unavailable ad
+ * resolves false, and the caller must not grant the reward.
+ */
+export async function runFrvrRewardedBreak(): Promise<boolean> {
+	const frvr = getFrvr();
+
+	if (!frvr) {
+		return false;
+	}
+
+	try {
+		const result = await frvr.ads.show(frvr.ads.AdType.REWARD);
+		return result === frvr.ads.AdShowResult.COMPLETED;
+	} catch {
+		return false;
+	}
+}
+
+/**
  * Custom funnel event (FRVR.tracker.logEvent): siempre se loguea en consola para
  * poder depurarlo localmente, y además se manda al SDK de FRVR si está disponible
  * (adblock / offline / aún cargando → no-op silencioso).
